@@ -1,0 +1,53 @@
+.dateRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dayArrow {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border: 1px solid var(--input-line);
+  background: var(--card);
+  border-radius: var(--r-btn-sm);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.dayArrow:disabled {
+  opacity: 0.35;
+}
+
+.dateBtn {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+  font-size: 1.1875rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dateWd {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.todayBadge {
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--green);
+  color: #fff;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 1rem;
+  white-space: nowrap;
+}

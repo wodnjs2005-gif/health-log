@@ -1,0 +1,9 @@
+{
+  "name": "나의 건강일지",
+  "short_name": "건강일지",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F1EA",
+  "theme_color": "#F4F1EA",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

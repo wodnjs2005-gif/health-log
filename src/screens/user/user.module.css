@@ -1,0 +1,291 @@
+/* ---------- 아래 탭바 ---------- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 35rem;
+  background: var(--card);
+  border-top: 1px solid var(--header-line);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.5rem 0.375rem calc(0.5rem + var(--safe-bottom));
+  z-index: 6;
+}
+
+.tab {
+  min-height: 3.5rem;
+  min-width: 0;
+  padding: 0;
+  white-space: nowrap;
+  border: none;
+  border-radius: var(--r-btn);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  background: transparent;
+  color: var(--ink);
+}
+
+.tab[aria-current='page'] {
+  background: var(--green);
+  color: #fff;
+}
+
+/* ---------- 오늘 탭 ---------- */
+.homeCard {
+  padding: 1.25rem;
+  gap: 0.875rem;
+}
+
+.big {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+}
+
+.bigNum {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--green);
+  letter-spacing: -0.03em;
+}
+
+.bigUnit {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.mealCell {
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 2px solid var(--card-line);
+  background: var(--card);
+  color: var(--ink-3);
+  border-radius: var(--r-btn);
+  padding: 0.75rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mealCell[data-on='true'] {
+  border-color: var(--orange);
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+}
+
+.mealCellName {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mealCellState {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.videoLink {
+  padding: 1.125rem 1.25rem;
+}
+
+.videoLinkTitle {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+/* ---------- 운동·식단 탭 ---------- */
+.exHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.exIcon {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.125rem;
+}
+
+.exBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.exKind {
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.exMin {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.mealName {
+  font-size: 1.1875rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.addBtn {
+  flex: none;
+  white-space: nowrap;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--orange);
+  background: var(--card);
+  color: var(--orange);
+  border-radius: var(--r-btn-sm);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mealItem {
+  border-top: 1px solid var(--divider);
+  padding-top: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.mealItemTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.menu {
+  font-size: 1.125rem;
+  font-weight: 700;
+  min-width: 0;
+  text-wrap: pretty;
+}
+
+/* ---------- 영상 ---------- */
+.progTitle {
+  font-size: 1.3125rem;
+  font-weight: 800;
+  text-wrap: pretty;
+}
+
+.countLine {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.countNum {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.screen {
+  background: var(--ink);
+  border-radius: 1rem;
+  overflow: hidden;
+  min-height: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ytHost {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  background: #000;
+}
+
+.ytHost iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video {
+  width: 100%;
+  max-height: 65dvh;
+  display: block;
+  background: #000;
+}
+
+.screenMsg {
+  color: #fff;
+  font-size: 1.0625rem;
+  padding: 1rem;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.plCard {
+  padding: 1.125rem;
+}
+
+.plCountCard {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.plCount {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--green);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.barSoft {
+  background: var(--green-bar);
+}
+
+.pct {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--green);
+}
+
+/* ---------- 기록 시트 ---------- */
+.minPreset {
+  min-height: 2.75rem;
+  min-width: 0;
+  border-radius: var(--r-btn-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid var(--input-line);
+  background: var(--card);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.minPreset[aria-pressed='true'] {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: var(--green);
+}

@@ -1,0 +1,391 @@
+.switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  background: var(--card);
+  border: 1px solid var(--input-line);
+  border-radius: 1rem;
+  padding: 0.25rem;
+}
+
+.switchBtn {
+  min-height: 3rem;
+  min-width: 0;
+  border: none;
+  border-radius: var(--r-btn-sm);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  background: transparent;
+  color: var(--ink);
+}
+
+.switchBtn[aria-selected='true'] {
+  background: var(--orange);
+  color: #fff;
+}
+
+.memberCard {
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.125rem;
+}
+
+.memberName {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.memberMin {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.memberMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.progCard {
+  padding: 1rem 1.125rem;
+}
+
+.progTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-wrap: pretty;
+}
+
+.progMeta {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.countRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 1.0625rem;
+}
+
+.countVal {
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.logRow {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  border-top: 1px solid var(--divider);
+  padding-top: 0.5rem;
+}
+
+.logMain {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-wrap: pretty;
+}
+
+/* 파일 고르기 상자 */
+.filePick {
+  min-height: 3.5rem;
+  border: 2px dashed var(--input-line);
+  border-radius: var(--r-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--ink-3);
+}
+
+.filePick[data-picked='true'] {
+  color: var(--green);
+}
+
+.filePick:focus-within {
+  outline: 0.1875rem solid var(--navy);
+  outline-offset: 0.125rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* ---------- 해시태그 ---------- */
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tag {
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--navy-soft);
+  color: var(--navy);
+  border-radius: 1rem;
+  padding: 0.125rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* 검색 + 해시태그로 골라 보기 */
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.search {
+  min-height: 3rem;
+  width: 100%;
+  border: 2px solid var(--input-line);
+  border-radius: var(--r-btn);
+  padding: 0 1rem;
+  font-size: 1.0625rem;
+  background: var(--card);
+}
+
+.tagFilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tagBtn {
+  min-height: 2.75rem;
+  padding: 0.25rem 0.875rem;
+  border-radius: var(--r-chip);
+  font-size: 1rem;
+  font-weight: 700;
+  border: 2px solid var(--input-line);
+  background: var(--card);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.tagBtn[aria-pressed='true'] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.tagCount {
+  font-weight: 600;
+  opacity: 0.75;
+  margin-left: 0.25rem;
+}
+
+.resultNote {
+  font-size: 0.9375rem;
+  color: var(--ink-3);
+}
+
+/* 해시태그 편집 시트 */
+.editTag {
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.875rem;
+  border-radius: var(--r-chip);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  border: none;
+  background: var(--navy);
+  color: #fff;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.x {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.suggest {
+  min-height: 2.75rem;
+  padding: 0.25rem 0.875rem;
+  border-radius: var(--r-chip);
+  font-size: 1rem;
+  font-weight: 700;
+  border: 2px dashed var(--navy);
+  background: transparent;
+  color: var(--navy);
+  white-space: nowrap;
+}
+
+.addRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.hashInput {
+  position: relative;
+}
+
+.hashInput::before {
+  content: '#';
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--navy);
+  pointer-events: none;
+}
+
+.hashInput input {
+  padding-left: 1.875rem;
+}
+
+/* ---------- 대상 이용자 고르기 ---------- */
+.picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.pickedChip {
+  --c: var(--orange);
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.875rem;
+  border-radius: var(--r-chip);
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  background: var(--c);
+  color: #fff;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.pickBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pickList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-btn);
+  overflow: hidden;
+}
+
+.pickRow {
+  --c: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  border-top: 1px solid var(--divider);
+  background: var(--card);
+  text-align: left;
+  width: 100%;
+}
+
+.pickRow:first-child {
+  border-top: none;
+}
+
+.pickRow[aria-checked='true'] {
+  background: var(--orange-soft);
+}
+
+.navyAccent,
+.navyAccent .pickRow,
+.navyAccent .pickedChip {
+  --c: var(--navy);
+}
+
+.navyAccent .pickRow[aria-checked='true'] {
+  background: var(--navy-soft);
+}
+
+.box {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: 0.5rem;
+  border: 2px solid var(--input-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.pickRow[aria-checked='true'] .box {
+  background: var(--c);
+  border-color: var(--c);
+}
+
+.pickMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pickName {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.pickAll {
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+  border-radius: var(--r-btn-sm);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  border: 1px solid var(--input-line);
+  background: var(--card);
+  white-space: nowrap;
+}
+
+/* 관리자 화면 전환 버튼은 남색 */
+.switchNavy .switchBtn[aria-selected='true'] {
+  background: var(--navy);
+}
+
+/* 카드 아래 버튼 줄 (대상 이용자 수정 · 영상 삭제) */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

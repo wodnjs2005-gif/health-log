@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+html{font-size:100%;-webkit-text-size-adjust:100%;transition:font-size .15s}
+*{box-sizing:border-box}
+body{margin:0;background:#F4F1EA;color:#1E2320;font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;word-break:keep-all;overflow-wrap:break-word;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit}
+input,textarea{font-family:inherit}
+a{color:#2E6A4E}a:hover{color:#1F4D38}
+</style>
+</helmet>
+<div style="max-width:35rem;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding-bottom:{{ mainPad }}">
+
+  <header style="position:sticky;top:0;z-index:5;background:#F4F1EA;padding:1rem 1rem 0.75rem;display:flex;flex-direction:column;gap:0.75rem;border-bottom:1px solid #DDD7CB">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem">
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:0.5rem">
+        <sc-if value="{{ showBack }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ back }}" style="flex:none;white-space:nowrap;min-height:2.75rem;padding:0 0.75rem;border:1px solid #CFC8BA;background:#FFFFFF;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer">‹ {{ backLabel }}</button>
+        </sc-if>
+        <div style="flex:1;min-width:0;font-size:1.375rem;font-weight:800;letter-spacing:-0.02em;word-break:keep-all;line-height:1.25">{{ title }}</div>
+      </div>
+      <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem">
+        <div style="font-size:0.8125rem;color:#5A625D;font-weight:600">글자 크기</div>
+        <div role="group" aria-label="글자 크기" style="display:flex;background:#FFFFFF;border:1px solid #CFC8BA;border-radius:0.75rem;padding:0.1875rem;gap:0.1875rem">
+          <sc-for list="{{ fsOptions }}" as="f" hint-placeholder-count="3">
+            <button onClick="{{ f.pick }}" aria-label="{{ f.aria }}" aria-pressed="{{ f.on }}" style="min-width:2.75rem;height:2.75rem;border:none;border-radius:0.5625rem;cursor:pointer;font-weight:800;line-height:1;background:{{ f.bg }};color:{{ f.fg }};font-size:{{ f.size }}">가</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ inUserApp }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <button onClick="{{ prevDay }}" aria-label="전날" style="width:3rem;height:3rem;flex:none;border:1px solid #CFC8BA;background:#FFFFFF;border-radius:0.75rem;font-size:1.5rem;cursor:pointer;line-height:1">‹</button>
+        <button onClick="{{ goToday }}" style="flex:1;min-width:0;height:3rem;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.5rem;font-size:1.1875rem;font-weight:700">
+          <span>{{ dateLabel }}</span>
+          <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:0.875rem;font-weight:700;background:#2E6A4E;color:#FFFFFF;padding:0.1875rem 0.5rem;border-radius:1rem">오늘</span>
+          </sc-if>
+        </button>
+        <button onClick="{{ nextDay }}" aria-label="다음날" disabled="{{ isToday }}" style="width:3rem;height:3rem;flex:none;border:1px solid #CFC8BA;background:#FFFFFF;border-radius:0.75rem;font-size:1.5rem;cursor:pointer;line-height:1;opacity:{{ nextOpacity }}">›</button>
+      </div>
+    </sc-if>
+  </header>
+
+  <main style="padding:1rem;display:flex;flex-direction:column;gap:1rem">
+
+    <sc-if value="{{ isEntry }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:1.5rem 0.25rem 0.5rem;display:flex;flex-direction:column;gap:0.5rem">
+        <div style="font-size:1.75rem;font-weight:800;letter-spacing:-0.02em;line-height:1.3">어떻게 들어오시나요?</div>
+        <div style="font-size:1.0625rem;color:#5A625D">해당하는 버튼을 눌러주세요.</div>
+      </div>
+      <sc-for list="{{ roles }}" as="r" hint-placeholder-count="3">
+        <button onClick="{{ r.go }}" style="width:100%;text-align:left;cursor:pointer;background:#FFFFFF;border:2px solid {{ r.color }};border-radius:1.25rem;padding:1.25rem;display:flex;align-items:center;gap:1rem;min-height:6rem">
+          <div style="width:3.5rem;height:3.5rem;flex:none;border-radius:1rem;background:{{ r.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:1.375rem;font-weight:800">{{ r.initial }}</div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.25rem">
+            <div style="font-size:1.5rem;font-weight:800;color:{{ r.color }}">{{ r.label }}</div>
+            <div style="font-size:1rem;color:#3F4743;text-wrap:pretty">{{ r.desc }}</div>
+          </div>
+          <div style="flex:none;font-size:1.75rem;color:{{ r.color }};font-weight:700">›</div>
+        </button>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isEntryLocal }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1rem;padding:0.875rem 1rem;font-size:0.9375rem;color:#3F4743;text-wrap:pretty"><b>체험 모드</b> · 기록이 이 기기에만 저장돼요. 서버를 연결하면 모든 휴대폰에서 같은 기록을 볼 수 있어요.</div>
+    </sc-if>
+
+    <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:4rem 1rem;text-align:center;font-size:1.125rem;font-weight:600;color:#5A625D">불러오는 중…</div>
+    </sc-if>
+
+    <sc-if value="{{ isCodeLogin }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:1rem 0.25rem 0.25rem;display:flex;flex-direction:column;gap:0.375rem">
+        <div style="font-size:1.5rem;font-weight:800;line-height:1.3">개인 번호를 입력하세요</div>
+        <div style="font-size:1.0625rem;color:#3F4743;text-wrap:pretty">트레이너나 관리자에게 받은 6자리 번호예요.</div>
+      </div>
+      <input value="{{ codeInput }}" onChange="{{ onCode }}" onKeyDown="{{ onCodeKey }}" maxLength="6" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck="false" aria-label="개인 번호 6자리" placeholder="AB3K7Q" style="height:5rem;width:100%;border:3px solid #2E6A4E;border-radius:1.125rem;background:#FFFFFF;color:#1E2320;text-align:center;font-size:2.25rem;font-weight:800;letter-spacing:0.3em;padding:0 0 0 0.3em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase"></input>
+      <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
+        <div role="alert" style="font-size:1.0625rem;font-weight:700;color:#A3261B;text-align:center">{{ loginError }}</div>
+      </sc-if>
+      <button onClick="{{ submitCode }}" disabled="{{ loggingIn }}" style="height:4rem;border:none;border-radius:1rem;background:#2E6A4E;color:#FFFFFF;font-size:1.3125rem;font-weight:800;cursor:pointer">{{ loginLabel }}</button>
+      <div style="font-size:0.9375rem;color:#5A625D;text-align:center;text-wrap:pretty">한 번 들어가면 이 휴대폰에서는 다시 묻지 않아요.</div>
+      <sc-if value="{{ hasDemoHint }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1rem;padding:0.75rem 1rem;font-size:0.9375rem;color:#3F4743;text-align:center">체험용 · {{ demoHint }}</div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isStaffLogin }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:1rem 0.25rem 0.25rem;display:flex;flex-direction:column;gap:0.375rem">
+        <div style="font-size:1.5rem;font-weight:800;line-height:1.3">{{ staffLoginTitle }}</div>
+        <div style="font-size:1.0625rem;color:#3F4743;text-wrap:pretty">트레이너·관리자 공용 비밀번호를 입력하세요.</div>
+      </div>
+      <input type="password" value="{{ pwInput }}" onChange="{{ onPw }}" onKeyDown="{{ onPwKey }}" autoComplete="current-password" aria-label="비밀번호" placeholder="비밀번호" style="height:4rem;width:100%;border:2px solid #CFC8BA;border-radius:1rem;background:#FFFFFF;color:#1E2320;font-size:1.25rem;padding:0 1rem"></input>
+      <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
+        <div role="alert" style="font-size:1.0625rem;font-weight:700;color:#A3261B">{{ loginError }}</div>
+      </sc-if>
+      <button onClick="{{ submitPw }}" disabled="{{ loggingIn }}" style="height:4rem;border:none;border-radius:1rem;background:#3D4F7A;color:#FFFFFF;font-size:1.3125rem;font-weight:800;cursor:pointer">{{ loginLabel }}</button>
+      <sc-if value="{{ isLocal }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1rem;padding:0.75rem 1rem;font-size:0.9375rem;color:#3F4743;text-align:center">체험 모드 비밀번호: 1234</div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+      <section style="background:#FFFFFF;border-radius:1.25rem;padding:1.25rem;display:flex;flex-direction:column;gap:0.875rem;border:1px solid #E4DED2">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;flex-wrap:wrap">
+          <div style="font-size:1.125rem;font-weight:700">운동</div>
+          <div style="font-size:0.9375rem;color:#5A625D">{{ dayExCount }}건</div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:0.375rem">
+          <span style="font-size:3rem;font-weight:800;line-height:1;color:#2E6A4E;letter-spacing:-0.03em">{{ dayMin }}</span>
+          <span style="font-size:1.25rem;font-weight:700">분</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+          <div style="height:0.875rem;background:#E3EEE7;border-radius:1rem;overflow:hidden">
+            <div style="height:100%;background:#2E6A4E;border-radius:1rem;width:{{ weekPct }}%"></div>
+          </div>
+          <div style="font-size:1rem;color:#3F4743;text-wrap:pretty">이번 주 <b>{{ weekMin }}분</b> / 목표 150분</div>
+        </div>
+        <button onClick="{{ openEx }}" style="height:3.5rem;border:none;border-radius:0.875rem;background:#2E6A4E;color:#FFFFFF;font-size:1.1875rem;font-weight:700;cursor:pointer">+ 운동 기록하기</button>
+      </section>
+      <section style="background:#FFFFFF;border-radius:1.25rem;padding:1.25rem;display:flex;flex-direction:column;gap:0.875rem;border:1px solid #E4DED2">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;flex-wrap:wrap">
+          <div style="font-size:1.125rem;font-weight:700">식사</div>
+          <div style="font-size:0.9375rem;color:#5A625D">세 끼 중 {{ mainMealsDone }}끼</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0.5rem">
+          <sc-for list="{{ mealStatus }}" as="m" hint-placeholder-count="4">
+            <button onClick="{{ m.open }}" style="border:2px solid {{ m.bd }};background:{{ m.bg }};color:{{ m.fg }};border-radius:0.875rem;padding:0.75rem 0.25rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;cursor:pointer">
+              <span style="font-size:1.0625rem;font-weight:700">{{ m.name }}</span>
+              <span style="font-size:0.875rem;font-weight:600">{{ m.state }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <button onClick="{{ openMealAuto }}" style="height:3.5rem;border:none;border-radius:0.875rem;background:#B4541F;color:#FFFFFF;font-size:1.1875rem;font-weight:700;cursor:pointer">+ 식사 기록하기</button>
+      </section>
+      <sc-if value="{{ hasMyProgs }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ goVideo }}" style="width:100%;text-align:left;cursor:pointer;background:#FFFFFF;border:2px solid #3D4F7A;border-radius:1.25rem;padding:1.125rem 1.25rem;display:flex;align-items:center;gap:1rem">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.25rem">
+            <div style="font-size:1.125rem;font-weight:800;color:#3D4F7A">트레이너 운동 영상</div>
+            <div style="font-size:1rem;color:#3F4743">{{ myProgCount }}개 · 오늘 {{ todayViews }}회 따라함</div>
+          </div>
+          <div style="flex:none;font-size:1.75rem;font-weight:700;color:#3D4F7A">›</div>
+        </button>
+      </sc-if>
+      <button onClick="{{ logout }}" style="min-height:3rem;border:1px solid #CFC8BA;background:transparent;border-radius:0.875rem;font-size:1rem;font-weight:700;color:#5A625D;cursor:pointer">로그아웃 (다른 번호로 들어가기)</button>
+    </sc-if>
+
+    <sc-if value="{{ isEx }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem">
+        <div style="font-size:1.25rem;font-weight:800">운동일지</div>
+        <div style="font-size:1rem;color:#3F4743">합계 <b style="color:#2E6A4E">{{ dayMin }}분</b></div>
+      </div>
+      <sc-if value="{{ noEx }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1.25rem;padding:2rem 1rem;text-align:center;font-size:1.0625rem;color:#5A625D">이 날은 운동 기록이 없어요.</div>
+      </sc-if>
+      <sc-for list="{{ exList }}" as="e" hint-placeholder-count="2">
+        <div style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem;display:flex;flex-direction:column;gap:0.625rem">
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <div style="width:3rem;height:3rem;flex:none;border-radius:50%;background:#E3EEE7;color:#2E6A4E;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.125rem">{{ e.initial }}</div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.125rem">
+              <div style="font-size:1.1875rem;font-weight:700">{{ e.kind }}</div>
+              <div style="font-size:0.9375rem;color:#5A625D">강도: {{ e.level }}</div>
+            </div>
+            <div style="font-size:1.5rem;font-weight:800;color:#2E6A4E;white-space:nowrap">{{ e.min }}분</div>
+          </div>
+          <sc-if value="{{ e.hasMemo }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:1rem;color:#3F4743;background:#F4F1EA;border-radius:0.75rem;padding:0.625rem 0.75rem;text-wrap:pretty">{{ e.memo }}</div>
+          </sc-if>
+          <button onClick="{{ e.del }}" style="align-self:flex-end;white-space:nowrap;min-height:2.75rem;padding:0 1rem;border-radius:0.75rem;cursor:pointer;font-size:0.9375rem;font-weight:700;border:1px solid {{ e.delBd }};background:{{ e.delBg }};color:{{ e.delFg }}">{{ e.delLabel }}</button>
+        </div>
+      </sc-for>
+      <button onClick="{{ openEx }}" style="height:3.5rem;border:none;border-radius:0.875rem;background:#2E6A4E;color:#FFFFFF;font-size:1.1875rem;font-weight:700;cursor:pointer">+ 운동 추가</button>
+    </sc-if>
+
+    <sc-if value="{{ isMeal }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:1.25rem;font-weight:800">식단기록</div>
+      <sc-for list="{{ mealGroups }}" as="g" hint-placeholder-count="4">
+        <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem;display:flex;flex-direction:column;gap:0.625rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem">
+            <div style="font-size:1.1875rem;font-weight:800;color:#B4541F">{{ g.name }}</div>
+            <button onClick="{{ g.add }}" style="min-height:2.75rem;padding:0 1rem;border:1px solid #B4541F;background:#FFFFFF;color:#B4541F;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer">+ 추가</button>
+          </div>
+          <sc-if value="{{ g.empty }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:1rem;color:#5A625D">아직 기록이 없어요.</div>
+          </sc-if>
+          <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="1">
+            <div style="border-top:1px solid #EDE8DE;padding-top:0.625rem;display:flex;flex-direction:column;gap:0.375rem">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem">
+                <div style="font-size:1.125rem;font-weight:700;text-wrap:pretty;min-width:0">{{ it.menu }}</div>
+                <span style="flex:none;font-size:0.875rem;font-weight:700;background:#F6E6DA;color:#8A3E14;padding:0.25rem 0.625rem;border-radius:1rem">{{ it.amount }}</span>
+              </div>
+              <sc-if value="{{ it.hasMemo }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:1rem;color:#3F4743;text-wrap:pretty">{{ it.memo }}</div>
+              </sc-if>
+              <button onClick="{{ it.del }}" style="align-self:flex-end;white-space:nowrap;min-height:2.75rem;padding:0 1rem;border-radius:0.75rem;cursor:pointer;font-size:0.9375rem;font-weight:700;border:1px solid {{ it.delBd }};background:{{ it.delBg }};color:{{ it.delFg }}">{{ it.delLabel }}</button>
+            </div>
+          </sc-for>
+        </section>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isVideoList }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:0.25rem">
+        <div style="font-size:1.25rem;font-weight:800">운동 영상</div>
+        <div style="font-size:1rem;color:#5A625D;text-wrap:pretty">영상을 끝까지 보고 따라하면 횟수가 자동으로 기록돼요.</div>
+      </div>
+      <sc-if value="{{ noMyProgs }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1.25rem;padding:2rem 1rem;text-align:center;font-size:1.0625rem;color:#5A625D">트레이너가 올린 영상이 아직 없어요.</div>
+      </sc-if>
+      <sc-for list="{{ myProgs }}" as="p" hint-placeholder-count="2">
+        <div style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem 1.125rem;display:flex;flex-direction:column;gap:0.75rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap">
+            <span style="font-size:0.875rem;font-weight:700;padding:0.25rem 0.625rem;border-radius:1rem;background:{{ p.typeBg }};color:{{ p.typeFg }}">{{ p.typeLabel }}</span>
+            <span style="font-size:0.9375rem;color:#5A625D">{{ p.dateLabel }}</span>
+          </div>
+          <sc-if value="{{ p.hasThumb }}" hint-placeholder-val="{{ false }}">
+            <div aria-hidden="true" style="width:100%;aspect-ratio:16/9;border-radius:0.75rem;background-color:#E4DED2;background-size:cover;background-position:center;background-image:url({{ p.thumb }})"></div>
+          </sc-if>
+          <div style="font-size:1.3125rem;font-weight:800;text-wrap:pretty">{{ p.title }}</div>
+          <sc-if value="{{ p.hasMemo }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:1rem;color:#3F4743;background:#F4F1EA;border-radius:0.75rem;padding:0.625rem 0.75rem;text-wrap:pretty">{{ p.memo }}</div>
+          </sc-if>
+          <div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap">
+            <span style="font-size:1rem;color:#3F4743">따라한 횟수</span>
+            <span style="font-size:1.5rem;font-weight:800;color:#2E6A4E">{{ p.count }}회</span>
+            <span style="font-size:0.9375rem;color:#5A625D">(오늘 {{ p.today }}회)</span>
+          </div>
+          <button onClick="{{ p.play }}" style="height:3.5rem;border:none;border-radius:0.875rem;background:#2E6A4E;color:#FFFFFF;font-size:1.1875rem;font-weight:700;cursor:pointer">▶ 영상 보고 따라하기</button>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ closePlayer }}" style="align-self:flex-start;white-space:nowrap;min-height:2.75rem;padding:0 1rem;border:1px solid #CFC8BA;background:#FFFFFF;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer">‹ 영상 목록</button>
+      <div style="display:flex;flex-direction:column;gap:0.375rem">
+        <span style="align-self:flex-start;font-size:0.875rem;font-weight:700;padding:0.25rem 0.625rem;border-radius:1rem;background:{{ plTypeBg }};color:{{ plTypeFg }}">{{ plTypeLabel }}</span>
+        <div style="font-size:1.375rem;font-weight:800;text-wrap:pretty">{{ plTitle }}</div>
+      </div>
+      <div style="background:#1E2320;border-radius:1rem;overflow:hidden;min-height:12rem;display:flex;align-items:center;justify-content:center">
+        <sc-if value="{{ plIsYT }}" hint-placeholder-val="{{ false }}">
+          <div data-yt-host="1" style="width:100%;aspect-ratio:16/9;position:relative;background:#000000"></div>
+        </sc-if>
+        <sc-if value="{{ plReady }}" hint-placeholder-val="{{ false }}">
+          <video src="{{ plUrl }}" controls="{{ true }}" playsInline="{{ true }}" onTimeUpdate="{{ onTime }}" onPlay="{{ onPlay }}" style="width:100%;max-height:65dvh;display:block;background:#000000"></video>
+        </sc-if>
+        <sc-if value="{{ plLoading }}" hint-placeholder-val="{{ false }}">
+          <span style="color:#FFFFFF;font-size:1.0625rem">영상을 불러오는 중…</span>
+        </sc-if>
+        <sc-if value="{{ plMissing }}" hint-placeholder-val="{{ false }}">
+          <span style="color:#FFFFFF;font-size:1.0625rem;padding:1rem;text-align:center">{{ plMissingMsg }}</span>
+        </sc-if>
+      </div>
+      <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1.125rem;display:flex;flex-direction:column;gap:0.625rem">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem">
+          <span style="font-size:1.125rem;font-weight:800">{{ plStatus }}</span>
+          <span style="font-size:1.25rem;font-weight:800;color:#2E6A4E">{{ plPct }}%</span>
+        </div>
+        <div style="height:0.875rem;background:#E3EEE7;border-radius:1rem;overflow:hidden">
+          <div style="height:100%;border-radius:1rem;width:{{ plPct }}%;background:{{ plBarBg }}"></div>
+        </div>
+        <div style="font-size:0.9375rem;color:#5A625D;text-wrap:pretty">건너뛰지 않고 영상의 90% 이상 보면 1회로 기록되고, 운동일지에도 자동으로 들어가요.</div>
+      </section>
+      <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1.125rem;display:flex;justify-content:space-between;align-items:center;gap:0.75rem">
+        <div style="display:flex;flex-direction:column;gap:0.125rem">
+          <span style="font-size:1.0625rem;font-weight:700">따라한 횟수</span>
+          <span style="font-size:0.9375rem;color:#5A625D">오늘 {{ plToday }}회</span>
+        </div>
+        <span style="font-size:2.5rem;font-weight:800;color:#2E6A4E;line-height:1">{{ plCount }}<span style="font-size:1.25rem;color:#1E2320;margin-left:0.25rem">회</span></span>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ showWeekChart }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;flex-wrap:wrap">
+        <div style="font-size:1.25rem;font-weight:800">{{ chartTitle }}</div>
+        <sc-if value="{{ isTDetail }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:1rem;color:#5A625D">{{ tMemberAge }}</div>
+        </sc-if>
+      </div>
+      <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1.25rem 1rem;display:flex;flex-direction:column;gap:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;flex-wrap:wrap">
+          <div style="font-size:1.125rem;font-weight:700">최근 7일 운동 시간</div>
+          <div style="font-size:1rem;color:#3F4743">합계 <b style="color:#2E6A4E">{{ rangeMin }}분</b></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0.375rem;align-items:end;height:10rem">
+          <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+            <button onClick="{{ d.go }}" style="height:100%;border:none;background:transparent;padding:0;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:0.25rem">
+              <span style="font-size:0.8125rem;font-weight:700;color:#2E6A4E">{{ d.minLabel }}</span>
+              <div style="width:100%;max-width:2.25rem;border-radius:0.5rem 0.5rem 0.25rem 0.25rem;height:{{ d.h }}%;min-height:0.25rem;background:{{ d.barBg }}"></div>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0.375rem;border-top:1px solid #EDE8DE;padding-top:0.5rem">
+          <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+            <div style="text-align:center;display:flex;flex-direction:column;gap:0.125rem">
+              <span style="font-size:0.9375rem;font-weight:{{ d.wdWeight }};color:{{ d.wdColor }}">{{ d.wd }}</span>
+              <span style="font-size:0.8125rem;color:#5A625D">{{ d.day }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+      <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1.25rem 1rem;display:flex;flex-direction:column;gap:0.75rem">
+        <div style="font-size:1.125rem;font-weight:700">식사 기록 (아침·점심·저녁)</div>
+        <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+          <button onClick="{{ d.go }}" style="display:flex;align-items:center;gap:0.75rem;border:none;background:transparent;padding:0.25rem 0;cursor:pointer;text-align:left;min-height:2.75rem">
+            <span style="width:5.5rem;flex:none;font-size:1rem;font-weight:600">{{ d.short }}</span>
+            <div style="flex:1;display:flex;gap:0.375rem">
+              <sc-for list="{{ d.meals }}" as="mm" hint-placeholder-count="3">
+                <span style="flex:1;text-align:center;padding:0.375rem 0;border-radius:0.5rem;font-size:0.875rem;font-weight:700;background:{{ mm.bg }};color:{{ mm.fg }}">{{ mm.name }}</span>
+              </sc-for>
+            </div>
+          </button>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isTDetail }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ tHasProgs }}" hint-placeholder-val="{{ false }}">
+        <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1.125rem 1rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:1.125rem;font-weight:700">운동 영상 따라하기</div>
+          <sc-for list="{{ tMemberProgs }}" as="p" hint-placeholder-count="1">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;border-top:1px solid #EDE8DE;padding-top:0.5rem">
+              <div style="min-width:0;display:flex;flex-direction:column;gap:0.125rem">
+                <span style="font-size:1.0625rem;font-weight:700;text-wrap:pretty">{{ p.title }}</span>
+                <span style="font-size:0.875rem;color:#5A625D">{{ p.typeLabel }} · 오늘 {{ p.today }}회</span>
+              </div>
+              <span style="flex:none;font-size:1.25rem;font-weight:800;color:#2E6A4E">{{ p.count }}회</span>
+            </div>
+          </sc-for>
+        </section>
+      </sc-if>
+      <div style="font-size:1.125rem;font-weight:800;padding-top:0.25rem">날짜별 기록</div>
+      <sc-if value="{{ tNoLog }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1.25rem;padding:2rem 1rem;text-align:center;font-size:1.0625rem;color:#5A625D">최근 7일 동안 기록이 없어요.</div>
+      </sc-if>
+      <sc-for list="{{ tLog }}" as="day" hint-placeholder-count="3">
+        <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:1.0625rem;font-weight:800">{{ day.label }}</div>
+          <sc-for list="{{ day.rows }}" as="row" hint-placeholder-count="2">
+            <div style="display:flex;gap:0.625rem;align-items:flex-start;border-top:1px solid #EDE8DE;padding-top:0.5rem">
+              <span style="flex:none;font-size:0.875rem;font-weight:700;padding:0.25rem 0.625rem;border-radius:1rem;background:{{ row.tagBg }};color:{{ row.tagFg }}">{{ row.tag }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.125rem">
+                <div style="font-size:1.0625rem;font-weight:700;text-wrap:pretty">{{ row.main }}</div>
+                <div style="font-size:0.9375rem;color:#5A625D;text-wrap:pretty">{{ row.sub }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </section>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isTHome }}" hint-placeholder-val="{{ false }}">
+      <div role="tablist" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.25rem;background:#FFFFFF;border:1px solid #CFC8BA;border-radius:1rem;padding:0.25rem">
+        <sc-for list="{{ tTabs }}" as="t" hint-placeholder-count="2">
+          <button onClick="{{ t.go }}" aria-selected="{{ t.on }}" style="min-height:3rem;border:none;border-radius:0.75rem;cursor:pointer;font-size:1.0625rem;font-weight:800;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTVideos }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:0.25rem;display:flex;flex-direction:column;gap:0.25rem">
+        <div style="font-size:1.25rem;font-weight:800">운동 영상</div>
+        <div style="font-size:1rem;color:#5A625D;text-wrap:pretty">이용자가 영상을 끝까지 보고 따라하면 횟수가 자동으로 기록돼요.</div>
+      </div>
+      <button onClick="{{ openProg }}" style="height:3.5rem;border:none;border-radius:0.875rem;background:#B4541F;color:#FFFFFF;font-size:1.1875rem;font-weight:700;cursor:pointer">+ 운동 영상 등록</button>
+      <sc-if value="{{ noProgs }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1.25rem;padding:2rem 1rem;text-align:center;font-size:1.0625rem;color:#5A625D;text-wrap:pretty">아직 등록한 영상이 없어요. 1:1 트레이닝이나 그룹 PT에서 진행한 운동 영상을 올려주세요.</div>
+      </sc-if>
+      <sc-for list="{{ tProgs }}" as="p" hint-placeholder-count="2">
+        <div style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem 1.125rem;display:flex;flex-direction:column;gap:0.625rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap">
+            <span style="font-size:0.875rem;font-weight:700;padding:0.25rem 0.625rem;border-radius:1rem;background:{{ p.typeBg }};color:{{ p.typeFg }}">{{ p.typeLabel }}</span>
+            <span style="font-size:0.9375rem;color:#5A625D">{{ p.dateLabel }}</span>
+          </div>
+          <div style="font-size:1.25rem;font-weight:800;text-wrap:pretty">{{ p.title }}</div>
+          <div style="font-size:0.9375rem;color:#3F4743;overflow-wrap:anywhere">{{ p.kind }} · {{ p.min }}분 · {{ p.videoName }}</div>
+          <div style="display:flex;flex-direction:column;gap:0.375rem;border-top:1px solid #EDE8DE;padding-top:0.625rem">
+            <div style="font-size:0.9375rem;font-weight:700;color:#5A625D">따라한 횟수</div>
+            <sc-for list="{{ p.counts }}" as="c" hint-placeholder-count="1">
+              <div style="display:flex;justify-content:space-between;gap:0.75rem;font-size:1.0625rem">
+                <span style="font-weight:700">{{ c.name }}</span>
+                <span style="font-weight:800;color:#2E6A4E">{{ c.count }}회</span>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ p.del }}" style="align-self:flex-end;white-space:nowrap;min-height:2.75rem;padding:0 1rem;border-radius:0.75rem;cursor:pointer;font-size:0.9375rem;font-weight:700;border:1px solid {{ p.delBd }};background:{{ p.delBg }};color:{{ p.delFg }}">{{ p.delLabel }}</button>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isTList }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:0.25rem;display:flex;flex-direction:column;gap:0.25rem">
+        <div style="font-size:1.25rem;font-weight:800">담당 이용자</div>
+        <div style="font-size:1rem;color:#5A625D">이번 주 운동 목표 150분 기준</div>
+      </div>
+      <sc-if value="{{ noMembers }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px dashed #CFC8BA;border-radius:1.25rem;padding:2rem 1rem;text-align:center;font-size:1.0625rem;color:#5A625D">등록된 이용자가 없어요.</div>
+      </sc-if>
+      <sc-for list="{{ tMembers }}" as="m" hint-placeholder-count="3">
+        <button onClick="{{ m.go }}" style="width:100%;text-align:left;cursor:pointer;background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem 1.125rem;display:flex;flex-direction:column;gap:0.625rem">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.75rem;width:100%">
+            <span style="font-size:1.25rem;font-weight:800">{{ m.name }}</span>
+            <span style="font-size:1.125rem;font-weight:800;color:#2E6A4E;white-space:nowrap">{{ m.weekMin }}분</span>
+          </div>
+          <div style="height:0.625rem;background:#E3EEE7;border-radius:1rem;overflow:hidden;width:100%">
+            <div style="height:100%;background:#2E6A4E;border-radius:1rem;width:{{ m.pct }}%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:0.75rem;font-size:0.9375rem;color:#3F4743;width:100%;flex-wrap:wrap">
+            <span>오늘 식사 {{ m.mealsToday }}/3끼</span>
+            <span>{{ m.lastLabel }}</span>
+          </div>
+        </button>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+      <section style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1.25rem 1rem;display:flex;flex-direction:column;gap:0.875rem">
+        <div style="font-size:1.1875rem;font-weight:800">이용자 등록</div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 6rem;gap:0.5rem">
+          <input value="{{ newName }}" onChange="{{ onNewName }}" placeholder="이름" aria-label="이름" style="height:3.5rem;border:2px solid #CFC8BA;border-radius:0.875rem;padding:0 1rem;font-size:1.125rem;background:#FFFFFF;color:#1E2320;width:100%;min-width:0"></input>
+          <input value="{{ newAge }}" onChange="{{ onNewAge }}" placeholder="나이" aria-label="나이" inputMode="numeric" style="height:3.5rem;border:2px solid #CFC8BA;border-radius:0.875rem;padding:0 1rem;font-size:1.125rem;background:#FFFFFF;color:#1E2320;width:100%;min-width:0"></input>
+        </div>
+        <sc-if value="{{ hasAdminError }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:1rem;font-weight:700;color:#A3261B">{{ adminError }}</div>
+        </sc-if>
+        <button onClick="{{ addMember }}" style="height:3.5rem;border:none;border-radius:0.875rem;background:#3D4F7A;color:#FFFFFF;font-size:1.1875rem;font-weight:700;cursor:pointer">{{ addLabel }}</button>
+      </section>
+      <sc-if value="{{ hasJustAdded }}" hint-placeholder-val="{{ false }}">
+        <section role="status" style="background:#3D4F7A;color:#FFFFFF;border-radius:1.25rem;padding:1.25rem 1rem;display:flex;flex-direction:column;align-items:center;gap:0.625rem;text-align:center">
+          <div style="font-size:1.0625rem;font-weight:700">{{ jaName }} 님 · {{ jaTitle }}</div>
+          <div style="font-size:2.5rem;font-weight:800;letter-spacing:0.25em;padding-left:0.25em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#FFFFFF;color:#1E2320;border-radius:0.875rem;padding:0.5rem 0.75rem 0.5rem 1rem">{{ jaCode }}</div>
+          <div style="font-size:1rem;text-wrap:pretty">이 번호를 이용자에게 알려주세요.</div>
+          <button onClick="{{ closeJA }}" style="min-height:2.75rem;padding:0 1.5rem;border:1px solid #FFFFFF;background:transparent;color:#FFFFFF;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer">확인</button>
+        </section>
+      </sc-if>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;padding:0.25rem">
+        <div style="font-size:1.25rem;font-weight:800">이용자 목록</div>
+        <div style="font-size:1rem;color:#5A625D">{{ memberCount }}명</div>
+      </div>
+      <sc-for list="{{ aMembers }}" as="m" hint-placeholder-count="3">
+        <div style="background:#FFFFFF;border:1px solid #E4DED2;border-radius:1.25rem;padding:1rem 1.125rem;display:flex;flex-direction:column;gap:0.625rem">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.75rem">
+            <span style="font-size:1.25rem;font-weight:800">{{ m.name }}</span>
+            <span style="font-size:1rem;color:#5A625D;white-space:nowrap">{{ m.ageLabel }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.625rem;flex-wrap:wrap">
+            <span style="font-size:0.9375rem;color:#5A625D">개인 번호</span>
+            <span style="font-size:1.375rem;font-weight:800;letter-spacing:0.15em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#F4F1EA;border-radius:0.5rem;padding:0.125rem 0.5rem">{{ m.code }}</span>
+          </div>
+          <div style="font-size:0.9375rem;color:#3F4743">운동 기록 {{ m.exCount }}건 · 식사 기록 {{ m.mealCount }}건</div>
+          <div style="display:flex;justify-content:flex-end;gap:0.5rem;flex-wrap:wrap">
+          <button onClick="{{ m.newCode }}" style="white-space:nowrap;min-height:2.75rem;padding:0 1rem;border-radius:0.75rem;cursor:pointer;font-size:0.9375rem;font-weight:700;border:1px solid {{ m.ncBd }};background:{{ m.ncBg }};color:{{ m.ncFg }}">{{ m.ncLabel }}</button>
+          <button onClick="{{ m.del }}" style="white-space:nowrap;min-height:2.75rem;padding:0 1rem;border-radius:0.75rem;cursor:pointer;font-size:0.9375rem;font-weight:700;border:1px solid {{ m.delBd }};background:{{ m.delBg }};color:{{ m.delFg }}">{{ m.delLabel }}</button>
+          </div>
+        </div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{ showStaffLogout }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ logout }}" style="min-height:3rem;border:1px solid #CFC8BA;background:transparent;border-radius:0.875rem;font-size:1rem;font-weight:700;color:#5A625D;cursor:pointer">로그아웃</button>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ inUserApp }}" hint-placeholder-val="{{ false }}">
+    <nav style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:35rem;background:#FFFFFF;border-top:1px solid #DDD7CB;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0.25rem;padding:0.5rem 0.375rem calc(0.5rem + env(safe-area-inset-bottom));z-index:6">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+        <button onClick="{{ t.go }}" aria-current="{{ t.on }}" style="min-height:3.5rem;padding:0;white-space:nowrap;border:none;border-radius:0.875rem;cursor:pointer;font-size:1.0625rem;font-weight:800;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+      </sc-for>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSheet }}" style="position:fixed;inset:0;background:rgba(30,35,32,0.5);z-index:20;display:flex;align-items:flex-end;justify-content:center">
+      <div onClick="{{ stop }}" role="dialog" style="width:100%;max-width:35rem;max-height:92dvh;overflow-y:auto;background:#FFFFFF;border-radius:1.5rem 1.5rem 0 0;padding:1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem">
+          <div style="font-size:1.375rem;font-weight:800">{{ sheetTitle }}</div>
+          <button onClick="{{ closeSheet }}" style="flex:none;white-space:nowrap;min-height:2.75rem;padding:0 1rem;border:1px solid #CFC8BA;background:#FFFFFF;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer">닫기</button>
+        </div>
+        <sc-if value="{{ sheetEx }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:0.625rem">
+            <div style="font-size:1.0625rem;font-weight:700">어떤 운동을 했나요?</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+              <sc-for list="{{ kindChips }}" as="c" hint-placeholder-count="7">
+                <button onClick="{{ c.pick }}" style="min-height:3rem;padding:0 1.125rem;border-radius:1.5rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.625rem">
+            <div style="font-size:1.0625rem;font-weight:700">몇 분 했나요?</div>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <button onClick="{{ minDown }}" aria-label="5분 줄이기" style="width:3.5rem;height:3.5rem;flex:none;border:2px solid #2E6A4E;background:#FFFFFF;color:#2E6A4E;border-radius:0.875rem;font-size:1.75rem;font-weight:800;cursor:pointer;line-height:1">−</button>
+              <div style="flex:1;text-align:center;font-size:2.5rem;font-weight:800;color:#2E6A4E">{{ formMin }}<span style="font-size:1.25rem;color:#1E2320;margin-left:0.25rem">분</span></div>
+              <button onClick="{{ minUp }}" aria-label="5분 늘리기" style="width:3.5rem;height:3.5rem;flex:none;border:none;background:#2E6A4E;color:#FFFFFF;border-radius:0.875rem;font-size:1.75rem;font-weight:800;cursor:pointer;line-height:1">+</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0.5rem">
+              <sc-for list="{{ minPresets }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.pick }}" style="min-height:2.75rem;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer;border:1px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }}">{{ p.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.625rem">
+            <div style="font-size:1.0625rem;font-weight:700">얼마나 힘들었나요?</div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.5rem">
+              <sc-for list="{{ levelChips }}" as="c" hint-placeholder-count="3">
+                <button onClick="{{ c.pick }}" style="min-height:3rem;border-radius:0.875rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ sheetMeal }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:0.625rem">
+            <div style="font-size:1.0625rem;font-weight:700">언제 드셨나요?</div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0.5rem">
+              <sc-for list="{{ mealChips }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.pick }}" style="min-height:3rem;border-radius:0.875rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:0.625rem">
+            <span style="font-size:1.0625rem;font-weight:700">무엇을 드셨나요?</span>
+            <input value="{{ formMenu }}" onChange="{{ onMenu }}" placeholder="예: 잡곡밥, 된장국, 시금치나물" style="height:3.5rem;border:2px solid #CFC8BA;border-radius:0.875rem;padding:0 1rem;font-size:1.125rem;background:#FFFFFF;color:#1E2320;outline-color:#B4541F;width:100%"></input>
+          </label>
+          <div style="display:flex;flex-direction:column;gap:0.625rem">
+            <div style="font-size:1.0625rem;font-weight:700">양은 어땠나요?</div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.5rem">
+              <sc-for list="{{ amountChips }}" as="c" hint-placeholder-count="3">
+                <button onClick="{{ c.pick }}" style="min-height:3rem;border-radius:0.875rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <label style="display:flex;flex-direction:column;gap:0.625rem">
+          <span style="font-size:1.0625rem;font-weight:700">메모 <span style="font-weight:500;color:#5A625D">(선택)</span></span>
+          <textarea value="{{ formMemo }}" onChange="{{ onMemo }}" rows="2" placeholder="{{ memoPlaceholder }}" style="border:2px solid #CFC8BA;border-radius:0.875rem;padding:0.75rem 1rem;font-size:1.125rem;resize:vertical;background:#FFFFFF;color:#1E2320;width:100%"></textarea>
+        </label>
+        <sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:1rem;font-weight:700;color:#A3261B">{{ error }}</div>
+        </sc-if>
+        <button onClick="{{ save }}" style="height:3.75rem;border:none;border-radius:0.875rem;font-size:1.25rem;font-weight:800;cursor:pointer;color:#FFFFFF;background:{{ saveBg }}">{{ saveLabel }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ pSheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeProg }}" style="position:fixed;inset:0;background:rgba(30,35,32,0.5);z-index:20;display:flex;align-items:flex-end;justify-content:center">
+      <div onClick="{{ stop }}" role="dialog" style="width:100%;max-width:35rem;max-height:92dvh;overflow-y:auto;background:#FFFFFF;border-radius:1.5rem 1.5rem 0 0;padding:1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem">
+          <div style="font-size:1.375rem;font-weight:800">운동 영상 등록</div>
+          <button onClick="{{ closeProg }}" style="flex:none;white-space:nowrap;min-height:2.75rem;padding:0 1rem;border:1px solid #CFC8BA;background:#FFFFFF;border-radius:0.75rem;font-size:1rem;font-weight:700;cursor:pointer">닫기</button>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:0.625rem">
+          <span style="font-size:1.0625rem;font-weight:700">제목</span>
+          <input value="{{ pTitle }}" onChange="{{ onPTitle }}" placeholder="예: 의자 스쿼트 따라하기" style="height:3.5rem;border:2px solid #CFC8BA;border-radius:0.875rem;padding:0 1rem;font-size:1.125rem;background:#FFFFFF;color:#1E2320;width:100%"></input>
+        </label>
+        <div style="display:flex;flex-direction:column;gap:0.625rem">
+          <div style="font-size:1.0625rem;font-weight:700">진행 방식</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.5rem">
+            <sc-for list="{{ pTypeChips }}" as="c" hint-placeholder-count="2">
+              <button onClick="{{ c.pick }}" style="min-height:3rem;border-radius:0.875rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.625rem">
+          <div style="font-size:1.0625rem;font-weight:700">대상 이용자 <span style="font-weight:500;color:#5A625D">{{ pMemberHint }}</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+            <sc-for list="{{ pMemberChips }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.pick }}" style="min-height:3rem;padding:0 1.125rem;border-radius:1.5rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.625rem">
+          <div style="font-size:1.0625rem;font-weight:700">운동 종류</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+            <sc-for list="{{ pKindChips }}" as="c" hint-placeholder-count="7">
+              <button onClick="{{ c.pick }}" style="min-height:3rem;padding:0 1.125rem;border-radius:1.5rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.625rem">
+          <div style="font-size:1.0625rem;font-weight:700">운동 시간 <span style="font-weight:500;color:#5A625D">(1회 따라하기 기준)</span></div>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <button onClick="{{ pMinDown }}" aria-label="5분 줄이기" style="width:3.5rem;height:3.5rem;flex:none;border:2px solid #B4541F;background:#FFFFFF;color:#B4541F;border-radius:0.875rem;font-size:1.75rem;font-weight:800;cursor:pointer;line-height:1">−</button>
+            <div style="flex:1;text-align:center;font-size:2.25rem;font-weight:800;color:#B4541F">{{ pMin }}<span style="font-size:1.25rem;color:#1E2320;margin-left:0.25rem">분</span></div>
+            <button onClick="{{ pMinUp }}" aria-label="5분 늘리기" style="width:3.5rem;height:3.5rem;flex:none;border:none;background:#B4541F;color:#FFFFFF;border-radius:0.875rem;font-size:1.75rem;font-weight:800;cursor:pointer;line-height:1">+</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.625rem">
+          <div style="font-size:1.0625rem;font-weight:700">영상 등록 방법</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.5rem">
+            <sc-for list="{{ pSrcChips }}" as="c" hint-placeholder-count="2">
+              <button onClick="{{ c.pick }}" style="min-height:3rem;border-radius:0.875rem;font-size:1.0625rem;font-weight:700;cursor:pointer;border:2px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ pIsFile }}" hint-placeholder-val="{{ true }}">
+          <label style="min-height:3.5rem;border:2px dashed #CFC8BA;border-radius:0.875rem;display:flex;align-items:center;justify-content:center;padding:0.75rem 1rem;font-size:1.0625rem;font-weight:700;cursor:pointer;text-align:center;overflow-wrap:anywhere;color:{{ pFileColor }}">
+            <input type="file" accept="video/*" onChange="{{ onPFile }}" style="display:none"></input>
+            <span>{{ pFileLabel }}</span>
+          </label>
+          </sc-if>
+          <sc-if value="{{ pIsYT }}" hint-placeholder-val="{{ false }}">
+            <input value="{{ pUrl }}" onChange="{{ onPUrl }}" placeholder="유튜브 주소를 붙여넣으세요" inputMode="url" aria-label="유튜브 주소" style="height:3.5rem;border:2px solid #CFC8BA;border-radius:0.875rem;padding:0 1rem;font-size:1.125rem;background:#FFFFFF;color:#1E2320;width:100%"></input>
+            <sc-if value="{{ pUrlOk }}" hint-placeholder-val="{{ false }}">
+              <div role="img" aria-label="영상 미리보기" style="width:100%;aspect-ratio:16/9;border-radius:0.75rem;background-color:#E4DED2;background-size:cover;background-position:center;background-image:url({{ pThumb }})"></div>
+            </sc-if>
+            <div style="font-size:0.9375rem;color:#5A625D;overflow-wrap:anywhere">예: https://youtu.be/… 또는 youtube.com/shorts/…</div>
+          </sc-if>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:0.625rem">
+          <span style="font-size:1.0625rem;font-weight:700">안내 메모 <span style="font-weight:500;color:#5A625D">(선택)</span></span>
+          <textarea value="{{ pMemo }}" onChange="{{ onPMemo }}" rows="2" placeholder="예: 무릎이 아프면 절반만 앉으세요" style="border:2px solid #CFC8BA;border-radius:0.875rem;padding:0.75rem 1rem;font-size:1.125rem;resize:vertical;background:#FFFFFF;color:#1E2320;width:100%"></textarea>
+        </label>
+        <sc-if value="{{ hasPError }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:1rem;font-weight:700;color:#A3261B">{{ pError }}</div>
+        </sc-if>
+        <button onClick="{{ saveProg }}" disabled="{{ pSaving }}" style="height:3.75rem;border:none;border-radius:0.875rem;font-size:1.25rem;font-weight:800;cursor:pointer;color:#FFFFFF;background:#B4541F">{{ pSaveLabel }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(6rem + env(safe-area-inset-bottom));background:#1E2320;color:#FFFFFF;padding:0.875rem 1.5rem;border-radius:2rem;font-size:1.0625rem;font-weight:700;z-index:30;white-space:nowrap">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KINDS=['걷기','스트레칭','근력운동','체조','자전거','수영','기타'];
+const LEVELS=['가볍게','보통','힘들게'];
+const MEALS=['아침','점심','저녁','간식'];
+const MAIN3=['아침','점심','저녁'];
+const AMOUNTS=['적게','보통','많이'];
+const FS=[{pct:100,size:'0.9375rem',aria:'보통 글자'},{pct:120,size:'1.125rem',aria:'큰 글자'},{pct:140,size:'1.375rem',aria:'아주 큰 글자'}];
+const WD=['일','월','화','수','목','금','토'];
+const KEY='healthlog.v1',FSKEY='healthlog.fs',CODEKEY='healthlog.code',STAFFKEY='healthlog.staff';
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const lsDel=k=>{try{localStorage.removeItem(k);}catch(e){}};
+const loadScript=src=>new Promise(res=>{const s=document.createElement('script');s.src=new URL(src,document.baseURI).href+'?v='+Date.now();s.onload=res;s.onerror=res;document.head.appendChild(s);});
+const G='#2E6A4E',GS='#E3EEE7',O='#B4541F',OS='#F6E6DA',NV='#3D4F7A',INK='#1E2320',LINE='#CFC8BA';
+const ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return ymd(d);};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const chip=(on,c)=>on?{bg:c,fg:'#FFFFFF',bd:c}:{bg:'#FFFFFF',fg:INK,bd:LINE};
+const md=s=>{const d=parse(s);return `${d.getMonth()+1}월 ${d.getDate()}일 (${WD[d.getDay()]})`;};
+
+const ytIdOf=u=>{u=(u||'').trim();const m=u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/);if(m)return m[1];return /^[A-Za-z0-9_-]{11}$/.test(u)?u:null;};
+let ytP=null;
+const loadYT=()=>ytP||(ytP=new Promise((res,rej)=>{if(window.YT&&window.YT.Player)return res();const prev=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{prev&&prev();res();};const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>{ytP=null;rej();};document.head.appendChild(sc);}));
+const typeB=t=>t==='1:1'?{typeLabel:'1:1 트레이닝',typeBg:'#E3E7F0',typeFg:'#3D4F7A'}:{typeLabel:'그룹 PT',typeBg:'#F6E6DA',typeFg:'#8A3E14'};
+
+class Component extends DCLogic {
+  state = this.init();
+  init(){
+    const today=ymd(new Date());
+    let fs=parseInt(lsGet(FSKEY),10);
+    if(isNaN(fs)){try{fs=(JSON.parse(lsGet(KEY)||'{}')||{}).fs||0;}catch(e){fs=0;}}
+    return {today,date:today,tab:'home',fs:Math.min(2,Math.max(0,fs)),ready:false,mode:'',demoHint:'',
+      members:[],ex:[],meals:[],programs:[],views:[],
+      role:null,auth:null,me:null,userCode:'',staffPw:'',codeInput:'',pwInput:'',loginError:'',loggingIn:false,
+      tView:null,newName:'',newAge:'',adminError:'',justAdded:null,saving:false,
+      tTab:'members',pSheet:false,pForm:{},pFileName:'',pError:'',pSaving:false,
+      playing:null,plUrl:null,plMissing:false,plPct:0,plCounted:false,
+      sheet:null,form:{},error:'',toast:'',pendingDel:null};
+  }
+  async componentDidMount(){
+    this.applyFs();
+    await loadScript('./server-config.js');
+    await loadScript('./backend.js');
+    if(!window.HealthBackend)return this.setState({ready:true,mode:'error'});
+    this.be=window.HealthBackend.create(window.HEALTHLOG_SERVER);
+    let hint='';try{hint=await this.be.demoHint();}catch(e){}
+    this.setState({ready:true,mode:this.be.mode,demoHint:hint});
+    this.onVis=()=>{if(document.visibilityState==='visible')this.refresh();};
+    document.addEventListener('visibilitychange',this.onVis);
+  }
+  clearData(){return {members:[],ex:[],meals:[],programs:[],views:[],me:null,userCode:'',staffPw:'',tView:null,justAdded:null,sheet:null,pSheet:false,playing:null,plUrl:null};}
+  startRole(role){
+    if(!this.be)return this.showToast('앱을 불러오지 못했어요');
+    const isUser=role==='user',saved=lsGet(isUser?CODEKEY:STAFFKEY);
+    this.nav({role,auth:saved?'loading':(isUser?'code':'staff'),codeInput:'',pwInput:'',loginError:'',tTab:'members',tView:null});
+    if(saved)(isUser?this.loginUser(saved,true):this.loginStaff(saved,true));
+  }
+  async loginUser(code,silent){
+    code=window.HealthBackend.norm(code);
+    if(code.length!==6)return this.setState({loginError:'6자리 번호를 모두 입력해주세요.'});
+    this.setState({loggingIn:true,loginError:''});
+    let d=null;
+    try{d=await this.be.userGet(code);}catch(e){return this.setState({loggingIn:false,auth:'code',codeInput:code,loginError:'연결되지 않아요. 인터넷을 확인하고 다시 눌러주세요.'});}
+    if(this.state.role!=='user')return;
+    if(!d){lsDel(CODEKEY);return this.setState({loggingIn:false,auth:'code',codeInput:silent?'':code,loginError:silent?'':'번호가 맞지 않아요. 다시 확인해주세요.'});}
+    lsSet(CODEKEY,code);
+    this.setState({loggingIn:false,auth:null,userCode:code,me:d.member.id,members:[d.member],ex:d.ex||[],meals:d.meals||[],programs:d.programs||[],views:d.views||[],tab:'home',date:this.state.today});
+  }
+  async loginStaff(pw,silent){
+    if(!pw)return this.setState({loginError:'비밀번호를 입력해주세요.'});
+    this.setState({loggingIn:true,loginError:''});
+    let d=null;
+    try{d=await this.be.staffGet(pw);}catch(e){return this.setState({loggingIn:false,auth:'staff',loginError:'연결되지 않아요. 인터넷을 확인하고 다시 눌러주세요.'});}
+    if(this.state.role!=='trainer'&&this.state.role!=='admin')return;
+    if(!d){lsDel(STAFFKEY);return this.setState({loggingIn:false,auth:'staff',pwInput:'',loginError:silent?'':'비밀번호가 맞지 않아요.'});}
+    lsSet(STAFFKEY,pw);
+    this.setState({loggingIn:false,auth:null,staffPw:pw,pwInput:'',members:d.members||[],ex:d.ex||[],meals:d.meals||[],programs:d.programs||[],views:d.views||[]});
+  }
+  async refresh(){
+    const s=this.state;if(!this.be||s.auth||!s.role)return;
+    try{
+      if(s.role==='user'&&s.userCode){const d=await this.be.userGet(s.userCode);if(!d)return this.expired();if(this.state.userCode===s.userCode)this.setState({members:[d.member],ex:d.ex||[],meals:d.meals||[],programs:d.programs||[],views:d.views||[]});}
+      else if(s.staffPw){const d=await this.be.staffGet(s.staffPw);if(!d)return this.expired();if(this.state.staffPw===s.staffPw)this.setState({members:d.members||[],ex:d.ex||[],meals:d.meals||[],programs:d.programs||[],views:d.views||[]});}
+    }catch(e){}
+  }
+  expired(){const u=this.state.role==='user';lsDel(u?CODEKEY:STAFFKEY);this.closeUrl();this.nav({...this.clearData(),auth:u?'code':'staff',codeInput:'',pwInput:'',loginError:u?'번호가 바뀌었어요. 새 번호를 입력해주세요.':'비밀번호가 바뀌었어요. 다시 입력해주세요.'});}
+  fail(e){if(e&&e.auth)return this.expired();this.showToast('저장하지 못했어요. 인터넷을 확인해주세요');}
+  logout(){lsDel(this.state.role==='user'?CODEKEY:STAFFKEY);this.closeUrl();this.nav({...this.clearData(),role:null,auth:null});this.showToast('로그아웃했어요');}
+  componentWillUnmount(){clearTimeout(this.tt);clearTimeout(this.dt);this.closeUrl();if(this.onVis)document.removeEventListener('visibilitychange',this.onVis);document.documentElement.style.fontSize='';}
+  applyFs(i=this.state.fs){document.documentElement.style.fontSize=FS[i].pct+'%';}
+  persist(){lsSet(FSKEY,String(this.state.fs));}
+  up(p){this.setState(p,()=>this.persist());}
+  scrollTop(){try{window.scrollTo(0,0);}catch(e){}}
+  nav(p){this.setState({pendingDel:null,...p},()=>this.scrollTop());}
+  showToast(t){clearTimeout(this.tt);this.setState({toast:t});this.tt=setTimeout(()=>this.setState({toast:''}),2000);}
+  confirmTap(id,fn){
+    clearTimeout(this.dt);
+    if(this.state.pendingDel===id){this.setState({pendingDel:null});fn();}
+    else{this.setState({pendingDel:id});this.dt=setTimeout(()=>this.setState({pendingDel:null}),4000);}
+  }
+  askDel(id,list){this.confirmTap(id,async()=>{try{await this.be[list==='ex'?'userDelEx':'userDelMeal'](this.state.userCode,id);}catch(e){return this.fail(e);}this.setState(s=>({[list]:s[list].filter(x=>x.id!==id)}));this.showToast('삭제했어요');});}
+  delMember(id){this.confirmTap(id,async()=>{try{await this.be.staffDelMember(this.state.staffPw,id);}catch(e){return this.fail(e);}this.setState(s=>({members:s.members.filter(m=>m.id!==id),ex:s.ex.filter(e=>e.mid!==id),meals:s.meals.filter(e=>e.mid!==id),views:s.views.filter(v=>v.mid!==id),programs:s.programs.map(p=>({...p,mids:p.mids.filter(x=>x!==id)})),justAdded:s.justAdded&&s.justAdded.id===id?null:s.justAdded}));this.showToast('이용자를 삭제했어요');});}
+  newCode(id){this.confirmTap('c'+id,async()=>{let code;try{code=await this.be.staffNewCode(this.state.staffPw,id);}catch(e){return this.fail(e);}this.setState(s=>{const m=s.members.find(x=>x.id===id);return {members:s.members.map(x=>x.id===id?{...x,code}:x),justAdded:m?{id,name:m.name,code,renewed:true}:null};},()=>this.scrollTop());});}
+  delStyle(id,label='삭제',confirm='한 번 더 누르면 삭제'){const on=this.state.pendingDel===id;return on?{delLabel:confirm,delBg:'#A3261B',delFg:'#FFFFFF',delBd:'#A3261B'}:{delLabel:label,delBg:'#FFFFFF',delFg:'#5A625D',delBd:LINE};}
+  async addMember(){
+    const name=this.state.newName.trim(),age=parseInt(this.state.newAge,10);
+    if(!name)return this.setState({adminError:'이름을 입력해주세요.'});
+    if(this.state.saving)return;
+    this.setState({saving:true});
+    try{const m=await this.be.staffAddMember(this.state.staffPw,name,age>0?age:null);this.setState(s=>({members:[...s.members,m],newName:'',newAge:'',adminError:'',saving:false,justAdded:{id:m.id,name:m.name,code:m.code}}));}
+    catch(e){this.setState({saving:false});this.fail(e);}
+  }
+  openEx(){this.setState({sheet:'ex',error:'',form:{kind:'',min:30,level:'보통',memo:''}});}
+  openMeal(meal){this.setState({sheet:'meal',error:'',form:{meal,menu:'',amount:'보통',memo:''}});}
+  autoMeal(){const h=new Date().getHours();return h<10?'아침':h<15?'점심':h<21?'저녁':'간식';}
+  setForm(p){this.setState(s=>({form:{...s.form,...p},error:''}));}
+  async save(){
+    const {sheet,form,date,userCode,saving}=this.state;if(saving)return;
+    if(sheet==='ex'&&!form.kind)return this.setState({error:'운동 종류를 골라주세요.'});
+    if(sheet==='meal'&&!(form.menu||'').trim())return this.setState({error:'드신 음식을 적어주세요.'});
+    this.setState({saving:true});
+    try{
+      if(sheet==='ex'){const rec=await this.be.userAddEx(userCode,{date,kind:form.kind,min:form.min,level:form.level,memo:(form.memo||'').trim()});this.setState(s=>({ex:[...s.ex,rec],sheet:null,saving:false}));this.showToast('운동을 저장했어요');}
+      else{const rec=await this.be.userAddMeal(userCode,{date,meal:form.meal,menu:form.menu.trim(),amount:form.amount,memo:(form.memo||'').trim()});this.setState(s=>({meals:[...s.meals,rec],sheet:null,saving:false}));this.showToast('식사를 저장했어요');}
+    }catch(e){this.setState({saving:false});this.fail(e);}
+  }
+  back(){
+    const s=this.state;
+    if(s.tView){this.nav({tView:null});return this.refresh();}
+    this.closeUrl();this.nav({...this.clearData(),role:null,auth:null,loginError:''});
+  }
+  openProg(){this.pFile=null;this.setState({pSheet:true,pError:'',pFileName:'',pSaving:false,pForm:{title:'',type:'1:1',mids:[],kind:'',min:20,memo:'',src:'file',url:''}});}
+  setP(p){this.setState(s=>({pForm:{...s.pForm,...p},pError:''}));}
+  pickPType(t){const f=this.state.pForm;this.setP({type:t,mids:t==='1:1'?f.mids.slice(0,1):f.mids});}
+  pickPMember(id){const f=this.state.pForm;if(f.type==='1:1')return this.setP({mids:[id]});this.setP({mids:f.mids.includes(id)?f.mids.filter(x=>x!==id):[...f.mids,id]});}
+  async saveProg(){
+    const s=this.state,p=s.pForm,title=(p.title||'').trim();
+    if(!title)return this.setState({pError:'제목을 입력해주세요.'});
+    if(!p.mids.length)return this.setState({pError:'대상 이용자를 골라주세요.'});
+    if(!p.kind)return this.setState({pError:'운동 종류를 골라주세요.'});
+    let ytId=null;
+    if(p.src==='yt'){ytId=ytIdOf(p.url);if(!ytId)return this.setState({pError:'유튜브 링크를 확인해주세요.'});}
+    else if(!this.pFile)return this.setState({pError:'영상 파일을 골라주세요.'});
+    if(s.pSaving)return;
+    this.setState({pSaving:true});
+    try{
+      const rec=await this.be.staffAddProgram(s.staffPw,{title,type:p.type,mids:p.mids,kind:p.kind,min:p.min,memo:(p.memo||'').trim(),ytId},p.src==='yt'?null:this.pFile);
+      this.pFile=null;this.setState(st=>({programs:[rec,...st.programs],pSheet:false,pSaving:false}));this.showToast('영상을 등록했어요');
+    }catch(e){this.setState({pSaving:false});if(e&&e.auth)return this.fail(e);this.setState({pError:p.src==='yt'?'저장하지 못했어요. 인터넷을 확인해주세요.':'영상을 올리지 못했어요. 인터넷을 확인하거나 더 짧은 영상을 올려주세요.'});}
+  }
+  delProg(id){this.confirmTap(id,async()=>{try{await this.be.staffDelProgram(this.state.staffPw,id);}catch(e){return this.fail(e);}this.setState(s=>({programs:s.programs.filter(x=>x.id!==id),views:s.views.filter(v=>v.pid!==id)}));this.showToast('영상을 삭제했어요');});}
+  closeUrl(){if(this.url){if(this.urlRevoke)URL.revokeObjectURL(this.url);this.url=null;}this.destroyYT();}
+  startPoll(){this.stopPoll();this.poll=setInterval(()=>{if(this.yt&&this.yt.getCurrentTime)this.tick(this.yt.getCurrentTime(),this.yt.getDuration()||0);},500);}
+  stopPoll(){clearInterval(this.poll);this.poll=null;}
+  destroyYT(){this.stopPoll();if(this.yt){try{this.yt.destroy();}catch(e){}this.yt=null;}}
+  async mountYT(pid,tries=0){
+    const s=this.state,p=s.programs.find(x=>x.id===pid);if(!p||s.playing!==pid||p.src!=='yt')return;
+    const host=document.querySelector('[data-yt-host]');
+    if(!host){if(tries<40)setTimeout(()=>this.mountYT(pid,tries+1),50);return;}
+    try{await loadYT();}catch(e){return this.setState({plMissing:true});}
+    if(this.state.playing!==pid||!host.isConnected)return;
+    this.destroyYT();host.innerHTML='';const inner=document.createElement('div');host.appendChild(inner);
+    this.yt=new window.YT.Player(inner,{videoId:p.ytId,width:'100%',height:'100%',playerVars:{playsinline:1,rel:0},events:{
+      onStateChange:e=>{if(e.data===1){const t=this.yt.getCurrentTime();if(this.pl.counted&&t<1){this.pl={watched:0,lastT:0,counted:false};this.setState({plPct:0,plCounted:false});}this.pl.lastT=t;this.startPoll();}else{this.stopPoll();if(e.data===0&&this.yt)this.tick(this.yt.getDuration(),this.yt.getDuration());}},
+      onError:()=>{this.destroyYT();this.setState({plMissing:true});}}});
+  }
+  async openPlayer(pid){
+    this.closeUrl();this.pl={watched:0,lastT:0,counted:false};
+    this.nav({playing:pid,plUrl:null,plMissing:false,plPct:0,plCounted:false});
+    const p=this.state.programs.find(x=>x.id===pid);
+    if(p.src==='yt'){requestAnimationFrame(()=>requestAnimationFrame(()=>this.mountYT(pid)));return;}
+    try{const r=await this.be.videoUrl(p);if(!r)throw 0;if(this.state.playing!==pid){if(r.revoke)URL.revokeObjectURL(r.url);return;}this.url=r.url;this.urlRevoke=!!r.revoke;this.setState({plUrl:r.url});}
+    catch(e){if(this.state.playing===pid)this.setState({plMissing:true});}
+  }
+  closePlayer(){this.closeUrl();this.nav({playing:null,plUrl:null});}
+  onTime(e){this.tick(e.target.currentTime,e.target.duration||0);}
+  tick(t,d){
+    const pl=this.pl;if(!pl)return;
+    const dt=t-pl.lastT;if(dt>0&&dt<1.5)pl.watched+=dt;pl.lastT=t;
+    if(!pl.counted&&d>0&&pl.watched>=d*0.9){pl.counted=true;this.recordView();}
+    const pct=pl.counted?100:(d?Math.min(99,Math.floor(pl.watched/(d*0.9)*100)):0);
+    if(pct!==this.state.plPct||pl.counted!==this.state.plCounted)this.setState({plPct:pct,plCounted:pl.counted});
+  }
+  onPlay(e){if(this.pl&&this.pl.counted&&e.target.currentTime<1){this.pl={watched:0,lastT:0,counted:false};this.setState({plPct:0,plCounted:false});}}
+  async recordView(){
+    const s=this.state,p=s.programs.find(x=>x.id===s.playing);if(!p)return;
+    try{const r=await this.be.userAddView(s.userCode,p.id,s.today);
+      this.setState(st=>({views:[...st.views,r.view],ex:[...st.ex,r.ex]}),()=>this.showToast(`${this.state.views.filter(v=>v.pid===p.id&&v.mid===s.me).length}회째 기록했어요!`));
+    }catch(e){this.fail(e);}
+  }
+  weekMinOf(mid,end){const d=parse(end),mon=addDays(end,-((d.getDay()+6)%7));return this.state.ex.filter(e=>e.mid===mid&&e.date>=mon&&e.date<=end).reduce((a,e)=>a+e.min,0);}
+  weekData(mid,end,onGo){
+    const s=this.state,days=[...Array(7)].map((_,i)=>addDays(end,i-6));
+    const mins=days.map(ds=>s.ex.filter(e=>e.mid===mid&&e.date===ds).reduce((a,e)=>a+e.min,0));
+    const max=Math.max(30,...mins);
+    return {total:mins.reduce((a,b)=>a+b,0),days:days.map((ds,i)=>{const dd=parse(ds),sel=ds===end;return {
+      wd:WD[dd.getDay()],day:dd.getDate(),short:`${dd.getMonth()+1}/${dd.getDate()} (${WD[dd.getDay()]})`,
+      minLabel:mins[i]||'',h:Math.round(mins[i]/max*80),barBg:sel?G:'#8DB39E',wdWeight:sel?800:600,wdColor:sel?G:INK,
+      go:()=>onGo&&onGo(ds),
+      meals:MAIN3.map(m=>{const has=s.meals.some(x=>x.mid===mid&&x.date===ds&&x.meal===m);return {name:m,bg:has?O:'#F4F1EA',fg:has?'#FFFFFF':'#8A918C'};})};})};
+  }
+  renderVals(){
+    const s=this.state,f=s.form;
+    const member=id=>s.members.find(m=>m.id===id);
+    const ageLabel=m=>m.age?`${m.age}세`:'';
+    const inUserApp=s.role==='user'&&!s.auth&&!!s.me&&!!member(s.me);
+    const isEntry=s.ready&&!s.role;
+    const isLoading=!s.ready||s.auth==='loading';
+    const isCodeLogin=s.ready&&s.role==='user'&&s.auth==='code';
+    const isStaffLogin=s.ready&&!!s.role&&s.role!=='user'&&s.auth==='staff';
+    const staffIn=!s.auth&&!!s.staffPw;
+    const tMember=s.role==='trainer'&&staffIn&&s.tView?member(s.tView):null;
+    const isTDetail=!!tMember, isTHome=s.role==='trainer'&&staffIn&&!tMember, isTList=isTHome&&s.tTab==='members', isTVideos=isTHome&&s.tTab==='videos';
+    const isAdmin=s.role==='admin'&&staffIn;
+    const isToday=s.date===s.today, d=parse(s.date);
+    const myEx=s.ex.filter(e=>e.mid===s.me&&e.date===s.date);
+    const myMeals=s.meals.filter(m=>m.mid===s.me&&m.date===s.date);
+    const dayMin=myEx.reduce((a,e)=>a+e.min,0);
+    const weekMin=inUserApp?this.weekMinOf(s.me,s.date):0;
+    const isStats=inUserApp&&s.tab==='stats';
+    const chartMid=isTDetail?tMember.id:s.me;
+    const chartEnd=isTDetail?s.today:s.date;
+    const wk=(isStats||isTDetail)?this.weekData(chartMid,chartEnd,isStats?ds=>this.nav({date:ds,tab:'home'}):null):{total:0,days:[]};
+    const title=!s.role?'나의 건강일지':s.role==='user'?(inUserApp?`${member(s.me).name} 님`:'이용자'):s.role==='trainer'?'트레이너':'관리자';
+    let tLog=[];
+    if(isTDetail){
+      for(let i=0;i<7;i++){
+        const ds=addDays(s.today,-i);
+        const rows=[...s.ex.filter(e=>e.mid===tMember.id&&e.date===ds).map(e=>({tag:'운동',tagBg:GS,tagFg:G,main:`${e.kind} ${e.min}분`,sub:[`강도 ${e.level}`,e.memo].filter(Boolean).join(' · ')})),
+          ...s.meals.filter(e=>e.mid===tMember.id&&e.date===ds).sort((a,b)=>MEALS.indexOf(a.meal)-MEALS.indexOf(b.meal)).map(e=>({tag:e.meal,tagBg:OS,tagFg:'#8A3E14',main:e.menu,sub:[`양 ${e.amount}`,e.memo].filter(Boolean).join(' · ')}))];
+        if(rows.length)tLog.push({label:i===0?`${md(ds)} · 오늘`:md(ds),rows});
+      }
+    }
+    const lastDate=mid=>{const all=[...s.ex,...s.meals].filter(e=>e.mid===mid).map(e=>e.date).sort();return all[all.length-1];};
+    const vc=(pid,mid,day)=>s.views.filter(v=>v.pid===pid&&v.mid===mid&&(!day||v.date===day)).length;
+    const myProgs=inUserApp?s.programs.filter(p=>p.mids.includes(s.me)):[];
+    const isVideoTab=inUserApp&&s.tab==='video';
+    const plProg=isVideoTab&&s.playing?s.programs.find(p=>p.id===s.playing):null;
+    const plT=plProg?typeB(plProg.type):{};
+    const tMP=tMember?s.programs.filter(p=>p.mids.includes(tMember.id)):[];
+    const pf=s.pForm;
+    return {
+      mainPad:inUserApp?'6.5rem':'2rem',
+      title,showBack:!!s.role,backLabel:isTDetail?'목록':'처음',back:()=>this.back(),
+      fsOptions:FS.map((o,i)=>({size:o.size,aria:o.aria,on:s.fs===i,bg:s.fs===i?G:'transparent',fg:s.fs===i?'#FFFFFF':INK,pick:()=>{this.applyFs(i);this.up({fs:i});}})),
+      isEntry,isLoading,isCodeLogin,isStaffLogin,inUserApp,isTList,isTDetail,isAdmin,
+      isEntryLocal:isEntry&&s.mode==='local',showStaffLogout:isAdmin||isTHome,
+      roles:[
+        {label:'이용자',initial:'이',desc:'받은 번호로 들어가 내 운동과 식사를 기록해요',color:G,go:()=>this.startRole('user')},
+        {label:'트레이너',initial:'트',desc:'이용자들의 기록을 확인해요',color:O,go:()=>this.startRole('trainer')},
+        {label:'관리자',initial:'관',desc:'이용자를 등록하고 개인 번호를 발급해요',color:NV,go:()=>this.startRole('admin')}],
+      codeInput:s.codeInput,onCode:e=>{const v=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);this.setState({codeInput:v,loginError:''});if(v.length===6&&!this.state.loggingIn)this.loginUser(v);},
+      onCodeKey:e=>{if(e.key==='Enter')this.loginUser(s.codeInput);},submitCode:()=>this.loginUser(s.codeInput),
+      pwInput:s.pwInput,onPw:e=>this.setState({pwInput:e.target.value,loginError:''}),onPwKey:e=>{if(e.key==='Enter')this.loginStaff(s.pwInput);},submitPw:()=>this.loginStaff(s.pwInput),
+      hasLoginError:!!s.loginError,loginError:s.loginError,loginLabel:s.loggingIn?'확인하는 중…':'들어가기',loggingIn:s.loggingIn,
+      isLocal:s.mode==='local',hasDemoHint:s.mode==='local'&&!!s.demoHint,demoHint:s.demoHint,
+      staffLoginTitle:s.role==='trainer'?'트레이너 비밀번호':'관리자 비밀번호',logout:()=>this.logout(),
+      saveLabel:s.saving?'저장하는 중…':'저장하기',addLabel:s.saving?'등록하는 중…':'등록하기',
+      hasJustAdded:isAdmin&&!!s.justAdded,jaName:s.justAdded?s.justAdded.name:'',jaCode:s.justAdded?s.justAdded.code:'',jaTitle:s.justAdded&&s.justAdded.renewed?'새 번호를 발급했어요':'등록했어요',closeJA:()=>this.setState({justAdded:null}),
+      dateLabel:`${d.getMonth()+1}월 ${d.getDate()}일 ${WD[d.getDay()]}요일`,
+      isToday,nextOpacity:isToday?0.35:1,
+      prevDay:()=>this.setState({date:addDays(s.date,-1),pendingDel:null}),
+      nextDay:()=>!isToday&&this.setState({date:addDays(s.date,1),pendingDel:null}),
+      goToday:()=>this.setState({date:s.today}),
+      isHome:inUserApp&&s.tab==='home',isEx:inUserApp&&s.tab==='ex',isMeal:inUserApp&&s.tab==='meal',
+      showWeekChart:isStats||isTDetail,chartTitle:isTDetail?`${tMember.name} 님`:'최근 7일',tMemberAge:tMember?ageLabel(tMember):'',
+      tabs:[['home','오늘'],['ex','운동'],['meal','식단'],['video','영상'],['stats','기록']].map(([k,l])=>({label:l,on:s.tab===k,bg:s.tab===k?G:'transparent',fg:s.tab===k?'#FFFFFF':INK,go:()=>{this.closeUrl();this.nav({tab:k,playing:null,plUrl:null});}})),
+      dayMin,dayExCount:myEx.length,weekMin,weekPct:Math.min(100,Math.round(weekMin/150*100)),
+      mainMealsDone:MAIN3.filter(m=>myMeals.some(x=>x.meal===m)).length,
+      mealStatus:MEALS.map(m=>{const n=myMeals.filter(x=>x.meal===m).length;return {name:m,state:n?'기록함':'—',bg:n?OS:'#FFFFFF',fg:n?'#8A3E14':'#5A625D',bd:n?O:'#E4DED2',open:()=>this.openMeal(m)};}),
+      openEx:()=>this.openEx(),openMealAuto:()=>this.openMeal(this.autoMeal()),
+      noEx:myEx.length===0,
+      exList:myEx.map(e=>({...e,initial:e.kind[0],hasMemo:!!e.memo,...this.delStyle(e.id),del:()=>this.askDel(e.id,'ex')})),
+      mealGroups:MEALS.map(m=>{const items=myMeals.filter(x=>x.meal===m);return {name:m,empty:!items.length,add:()=>this.openMeal(m),items:items.map(it=>({...it,hasMemo:!!it.memo,...this.delStyle(it.id),del:()=>this.askDel(it.id,'meals')}))};}),
+      rangeMin:wk.total,week:wk.days,
+      tLog,tNoLog:isTDetail&&!tLog.length,
+      noMembers:!s.members.length,
+      tMembers:s.members.map(m=>{const w=this.weekMinOf(m.id,s.today),ld=lastDate(m.id);return {name:m.name,weekMin:w,pct:Math.min(100,Math.round(w/150*100)),
+        mealsToday:MAIN3.filter(x=>s.meals.some(e=>e.mid===m.id&&e.date===s.today&&e.meal===x)).length,
+        lastLabel:ld?`최근 기록 ${ld===s.today?'오늘':md(ld)}`:'기록 없음',go:()=>this.nav({tView:m.id})};}),
+      newName:s.newName,newAge:s.newAge,
+      onNewName:e=>this.setState({newName:e.target.value,adminError:''}),
+      onNewAge:e=>this.setState({newAge:e.target.value.replace(/[^0-9]/g,'').slice(0,3)}),
+      hasAdminError:!!s.adminError,adminError:s.adminError,addMember:()=>this.addMember(),
+      memberCount:s.members.length,
+      aMembers:s.members.map(m=>({name:m.name,ageLabel:ageLabel(m),code:m.code||'—',newCode:()=>this.newCode(m.id),...(()=>{const st=this.delStyle('c'+m.id,'새 번호 발급','한 번 더 누르면 새 번호');return {ncLabel:st.delLabel,ncBg:st.delBg,ncFg:st.delFg,ncBd:st.delBd};})(),exCount:s.ex.filter(e=>e.mid===m.id).length,mealCount:s.meals.filter(e=>e.mid===m.id).length,...this.delStyle(m.id,'이용자 삭제'),del:()=>this.delMember(m.id)})),
+      sheetOpen:inUserApp&&!!s.sheet,sheetEx:s.sheet==='ex',sheetMeal:s.sheet==='meal',
+      sheetTitle:s.sheet==='ex'?'운동 기록하기':'식사 기록하기',saveBg:s.sheet==='ex'?G:O,
+      closeSheet:()=>this.setState({sheet:null}),stop:e=>e.stopPropagation(),
+      kindChips:KINDS.map(k=>({label:k,...chip(f.kind===k,G),pick:()=>this.setForm({kind:k})})),
+      levelChips:LEVELS.map(k=>({label:k,...chip(f.level===k,G),pick:()=>this.setForm({level:k})})),
+      minPresets:[10,20,30,60].map(n=>({label:n+'분',...(f.min===n?{bg:GS,fg:G,bd:G}:{bg:'#FFFFFF',fg:INK,bd:LINE}),pick:()=>this.setForm({min:n})})),
+      formMin:f.min||0,
+      minDown:()=>this.setForm({min:Math.max(5,(f.min||0)-5)}),
+      minUp:()=>this.setForm({min:Math.min(300,(f.min||0)+5)}),
+      mealChips:MEALS.map(k=>({label:k,...chip(f.meal===k,O),pick:()=>this.setForm({meal:k})})),
+      amountChips:AMOUNTS.map(k=>({label:k,...chip(f.amount===k,O),pick:()=>this.setForm({amount:k})})),
+      formMenu:f.menu||'',onMenu:e=>this.setForm({menu:e.target.value}),
+      formMemo:f.memo||'',onMemo:e=>this.setForm({memo:e.target.value}),
+      memoPlaceholder:s.sheet==='ex'?'예: 무릎이 조금 아팠음':'예: 싱겁게 먹음',
+      hasError:!!s.error,error:s.error,save:()=>this.save(),
+      isTHome,isTVideos,
+      tTabs:[['members','이용자 기록'],['videos','운동 영상']].map(([k,l])=>({label:l,on:s.tTab===k,bg:s.tTab===k?O:'transparent',fg:s.tTab===k?'#FFFFFF':INK,go:()=>this.nav({tTab:k})})),
+      openProg:()=>this.openProg(),noProgs:!s.programs.length,
+      tProgs:s.programs.map(p=>({...typeB(p.type),title:p.title,dateLabel:md(p.date),kind:p.kind,min:p.min,videoName:p.videoName,
+        counts:p.mids.map(mid=>({name:(member(mid)||{}).name||'삭제된 이용자',count:vc(p.id,mid)})),...this.delStyle(p.id,'영상 삭제'),del:()=>this.delProg(p.id)})),
+      tHasProgs:tMP.length>0,tMemberProgs:tMP.map(p=>({...typeB(p.type),title:p.title,count:vc(p.id,tMember.id),today:vc(p.id,tMember.id,s.today)})),
+      hasMyProgs:myProgs.length>0,myProgCount:myProgs.length,todayViews:s.views.filter(v=>v.mid===s.me&&v.date===s.today).length,
+      goVideo:()=>this.nav({tab:'video',playing:null}),
+      isVideoList:isVideoTab&&!plProg,isPlayer:!!plProg,noMyProgs:!myProgs.length,
+      myProgs:myProgs.map(p=>({...typeB(p.type),hasThumb:p.src==='yt',thumb:p.src==='yt'?`https://i.ytimg.com/vi/${p.ytId}/hqdefault.jpg`:'',title:p.title,dateLabel:md(p.date),memo:p.memo,hasMemo:!!p.memo,count:vc(p.id,s.me),today:vc(p.id,s.me,s.today),play:()=>this.openPlayer(p.id)})),
+      closePlayer:()=>this.closePlayer(),
+      plTitle:plProg?plProg.title:'',plTypeLabel:plT.typeLabel,plTypeBg:plT.typeBg,plTypeFg:plT.typeFg,
+      plIsYT:!!plProg&&plProg.src==='yt'&&!s.plMissing,plReady:!!s.plUrl,plUrl:s.plUrl||'',plLoading:!!plProg&&plProg.src!=='yt'&&!s.plUrl&&!s.plMissing,plMissing:s.plMissing,
+      plMissingMsg:plProg&&plProg.src==='yt'?'유튜브 영상을 불러오지 못했어요. 인터넷 연결이나 링크를 확인해주세요.':'이 기기에서 영상을 찾을 수 없어요.',
+      onTime:e=>this.onTime(e),onPlay:e=>this.onPlay(e),
+      plPct:s.plPct,plStatus:s.plCounted?'1회 기록 완료!':'따라하는 중',plBarBg:s.plCounted?G:'#8DB39E',
+      plCount:plProg?vc(plProg.id,s.me):0,plToday:plProg?vc(plProg.id,s.me,s.today):0,
+      pSheetOpen:s.role==='trainer'&&s.pSheet,closeProg:()=>this.setState({pSheet:false}),
+      pTitle:pf.title||'',onPTitle:e=>this.setP({title:e.target.value}),
+      pTypeChips:[['1:1','1:1 트레이닝'],['그룹','그룹 PT']].map(([v,l])=>({label:l,...chip(pf.type===v,O),pick:()=>this.pickPType(v)})),
+      pMemberChips:s.members.map(m=>({label:m.name,...chip((pf.mids||[]).includes(m.id),O),pick:()=>this.pickPMember(m.id)})),
+      pMemberHint:pf.type==='1:1'?'(1명)':'(여러 명 선택)',
+      pKindChips:KINDS.map(k=>({label:k,...chip(pf.kind===k,O),pick:()=>this.setP({kind:k})})),
+      pMin:pf.min||0,pMinDown:()=>this.setP({min:Math.max(5,(pf.min||0)-5)}),pMinUp:()=>this.setP({min:Math.min(180,(pf.min||0)+5)}),
+      onPFile:e=>{const file=e.target.files&&e.target.files[0];this.pFile=file||null;this.setState({pFileName:file?file.name:'',pError:''});},
+      pSrcChips:[['file','영상 파일'],['yt','유튜브 링크']].map(([v,l])=>({label:l,...chip((pf.src||'file')===v,O),pick:()=>this.setP({src:v})})),
+      pIsFile:(pf.src||'file')==='file',pIsYT:pf.src==='yt',pUrl:pf.url||'',onPUrl:e=>this.setP({url:e.target.value}),
+      pUrlOk:!!ytIdOf(pf.url),pThumb:ytIdOf(pf.url)?`https://i.ytimg.com/vi/${ytIdOf(pf.url)}/hqdefault.jpg`:'',
+      pFileLabel:s.pFileName?`✓ ${s.pFileName}`:'영상 파일 고르기',pFileColor:s.pFileName?G:'#5A625D',
+      pMemo:pf.memo||'',onPMemo:e=>this.setP({memo:e.target.value}),
+      hasPError:!!s.pError,pError:s.pError,saveProg:()=>this.saveProg(),pSaving:s.pSaving,pSaveLabel:s.pSaving?'저장하는 중…':'등록하기',
+      hasToast:!!s.toast,toast:s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

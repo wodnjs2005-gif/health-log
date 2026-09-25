@@ -1,0 +1,131 @@
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-card);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mealCard {
+  gap: 0.75rem;
+}
+
+.bars,
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.bars {
+  align-items: end;
+  height: 10rem;
+}
+
+.col {
+  height: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.minLabel {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.barPiece {
+  width: 100%;
+  max-width: 2.25rem;
+  min-height: 0.25rem;
+  border-radius: 0.5rem 0.5rem 0.25rem 0.25rem;
+  background: var(--green-bar);
+}
+
+.sel .barPiece {
+  background: var(--green);
+}
+
+.days {
+  border-top: 1px solid var(--divider);
+  padding-top: 0.5rem;
+}
+
+.day {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.wd {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.day.sel .wd {
+  font-weight: 800;
+  color: var(--green);
+}
+
+.dnum {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.mealRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0;
+  text-align: left;
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+.mealDate {
+  width: 5.5rem;
+  flex: none;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mealDots {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 0.375rem;
+}
+
+.dot {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding: 0.375rem 0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--bg);
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+
+.dot[data-on='true'] {
+  background: var(--orange);
+  color: #fff;
+}
