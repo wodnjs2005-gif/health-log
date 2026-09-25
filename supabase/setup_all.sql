@@ -4,6 +4,19 @@
 -- 실행한 뒤 첫 관리자 계정을 꼭 만드세요:
 --   select admin_create('admin', '여기에-8자-이상-비밀번호', '관리자');
 
+-- ================= 다시 실행해도 되도록: 이 앱의 함수 지우기 (표·기록은 그대로) =================
+
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure sig from pg_proc p
+           where p.pronamespace = 'public'::regnamespace
+             and p.proname = any(array['_gid','_j_ex','_j_meal','_j_member','_j_member_staff','_j_member_trainer','_j_prog','_j_trainer','_j_view','_mid','_need_admin','_need_staff','_new_code','_new_session','_new_trainer_code','_role','_staff_ok','_token_hash','admin_add_trainer','admin_change_password','admin_create','admin_del_trainer','admin_login','admin_new_trainer_code','guardian_get','staff_add_member','staff_add_program','staff_check','staff_del_member','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_set_birth','staff_set_program_members','staff_set_tags','trainer_login','user_add_ex','user_add_meal','user_add_view','user_del_ex','user_del_meal','user_get'])
+  loop
+    execute 'drop function if exists ' || f.sig || ' cascade';
+  end loop;
+end $$;
+
 -- ================= 20260925000000_healthlog_init.sql =================
 
 -- 나의 건강일지 · Supabase 설정

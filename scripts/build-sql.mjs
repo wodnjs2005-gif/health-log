@@ -15,7 +15,25 @@ const head = `-- 나의 건강일지 · 새 Supabase 프로젝트 한 번에 설
 -- 실행한 뒤 첫 관리자 계정을 꼭 만드세요:
 --   select admin_create('admin', '여기에-8자-이상-비밀번호', '관리자');
 `;
-const body = files.map((f) => `\n-- ================= ${f} =================\n\n${readFileSync(join(dir, f), 'utf8').trim()}\n`).join('');
+// 여러 번 Run 해도 되도록 이 앱의 함수를 먼저 모두 지운다 (매개변수 이름이 바뀐 함수는 create or replace 로 덮어쓸 수 없음).
+// 표와 기록은 건드리지 않는다.
+const sources = files.map((f) => readFileSync(join(dir, f), 'utf8'));
+const fns = [...new Set(sources.flatMap((s) => [...s.matchAll(/create or replace function\s+(\w+)\s*\(/gi)].map((m) => m[1])))].sort();
+const reset = `
+-- ================= 다시 실행해도 되도록: 이 앱의 함수 지우기 (표·기록은 그대로) =================
+
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure sig from pg_proc p
+           where p.pronamespace = 'public'::regnamespace
+             and p.proname = any(array[${fns.map((n) => `'${n}'`).join(',')}])
+  loop
+    execute 'drop function if exists ' || f.sig || ' cascade';
+  end loop;
+end $$;
+`;
+const body = reset + files.map((f) => `\n-- ================= ${f} =================\n\n${sources[files.indexOf(f)].trim()}\n`).join('');
 
 const out = join(root, 'supabase', 'setup_all.sql');
 writeFileSync(out, head + body);
