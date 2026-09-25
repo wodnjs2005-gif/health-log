@@ -9,9 +9,11 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "build:html": "npm run build && node scripts/build-html.mjs",
-    "build:sql": "node scripts/build-sql.mjs"
+    "build:sql": "node scripts/build-sql.mjs",
+    "test:export": "node scripts/export-test.mjs"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

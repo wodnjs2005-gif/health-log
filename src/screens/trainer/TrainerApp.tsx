@@ -11,6 +11,7 @@ import type { MemberFilterValue } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
 import { MemberDetail } from '../staff/MemberDetail';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
+import { ExportSheet } from '../staff/ExportSheet';
 import { LessonManage } from '../staff/LessonManage';
 import { TagSheet } from '../staff/TagSheet';
 import { VideoManage } from '../staff/VideoManage';
@@ -26,6 +27,11 @@ export function TrainerApp() {
   // 상세 화면에 갔다 와도 찾던 조건은 그대로 둔다
   const { filter, setFilter, shown } = useMemberFilter(data.members);
   const [tagging, setTagging] = useState<Member | null>(null);
+  /** 기록 내려받기 창: 'all' = 전체로 열기, 이용자 id = 그 사람을 골라 열기 */
+  const [exporting, setExporting] = useState<string | null>(null);
+  const exportSheet = exporting && (
+    <ExportSheet initialMid={exporting === 'all' ? undefined : exporting} onClose={() => setExporting(null)} />
+  );
   const confirm = useConfirm();
 
   const detail = tView ? data.members.find((m) => m.id === tView) : null;
@@ -41,8 +47,12 @@ export function TrainerApp() {
           void refresh();
         }}
       >
-        <MemberDetail member={detail} summary={<TagRow member={detail} onEdit={() => setTagging(detail)} />} />
+        <MemberDetail
+          member={detail}
+          summary={<TagRow member={detail} onEdit={() => setTagging(detail)} onExport={() => setExporting(detail.id)} />}
+        />
         {tagging && <TagSheet member={tagging} onClose={() => setTagging(null)} />}
+        {exportSheet}
       </Layout>
     );
   }
@@ -80,6 +90,7 @@ export function TrainerApp() {
           filter={filter}
           onFilter={setFilter}
           shown={shown}
+          onExport={() => setExporting('all')}
           onOpen={(id) => {
             confirm.reset();
             setTView(id);
@@ -93,38 +104,50 @@ export function TrainerApp() {
       <button type="button" className={ui.btnGhost} onClick={logout}>
         로그아웃
       </button>
+      {exportSheet}
     </Layout>
   );
 }
 
 /** 상세 화면 이름 아래: 해시태그 + 편집 버튼 */
-function TagRow({ member, onEdit }: { member: Member; onEdit: () => void }) {
+function TagRow({ member, onEdit, onExport }: { member: Member; onEdit: () => void; onExport: () => void }) {
   return (
     <div className={ui.row} style={{ alignItems: 'center' }}>
       <TagList tags={member.tags} />
-      <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={onEdit}>
-        # 해시태그 편집
-      </button>
+      <div className={s.actions}>
+        <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={onEdit}>
+          # 해시태그 편집
+        </button>
+        <button type="button" className={ui.btnSmall} onClick={onExport}>
+          기록 내려받기
+        </button>
+      </div>
     </div>
   );
 }
 
 interface ListProps {
+  onExport: () => void;
   filter: MemberFilterValue;
   shown: Member[];
   onFilter: (f: MemberFilterValue) => void;
   onOpen: (id: string) => void;
 }
 
-function MemberList({ filter, onFilter, shown, onOpen }: ListProps) {
+function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
   const { data, today } = useApp();
   const mon = mondayOf(today);
 
   return (
     <>
-      <h2 className={ui.h2} style={{ padding: '0.25rem' }}>
-        담당 이용자
-      </h2>
+      <div className={ui.row} style={{ padding: '0.25rem', alignItems: 'center' }}>
+        <h2 className={ui.h2}>담당 이용자</h2>
+        {data.members.length > 0 && (
+          <button type="button" className={ui.btnSmall} onClick={onExport}>
+            엑셀 내려받기
+          </button>
+        )}
+      </div>
       {data.members.length === 0 ? (
         <div className={ui.empty}>등록된 이용자가 없어요.</div>
       ) : (

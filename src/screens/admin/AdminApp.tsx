@@ -9,6 +9,7 @@ import { cx } from '../../lib/cx';
 import ui from '../../styles/ui.module.css';
 import s from './admin.module.css';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
+import { ExportSheet } from '../staff/ExportSheet';
 import { EMPTY_TAG_DRAFT, TagEditor, tagsToSave } from '../staff/TagEditor';
 import { LessonManage } from '../staff/LessonManage';
 import { TagSheet } from '../staff/TagSheet';
@@ -48,6 +49,8 @@ export function AdminApp() {
   const [tagging, setTagging] = useState<Member | null>(null);
   const [aTab, setATab] = useState<ATab>('members');
   const [changingPw, setChangingPw] = useState(false);
+  /** 기록 내려받기 창: 'all' = 전체로 열기, 이용자 id = 그 사람을 골라 열기 */
+  const [exporting, setExporting] = useState<string | null>(null);
   const { filter, setFilter, shown } = useMemberFilter(data.members);
   const confirm = useConfirm();
 
@@ -226,9 +229,15 @@ export function AdminApp() {
             />
           )}
 
-          <div className={ui.row} style={{ padding: '0.25rem' }}>
-            <h2 className={ui.h2}>이용자 목록</h2>
-            <div className={ui.muted}>{data.members.length}명</div>
+          <div className={ui.row} style={{ padding: '0.25rem', alignItems: 'center' }}>
+            <h2 className={ui.h2}>
+              이용자 목록 <span className={ui.muted}>{data.members.length}명</span>
+            </h2>
+            {data.members.length > 0 && (
+              <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setExporting('all')}>
+                엑셀 내려받기
+              </button>
+            )}
           </div>
           {data.members.length === 0 ? (
             <div className={ui.empty}>등록된 이용자가 없어요.</div>
@@ -268,6 +277,9 @@ export function AdminApp() {
                   <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setTagging(m)}>
                     # 해시태그
                   </button>
+                  <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setExporting(m.id)}>
+                    기록 내려받기
+                  </button>
                   <ConfirmButton
                     armed={confirm.pending === 'c' + m.id}
                     onClick={() => newCode(m.id)}
@@ -299,6 +311,9 @@ export function AdminApp() {
       {editingMember && <BirthSheet member={editingMember} onClose={() => setEditingBirth(null)} />}
       {tagging && <TagSheet member={tagging} onClose={() => setTagging(null)} />}
       {changingPw && <PasswordSheet onClose={() => setChangingPw(false)} />}
+      {exporting && (
+        <ExportSheet color="navy" initialMid={exporting === 'all' ? undefined : exporting} onClose={() => setExporting(null)} />
+      )}
     </Layout>
   );
 }
