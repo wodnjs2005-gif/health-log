@@ -111,6 +111,8 @@ export type StaffRole = 'admin' | 'trainer';
 export interface Trainer {
   id: string;
   name: string;
+  /** 직급 (예: 팀장). 보여주기용이며 권한과는 상관없다. 없으면 '' */
+  rank?: string;
   code: string;
   createdAt: string;
 }
@@ -120,6 +122,8 @@ export interface StaffSession {
   token: string;
   role: StaffRole;
   name: string;
+  /** 트레이너 직급 */
+  rank?: string;
 }
 
 export type AdminLoginResult =
@@ -129,7 +133,7 @@ export type AdminLoginResult =
 
 /** 직원(관리자·트레이너) 화면 데이터. 관리자에게만 번호와 트레이너 목록이 들어 있다 */
 export interface StaffData extends DataSet {
-  me: { role: StaffRole; name: string };
+  me: { role: StaffRole; name: string; rank?: string };
   trainers?: Trainer[] | null;
 }
 
@@ -167,7 +171,9 @@ export interface Backend {
   staffSetBirth(token: string, id: string, birth: string): Promise<void>;
   staffNewCode(token: string, id: string): Promise<string>;
   staffNewGuardianCode(token: string, id: string): Promise<string>;
-  adminAddTrainer(token: string, name: string): Promise<Trainer>;
+  adminAddTrainer(token: string, name: string, rank: string): Promise<Trainer>;
+  /** 직급 바꾸기. 정리된 직급을 돌려준다 */
+  adminSetTrainerRank(token: string, id: string, rank: string): Promise<string>;
   /** 새 번호를 발급하면 그 트레이너의 로그인은 끝난다 */
   adminNewTrainerCode(token: string, id: string): Promise<string>;
   adminDelTrainer(token: string, id: string): Promise<void>;

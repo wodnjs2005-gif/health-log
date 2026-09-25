@@ -14,6 +14,8 @@ export interface AppCtx {
   staffToken: string;
   /** 로그인한 트레이너·관리자 이름 */
   staffName: string;
+  /** 트레이너 직급 (없으면 '') */
+  staffRank: string;
   /** 트레이너 목록 (관리자 화면에서만) */
   trainers: Trainer[];
   setTrainers: Dispatch<SetStateAction<Trainer[]>>;

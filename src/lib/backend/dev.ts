@@ -3,6 +3,7 @@
 // 데이터는 이 브라우저의 localStorage, 영상 파일은 IndexedDB 에만 저장된다.
 import { CODE_CHARS, genCode, normCode } from '../code';
 import { addDays, todayYmd } from '../date';
+import { normRank } from '../rank';
 import { normTags, TAGS_PER_MEMBER } from '../tags';
 import {
   AuthError,
@@ -129,7 +130,7 @@ function seed(): DevDB {
     programs: [],
     views: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
-    trainers: [{ id: 't1', name: '김코치', code: genTrainerCode(), createdAt: today }],
+    trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
     sessions: [],
   };
 }
@@ -328,11 +329,12 @@ export function createDevBackend(): Backend {
       const d = load();
       const s = sessionOf(d, token);
       if (!s) return null;
-      const name = s.role === 'admin' ? d.admins.find((a) => a.id === s.subject)?.name : d.trainers.find((t) => t.id === s.subject)?.name;
+      const tr = s.role === 'trainer' ? d.trainers.find((t) => t.id === s.subject) : undefined;
+      const name = s.role === 'admin' ? d.admins.find((a) => a.id === s.subject)?.name : tr?.name;
       if (!name) return null; // 지워진 계정
       const isAdmin = s.role === 'admin';
       return {
-        me: { role: s.role, name },
+        me: { role: s.role, name, rank: tr?.rank ?? '' },
         // 트레이너에게는 개인·보호자 번호를 보내지 않는다
         members: isAdmin ? d.members : d.members.map(({ code: _c, guardianCode: _g, ...m }) => ({ ...m, code: '' })),
         trainers: isAdmin ? d.trainers : null,
@@ -387,15 +389,24 @@ export function createDevBackend(): Backend {
       return m.guardianCode;
     },
 
-    async adminAddTrainer(token, name) {
+    async adminAddTrainer(token, name, rank) {
       const d = admin(token);
       let code: string;
       do code = genTrainerCode();
       while (d.trainers.some((t) => t.code === code));
-      const t: Trainer = { id: 't' + uid(), name: name.trim(), code, createdAt: todayYmd() };
+      const t: Trainer = { id: 't' + uid(), name: name.trim(), rank: normRank(rank), code, createdAt: todayYmd() };
       d.trainers.push(t);
       save(d);
       return t;
+    },
+
+    async adminSetTrainerRank(token, id, rank) {
+      const d = admin(token);
+      const t = d.trainers.find((x) => x.id === id);
+      if (!t) throw new Error('trainer not found');
+      t.rank = normRank(rank);
+      save(d);
+      return t.rank;
     },
 
     async adminNewTrainerCode(token, id) {

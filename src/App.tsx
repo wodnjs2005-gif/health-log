@@ -250,7 +250,7 @@ function Main({ be }: { be: Backend }) {
 
   // --- 트레이너·관리자 ------------------------------------------------------------
   const applyStaff = useCallback((token: string, d: StaffData) => {
-    setStaff({ token, role: d.me.role, name: d.me.name });
+    setStaff({ token, role: d.me.role, name: d.me.name, rank: d.me.rank ?? '' });
     setTrainers(d.trainers ?? []);
     setData({ members: d.members || [], ex: d.ex || [], meals: d.meals || [], programs: d.programs || [], views: d.views || [] });
   }, []);
@@ -448,7 +448,7 @@ function Main({ be }: { be: Backend }) {
   const ctx: AppCtx = useMemo(
     () => ({
       be, today, data, setData, userCode, me, guardians, addGuardian, removeGuardian,
-      staffToken: staff?.token ?? '', staffName: staff?.name ?? '', trainers, setTrainers,
+      staffToken: staff?.token ?? '', staffName: staff?.name ?? '', staffRank: staff?.rank ?? '', trainers, setTrainers,
       toast: showToast, fail, refresh, logout, goEntry, fs, setFs,
     }),
     [be, today, data, userCode, me, guardians, addGuardian, removeGuardian, staff, trainers, showToast, fail, refresh, logout, goEntry, fs, setFs],

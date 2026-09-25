@@ -6,6 +6,7 @@ import type { Member } from '../../lib/backend';
 import { MAIN3, WEEK_GOAL } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { md, mondayOf } from '../../lib/date';
+import { trainerTitle } from '../../lib/rank';
 import type { MemberFilterValue } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
 import { MemberDetail } from '../staff/MemberDetail';
@@ -17,8 +18,8 @@ import s from '../staff/staff.module.css';
 type TTab = 'members' | 'videos';
 
 export function TrainerApp() {
-  const { data, goEntry, refresh, logout, staffName } = useApp();
-  const title = staffName ? staffName + ' 트레이너' : '트레이너';
+  const { data, goEntry, refresh, logout, staffName, staffRank } = useApp();
+  const title = staffName ? trainerTitle(staffName, staffRank) : '트레이너';
   const [tTab, setTTab] = useState<TTab>('members');
   const [tView, setTView] = useState<string | null>(null);
   // 상세 화면에 갔다 와도 찾던 조건은 그대로 둔다

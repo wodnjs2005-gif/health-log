@@ -122,7 +122,9 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     staffNewGuardianCode: (token, id) => rpc<string>('staff_new_guardian_code', { p_token: token, p_id: id }),
 
-    adminAddTrainer: (token, name) => rpc<Trainer>('admin_add_trainer', { p_token: token, p_name: name }),
+    adminAddTrainer: (token, name, rank) => rpc<Trainer>('admin_add_trainer', { p_token: token, p_name: name, p_rank: rank }),
+
+    adminSetTrainerRank: (token, id, rank) => rpc<string>('admin_set_trainer_rank', { p_token: token, p_id: id, p_rank: rank }),
 
     adminNewTrainerCode: (token, id) => rpc<string>('admin_new_trainer_code', { p_token: token, p_id: id }),
 

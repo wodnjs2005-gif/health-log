@@ -9,6 +9,7 @@ import { cx } from '../../lib/cx';
 import ui from '../../styles/ui.module.css';
 import s from './admin.module.css';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
+import { EMPTY_TAG_DRAFT, TagEditor, tagsToSave } from '../staff/TagEditor';
 import { TagSheet } from '../staff/TagSheet';
 import { VideoManage } from '../staff/VideoManage';
 import st from '../staff/staff.module.css';
@@ -38,6 +39,7 @@ export function AdminApp() {
   const { be, data, staffToken, setData, toast, fail, goEntry, logout, today } = useApp();
   const [newName, setNewName] = useState('');
   const [birth, setBirth] = useState(EMPTY_BIRTH);
+  const [tagDraft, setTagDraft] = useState(EMPTY_TAG_DRAFT);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [issued, setIssued] = useState<Issued | null>(null);
@@ -53,13 +55,25 @@ export function AdminApp() {
     if (!name) return setError('이름을 입력해주세요.');
     const parsed = parseBirth(birth.y, birth.m, birth.d, today);
     if ('error' in parsed) return setError(parsed.error);
+    const tagged = tagsToSave(tagDraft);
+    if ('error' in tagged) return setError(tagged.error);
     if (saving) return;
     setSaving(true);
     try {
-      const m = await be.staffAddMember(staffToken, name, parsed.birth);
-      setData((d) => ({ ...d, members: [...d.members, m] }));
+      let m = await be.staffAddMember(staffToken, name, parsed.birth);
+      if (tagged.tags.length > 0) {
+        // 등록은 이미 됐으므로 해시태그만 실패하면 알려주고 번호 안내는 그대로 보여준다
+        try {
+          m = { ...m, tags: await be.staffSetTags(staffToken, m.id, tagged.tags) };
+        } catch {
+          toast('등록했지만 해시태그는 저장하지 못했어요');
+        }
+      }
+      const added = m;
+      setData((d) => ({ ...d, members: [...d.members, added] }));
       setNewName('');
       setBirth(EMPTY_BIRTH);
+      setTagDraft(EMPTY_TAG_DRAFT);
       setError('');
       setIssued({ id: m.id, name: m.name, kind: 'new', code: m.code, guardianCode: m.guardianCode });
     } catch (e) {
@@ -173,6 +187,16 @@ export function AdminApp() {
                 setError('');
               }}
               onEnter={() => void addMember()}
+            />
+            <TagEditor
+              value={tagDraft}
+              onChange={setTagDraft}
+              onError={setError}
+              label={
+                <>
+                  해시태그 <span className={ui.labelSub}>(선택)</span>
+                </>
+              }
             />
             {error && (
               <div role="alert" className={ui.error}>

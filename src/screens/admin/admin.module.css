@@ -178,3 +178,12 @@
   gap: 0.75rem;
   padding-top: 0.5rem;
 }
+
+/* 트레이너 이름 + 직급 배지 */
+.nameRank {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+}
