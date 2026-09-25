@@ -1,0 +1,178 @@
+/* 수업·출석 */
+
+.lessonCard {
+  width: 100%;
+  text-align: left;
+  gap: 0.5rem;
+  padding: 1rem 1.125rem;
+}
+
+.lessonHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.lessonName {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.lessonMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  width: 100%;
+  font-size: 0.9375rem;
+  color: var(--ink-3);
+}
+
+.detailHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.25rem;
+}
+
+/* 출석 n / m명 */
+.tally {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.tallyNum {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 이름 한 줄 = 누르면 출석 ↔ 결석 */
+.rosterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 4rem;
+  padding: 0.625rem 0.75rem 0.625rem 1.125rem;
+  border: 2px solid var(--card-line);
+  border-radius: var(--r-card);
+  background: var(--card);
+  text-align: left;
+  color: var(--ink);
+}
+
+.rosterRow[aria-pressed='true'] {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.rosterRow:disabled {
+  opacity: 0.55;
+}
+
+.rosterMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.rosterName {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.rosterSub {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+/* 출석 / 결석 표시 */
+.mark {
+  flex: none;
+  white-space: nowrap;
+  min-width: 4.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-chip);
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+  border: 2px solid var(--input-line);
+  color: var(--ink-3);
+  background: var(--card);
+}
+
+.rosterRow[aria-pressed='true'] .mark {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.offNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+/* 요일 고르기: 한 줄에 7개 */
+.dayGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.dayGrid > button {
+  padding: 0;
+  min-width: 0;
+}
+
+/* 이용자·보호자 화면: 최근 수업일 */
+.recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.recentDay {
+  white-space: nowrap;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--r-chip);
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--bg);
+  color: var(--ink-4);
+}
+
+.recentDay[data-present='true'] {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.rateRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.rateNum {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}

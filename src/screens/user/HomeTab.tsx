@@ -3,6 +3,7 @@ import { autoMeal, MAIN3, MEALS, WEEK_GOAL } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { mondayOf } from '../../lib/date';
 import ui from '../../styles/ui.module.css';
+import { MemberLessons } from '../staff/MemberLessons';
 import type { SheetState } from './RecordSheet';
 import s from './user.module.css';
 
@@ -97,6 +98,8 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
           </div>
         </button>
       )}
+
+      {me && <MemberLessons mid={me} />}
 
       <button type="button" className={ui.btnGhost} onClick={logout}>
         로그아웃 (다른 번호로 들어가기)

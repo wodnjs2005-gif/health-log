@@ -10,6 +10,7 @@ import ui from '../../styles/ui.module.css';
 import s from './admin.module.css';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
 import { EMPTY_TAG_DRAFT, TagEditor, tagsToSave } from '../staff/TagEditor';
+import { LessonManage } from '../staff/LessonManage';
 import { TagSheet } from '../staff/TagSheet';
 import { VideoManage } from '../staff/VideoManage';
 import st from '../staff/staff.module.css';
@@ -18,7 +19,7 @@ import { IssuedCard } from './IssuedCard';
 import { PasswordSheet } from './PasswordSheet';
 import { TrainerManage } from './TrainerManage';
 
-type ATab = 'members' | 'trainers' | 'videos';
+type ATab = 'members' | 'trainers' | 'lessons' | 'videos';
 
 /** 방금 발급한 번호 안내 카드. new = 새로 등록(두 번호 모두), code = 새 개인 번호, guardian = 새 보호자 번호 */
 interface Issued {
@@ -119,6 +120,9 @@ export function AdminApp() {
         return fail(e);
       }
       setData((d) => ({
+        ...d,
+        lessons: d.lessons.map((l) => ({ ...l, roster: l.roster.filter((r) => r.mid !== id) })),
+        attendance: d.attendance.filter((a) => a.mid !== id),
         members: d.members.filter((m) => m.id !== id),
         ex: d.ex.filter((e) => e.mid !== id),
         meals: d.meals.filter((e) => e.mid !== id),
@@ -138,6 +142,7 @@ export function AdminApp() {
           [
             ['members', '이용자 관리'],
             ['trainers', '트레이너 관리'],
+            ['lessons', '출석'],
             ['videos', '운동 영상'],
           ] as [ATab, string][]
         ).map(([k, label]) => (
@@ -157,7 +162,9 @@ export function AdminApp() {
         ))}
       </div>
 
-      {aTab === 'videos' ? (
+      {aTab === 'lessons' ? (
+        <LessonManage confirm={confirm} color="navy" />
+      ) : aTab === 'videos' ? (
         <VideoManage confirm={confirm} color="navy" />
       ) : aTab === 'trainers' ? (
         <TrainerManage confirm={confirm} />

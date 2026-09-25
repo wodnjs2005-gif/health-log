@@ -7,6 +7,7 @@ import { MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { addDays, md } from '../../lib/date';
 import ui from '../../styles/ui.module.css';
+import { MemberLessons } from './MemberLessons';
 import s from './staff.module.css';
 
 interface Props {
@@ -81,6 +82,8 @@ export function MemberDetail({ member, summary, end: endProp, onGo }: Props) {
           ))}
         </section>
       )}
+
+      <MemberLessons mid={member.id} />
 
       <h3 className={ui.h3} style={{ fontWeight: 800, paddingTop: '0.25rem' }}>
         날짜별 기록

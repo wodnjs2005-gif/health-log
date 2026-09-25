@@ -1,8 +1,6 @@
-/* 탭 개수만큼 한 줄로 나눈다 */
+/* 탭을 모두 한 줄에. 글자가 긴 탭은 조금 더 넓게 */
 .switch {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  display: flex;
   gap: 0.25rem;
   container-type: inline-size;
   background: var(--card);
@@ -12,13 +10,14 @@
 }
 
 .switchBtn {
+  flex: 1 1 auto;
   min-height: 3rem;
   min-width: 0;
   padding: 0 0.25rem;
   white-space: nowrap;
   border: none;
   border-radius: var(--r-btn-sm);
-  font-size: min(1.0625rem, 8cqi);
+  font-size: min(1.0625rem, 7.6cqi);
   font-weight: 800;
   background: transparent;
   color: var(--ink);
@@ -387,13 +386,13 @@
   background: var(--navy);
 }
 
-/* 관리자는 탭이 3개라 좁은 화면·큰 글자에서도 한 줄에 들어가도록 글자를 필요한 만큼만 줄인다 */
+/* 관리자는 탭이 4개라 좁은 화면·큰 글자에서도 한 줄에 들어가도록 글자를 필요한 만큼만 줄인다 */
 .switchNavy {
   gap: 0.125rem;
 }
 
 .switchNavy .switchBtn {
-  font-size: min(1.125rem, 5.6cqi);
+  font-size: min(1.125rem, 5.5cqi);
 }
 
 /* 카드 아래 버튼 줄 (대상 이용자 수정 · 영상 삭제) */

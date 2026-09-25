@@ -4,6 +4,7 @@ import {
   AuthError,
   type Backend,
   type Exercise,
+  type Lesson,
   type GuardianData,
   type Meal,
   type Member,
@@ -123,6 +124,20 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     staffNewGuardianCode: (token, id) => rpc<string>('staff_new_guardian_code', { p_token: token, p_id: id }),
 
     adminAddTrainer: (token, name, rank) => rpc<Trainer>('admin_add_trainer', { p_token: token, p_name: name, p_rank: rank }),
+
+    staffAddLesson: (token, l) =>
+      rpc<Lesson>('staff_add_lesson', { p_token: token, p_name: l.name, p_days: l.days, p_mids: l.mids }),
+
+    staffUpdateLesson: (token, id, l) =>
+      rpc<Lesson>('staff_update_lesson', { p_token: token, p_id: id, p_name: l.name, p_days: l.days, p_mids: l.mids }),
+
+    staffDelLesson: (token, id) => rpc<void>('staff_del_lesson', { p_token: token, p_id: id }),
+
+    staffSetAttendance: (token, lid, mid, date, present) =>
+      rpc<void>('staff_set_attendance', { p_token: token, p_lesson: lid, p_member: mid, p_date: date, p_present: present }),
+
+    staffSetOffday: (token, lid, date, off) =>
+      rpc<void>('staff_set_offday', { p_token: token, p_lesson: lid, p_date: date, p_off: off }),
 
     adminSetTrainerRank: (token, id, rank) => rpc<string>('admin_set_trainer_rank', { p_token: token, p_id: id, p_rank: rank }),
 

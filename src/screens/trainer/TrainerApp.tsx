@@ -11,11 +11,12 @@ import type { MemberFilterValue } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
 import { MemberDetail } from '../staff/MemberDetail';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
+import { LessonManage } from '../staff/LessonManage';
 import { TagSheet } from '../staff/TagSheet';
 import { VideoManage } from '../staff/VideoManage';
 import s from '../staff/staff.module.css';
 
-type TTab = 'members' | 'videos';
+type TTab = 'members' | 'lessons' | 'videos';
 
 export function TrainerApp() {
   const { data, goEntry, refresh, logout, staffName, staffRank } = useApp();
@@ -52,6 +53,7 @@ export function TrainerApp() {
         {(
           [
             ['members', '이용자 기록'],
+            ['lessons', '출석'],
             ['videos', '운동 영상'],
           ] as [TTab, string][]
         ).map(([k, label]) => (
@@ -71,7 +73,9 @@ export function TrainerApp() {
         ))}
       </div>
 
-      {tTab === 'members' ? (
+      {tTab === 'lessons' ? (
+        <LessonManage confirm={confirm} />
+      ) : tTab === 'members' ? (
         <MemberList
           filter={filter}
           onFilter={setFilter}

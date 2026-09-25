@@ -12,6 +12,7 @@ import {
   type StaffData,
   type StaffSession,
   type Trainer,
+  toDataSet,
 } from './lib/backend';
 import { CODE_LEN, normCode, TRAINER_CODE_LEN } from './lib/code';
 import { todayYmd } from './lib/date';
@@ -30,7 +31,7 @@ export type Role = 'user' | 'guardian' | 'trainer' | 'admin';
 /** code = 이용자 번호, gcode = 보호자 번호, tcode = 트레이너 번호, admin = 관리자 아이디·비밀번호 입력 */
 type Auth = null | 'loading' | 'code' | 'gcode' | 'tcode' | 'admin';
 
-const EMPTY: DataSet = { members: [], ex: [], meals: [], programs: [], views: [] };
+const EMPTY: DataSet = toDataSet([], {});
 const NET_ERR = '연결되지 않아요. 인터넷을 확인하고 다시 눌러주세요.';
 const SERVER_ERR = '서버에서 처리하지 못했어요. 잠시 뒤 다시 눌러주세요. 계속되면 관리자에게 알려주세요.';
 /** fetch 자체가 실패하면(인터넷 끊김) TypeError, 서버가 오류로 답하면 그 밖의 오류 */
@@ -149,7 +150,7 @@ function Main({ be }: { be: Backend }) {
       lsSet(LS.code, code);
       setUserCode(code);
       setMe(d.member.id);
-      setData({ members: [d.member], ex: d.ex || [], meals: d.meals || [], programs: d.programs || [], views: d.views || [] });
+      setData(toDataSet([d.member], d));
       setAuth(null);
     },
     [be, toLogin],
@@ -252,7 +253,7 @@ function Main({ be }: { be: Backend }) {
   const applyStaff = useCallback((token: string, d: StaffData) => {
     setStaff({ token, role: d.me.role, name: d.me.name, rank: d.me.rank ?? '' });
     setTrainers(d.trainers ?? []);
-    setData({ members: d.members || [], ex: d.ex || [], meals: d.meals || [], programs: d.programs || [], views: d.views || [] });
+    setData(toDataSet(d.members || [], d));
   }, []);
 
   /** 로그인 표로 직원 데이터 받기. 표가 끝났으면 로그인 화면으로 */
@@ -391,7 +392,7 @@ function Main({ be }: { be: Backend }) {
         const d = await be.userGet(s.userCode);
         if (sid !== session.current) return;
         if (!d) return expired();
-        setData({ members: [d.member], ex: d.ex || [], meals: d.meals || [], programs: d.programs || [], views: d.views || [] });
+        setData(toDataSet([d.member], d));
       } else if (s.role === 'guardian') {
         const codes = s.guardianEntries.map((x) => x.code);
         if (!codes.length) return;

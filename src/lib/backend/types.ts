@@ -63,13 +63,61 @@ export interface View {
   date: string;
 }
 
+/** 수업 (예: 오전 체조). 요일마다 출석을 체크한다 */
+export interface Lesson {
+  id: string;
+  name: string;
+  /** 0=일 1=월 … 6=토 (Date.getDay 와 같음) */
+  days: number[];
+  createdAt: string;
+  /** 대상 이용자와 넣은 날짜. 이용자·보호자에게는 본인 것만 온다 */
+  roster: { mid: string; since: string }[];
+}
+
+/** 출석한 날 (체크가 없으면 결석) */
+export interface Attendance {
+  lid: string;
+  mid: string;
+  date: string;
+}
+
+/** 휴강한 날 (출석률 계산에서 빠진다) */
+export interface OffDay {
+  lid: string;
+  date: string;
+}
+
+export interface NewLesson {
+  name: string;
+  days: number[];
+  mids: string[];
+}
+
 export interface DataSet {
   members: Member[];
   ex: Exercise[];
   meals: Meal[];
   programs: Program[];
   views: View[];
+  lessons: Lesson[];
+  attendance: Attendance[];
+  offdays: OffDay[];
 }
+
+/**
+ * 서버에서 받은 묶음을 화면용 DataSet 으로. 빠진 목록은 빈 목록으로 채운다
+ * (새 SQL 을 아직 실행하지 않은 서버는 수업·출석을 보내지 않는다).
+ */
+export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>>): DataSet => ({
+  members,
+  ex: d.ex || [],
+  meals: d.meals || [],
+  programs: d.programs || [],
+  views: d.views || [],
+  lessons: d.lessons || [],
+  attendance: d.attendance || [],
+  offdays: d.offdays || [],
+});
 
 export interface UserData extends Omit<DataSet, 'members'> {
   member: Member;
@@ -185,6 +233,14 @@ export interface Backend {
   /** 이미 등록한 영상의 대상 이용자 바꾸기. 저장된 대상 목록을 돌려준다 */
   staffSetProgramMembers(token: string, id: string, mids: string[]): Promise<string[]>;
   videoUrl(p: Program): Promise<{ url: string; revoke?: boolean } | null>;
+  // 수업·출석 (관리자·트레이너)
+  staffAddLesson(token: string, l: NewLesson): Promise<Lesson>;
+  staffUpdateLesson(token: string, id: string, l: NewLesson): Promise<Lesson>;
+  staffDelLesson(token: string, id: string): Promise<void>;
+  /** present=false 면 출석 취소(결석) */
+  staffSetAttendance(token: string, lid: string, mid: string, date: string, present: boolean): Promise<void>;
+  /** off=true 면 그날 휴강 */
+  staffSetOffday(token: string, lid: string, date: string, off: boolean): Promise<void>;
 }
 
 /** 번호가 무효이거나 로그인이 끝났을 때 던지는 오류. 화면에서는 로그인 화면으로 돌려보낸다. */

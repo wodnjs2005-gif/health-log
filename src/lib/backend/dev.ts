@@ -10,6 +10,7 @@ import {
   type Backend,
   type DataSet,
   type Exercise,
+  type Lesson,
   type Meal,
   type Member,
   type Program,
@@ -129,6 +130,16 @@ function seed(): DevDB {
     ],
     programs: [],
     views: [],
+    lessons: [
+      { id: 'l1', name: '오전 체조', days: [1, 3, 5], createdAt: addDays(today, -28), roster: [
+        { mid: 'm1', since: addDays(today, -28) }, { mid: 'm2', since: addDays(today, -28) },
+      ] },
+    ],
+    attendance: [-2, -5, -7, -9, -12].flatMap((o) => [
+      { lid: 'l1', mid: 'm1', date: addDays(today, o) },
+      ...(o % 2 ? [{ lid: 'l1', mid: 'm2', date: addDays(today, o) }] : []),
+    ]),
+    offdays: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
     sessions: [],
@@ -149,6 +160,9 @@ const load = (): DevDB => {
     save(s);
     return s;
   }
+  d.lessons ??= [];
+  d.attendance ??= [];
+  d.offdays ??= [];
   return d;
 };
 
@@ -167,6 +181,10 @@ const userData = (d: DevDB, m: Member): UserData => ({
   // 다른 이용자 정보는 넘기지 않는다
   programs: d.programs.filter((p) => p.mids.includes(m.id)).map((p) => ({ ...p, mids: [m.id] })),
   views: d.views.filter((v) => v.mid === m.id),
+  // 같은 수업의 다른 이용자는 알려주지 않는다
+  lessons: d.lessons.filter((l) => l.roster.some((r) => r.mid === m.id)).map((l) => ({ ...l, roster: l.roster.filter((r) => r.mid === m.id) })),
+  attendance: d.attendance.filter((a) => a.mid === m.id),
+  offdays: d.offdays.filter((o) => d.lessons.some((l) => l.id === o.lid && l.roster.some((r) => r.mid === m.id))),
 });
 
 /** 유효한 로그인 표 (없거나 끝났으면 undefined) */
@@ -178,6 +196,17 @@ const newSession = (d: DevDB, role: StaffRole, subject: string) => {
   const token = randomToken();
   d.sessions.push({ token, role, subject, expires: new Date(now.getTime() + HOURS[role] * 3600_000).toISOString() });
   return token;
+};
+
+/** 서버 staff_add_lesson 과 같은 검사·정리 */
+const checkLesson = (d: DevDB, l: { name: string; days: number[]; mids: string[] }) => {
+  const name = l.name.trim().slice(0, 30);
+  const days = [...new Set(l.days)].filter((x) => x >= 0 && x <= 6).sort();
+  const mids = [...new Set(l.mids)].filter((mid) => d.members.some((m) => m.id === mid));
+  if (!name) throw new Error('no name');
+  if (!days.length) throw new Error('no days');
+  if (!mids.length) throw new Error('no members');
+  return { name, days, mids };
 };
 
 export function createDevBackend(): Backend {
@@ -342,6 +371,9 @@ export function createDevBackend(): Backend {
         meals: d.meals,
         programs: d.programs,
         views: d.views,
+        lessons: d.lessons,
+        attendance: d.attendance,
+        offdays: d.offdays,
       };
     },
 
@@ -361,6 +393,8 @@ export function createDevBackend(): Backend {
       d.meals = d.meals.filter((e) => e.mid !== id);
       d.views = d.views.filter((v) => v.mid !== id);
       d.programs.forEach((p) => (p.mids = p.mids.filter((x) => x !== id)));
+      d.lessons.forEach((l) => (l.roster = l.roster.filter((r) => r.mid !== id)));
+      d.attendance = d.attendance.filter((a) => a.mid !== id);
       save(d);
     },
 
@@ -476,6 +510,60 @@ export function createDevBackend(): Backend {
       p.mids = next;
       save(d);
       return next;
+    },
+
+    // --- 수업·출석 -------------------------------------------------------------
+    async staffAddLesson(token, l) {
+      const { d } = staff(token);
+      const v = checkLesson(d, l);
+      const today = todayYmd();
+      const rec: Lesson = { id: 'l' + uid(), name: v.name, days: v.days, createdAt: today, roster: v.mids.map((mid) => ({ mid, since: today })) };
+      d.lessons.push(rec);
+      save(d);
+      return rec;
+    },
+
+    async staffUpdateLesson(token, id, l) {
+      const { d } = staff(token);
+      const v = checkLesson(d, l);
+      const rec = d.lessons.find((x) => x.id === id);
+      if (!rec) throw new Error('lesson not found');
+      const today = todayYmd();
+      rec.name = v.name;
+      rec.days = v.days;
+      // 계속 있는 이용자는 처음 넣은 날짜를 유지. 뺀 이용자의 지난 출석은 남겨 둔다
+      rec.roster = v.mids.map((mid) => rec.roster.find((r) => r.mid === mid) ?? { mid, since: today });
+      save(d);
+      return rec;
+    },
+
+    async staffDelLesson(token, id) {
+      const { d } = staff(token);
+      d.lessons = d.lessons.filter((x) => x.id !== id);
+      d.attendance = d.attendance.filter((a) => a.lid !== id);
+      d.offdays = d.offdays.filter((o) => o.lid !== id);
+      save(d);
+    },
+
+    async staffSetAttendance(token, lid, mid, date, present) {
+      const { d } = staff(token);
+      const l = d.lessons.find((x) => x.id === lid);
+      if (!l) throw new Error('lesson not found');
+      if (date > todayYmd()) throw new Error('invalid date');
+      d.attendance = d.attendance.filter((a) => !(a.lid === lid && a.mid === mid && a.date === date));
+      if (present) {
+        if (!l.roster.some((r) => r.mid === mid)) throw new Error('not in lesson');
+        d.attendance.push({ lid, mid, date });
+      }
+      save(d);
+    },
+
+    async staffSetOffday(token, lid, date, off) {
+      const { d } = staff(token);
+      if (!d.lessons.some((x) => x.id === lid)) throw new Error('lesson not found');
+      d.offdays = d.offdays.filter((o) => !(o.lid === lid && o.date === date));
+      if (off) d.offdays.push({ lid, date });
+      save(d);
     },
 
     async videoUrl(p) {
