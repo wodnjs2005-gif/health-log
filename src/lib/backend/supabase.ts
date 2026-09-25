@@ -14,8 +14,23 @@ import {
   type View,
 } from './types';
 
+/**
+ * 환경변수에 넣은 주소를 https://<ref>.supabase.co 로 정리한다.
+ * 끝에 /rest/v1 같은 경로를 붙였거나, 대시보드 주소(supabase.com/dashboard/project/<ref>)를 넣은 경우도 받아준다.
+ */
+export function supabaseBase(url: string): string {
+  const raw = url.trim();
+  const dash = raw.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
+  if (dash) return `https://${dash[1].toLowerCase()}.supabase.co`;
+  try {
+    return new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw).origin;
+  } catch {
+    return raw.replace(/\/+$/, '');
+  }
+}
+
 export function createSupabaseBackend(url: string, key: string): Backend {
-  const base = url.replace(/\/+$/, '');
+  const base = supabaseBase(url);
 
   const headers = (contentType = 'application/json') => {
     const h: Record<string, string> = { apikey: key, 'Content-Type': contentType };

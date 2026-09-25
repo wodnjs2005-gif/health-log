@@ -32,6 +32,9 @@ type Auth = null | 'loading' | 'code' | 'gcode' | 'tcode' | 'admin';
 
 const EMPTY: DataSet = { members: [], ex: [], meals: [], programs: [], views: [] };
 const NET_ERR = '연결되지 않아요. 인터넷을 확인하고 다시 눌러주세요.';
+const SERVER_ERR = '서버에서 처리하지 못했어요. 잠시 뒤 다시 눌러주세요. 계속되면 관리자에게 알려주세요.';
+/** fetch 자체가 실패하면(인터넷 끊김) TypeError, 서버가 오류로 답하면 그 밖의 오류 */
+const errText = (e: unknown) => (e instanceof TypeError ? NET_ERR : SERVER_ERR);
 const BAD_CODE = '번호가 맞지 않아요. 다시 확인해주세요.';
 const GUARDIAN_CHANGED = '번호가 바뀐 분이 있어요. 새 보호자 번호를 입력해주세요.';
 const ROLE_TITLE: Record<Role, string> = { user: '이용자', guardian: '보호자', trainer: '트레이너', admin: '관리자' };
@@ -129,12 +132,12 @@ function Main({ be }: { be: Backend }) {
       let d;
       try {
         d = await be.userGet(code);
-      } catch {
+      } catch (e) {
         if (sid !== session.current) return;
         setLoggingIn(false);
         setAuth('code');
         setCodeInput(code);
-        setLoginError(NET_ERR);
+        setLoginError(errText(e));
         return;
       }
       if (sid !== session.current) return;
@@ -176,10 +179,10 @@ function Main({ be }: { be: Backend }) {
       let ok: GuardianEntry[];
       try {
         ok = await fetchGuardians(codes);
-      } catch {
+      } catch (e) {
         if (sid !== session.current) return;
         setAuth('gcode');
-        setLoginError(NET_ERR);
+        setLoginError(errText(e));
         return;
       }
       if (sid !== session.current) return;
@@ -200,8 +203,8 @@ function Main({ be }: { be: Backend }) {
       try {
         const d = await be.guardianGet(code);
         return d ? { entry: { code, d } } : { error: BAD_CODE };
-      } catch {
-        return { error: NET_ERR };
+      } catch (e) {
+        return { error: errText(e) };
       }
     },
     [be],
@@ -259,11 +262,11 @@ function Main({ be }: { be: Backend }) {
       let d: StaffData | null;
       try {
         d = await be.staffGet(token);
-      } catch {
+      } catch (e) {
         if (sid !== session.current) return;
         setAuth(LOGIN_AUTH[r]);
         setLoggingIn(false);
-        setLoginError(NET_ERR);
+        setLoginError(errText(e));
         return;
       }
       if (sid !== session.current) return;
@@ -287,11 +290,11 @@ function Main({ be }: { be: Backend }) {
       let s: StaffSession | null;
       try {
         s = await be.trainerLogin(code);
-      } catch {
+      } catch (e) {
         if (sid !== session.current) return;
         setLoggingIn(false);
         setCodeInput(code);
-        return setLoginError(NET_ERR);
+        return setLoginError(errText(e));
       }
       if (sid !== session.current) return;
       if (!s) {
@@ -313,10 +316,10 @@ function Main({ be }: { be: Backend }) {
       let r;
       try {
         r = await be.adminLogin(loginId, pw);
-      } catch {
+      } catch (e) {
         if (sid !== session.current) return;
         setLoggingIn(false);
-        return setLoginError(NET_ERR);
+        return setLoginError(errText(e));
       }
       if (sid !== session.current) return;
       if (!r.ok) {
@@ -374,7 +377,7 @@ function Main({ be }: { be: Backend }) {
   const fail = useCallback(
     (e: unknown) => {
       if (isAuthError(e)) return expired();
-      showToast('저장하지 못했어요. 인터넷을 확인해주세요');
+      showToast(e instanceof TypeError ? '저장하지 못했어요. 인터넷을 확인해주세요' : '저장하지 못했어요. 잠시 뒤 다시 해주세요');
     },
     [expired, showToast],
   );
