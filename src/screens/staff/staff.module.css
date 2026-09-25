@@ -1,7 +1,10 @@
+/* 탭 개수만큼 한 줄로 나눈다 */
 .switch {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 0.25rem;
+  container-type: inline-size;
   background: var(--card);
   border: 1px solid var(--input-line);
   border-radius: 1rem;
@@ -11,9 +14,11 @@
 .switchBtn {
   min-height: 3rem;
   min-width: 0;
+  padding: 0 0.25rem;
+  white-space: nowrap;
   border: none;
   border-radius: var(--r-btn-sm);
-  font-size: 1.0625rem;
+  font-size: min(1.0625rem, 8cqi);
   font-weight: 800;
   background: transparent;
   color: var(--ink);
@@ -380,6 +385,15 @@
 /* 관리자 화면 전환 버튼은 남색 */
 .switchNavy .switchBtn[aria-selected='true'] {
   background: var(--navy);
+}
+
+/* 관리자는 탭이 3개라 좁은 화면·큰 글자에서도 한 줄에 들어가도록 글자를 필요한 만큼만 줄인다 */
+.switchNavy {
+  gap: 0.125rem;
+}
+
+.switchNavy .switchBtn {
+  font-size: min(1.125rem, 5.6cqi);
 }
 
 /* 카드 아래 버튼 줄 (대상 이용자 수정 · 영상 삭제) */
