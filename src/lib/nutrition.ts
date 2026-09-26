@@ -15,6 +15,8 @@ export interface Food extends Nutri {
   /** 1인분 중량 (예: 200) */
   size: number;
   unit: string;
+  /** '1인분' = 음식 자료의 1인분, '1회' = 원재료(과일·우유 등)에 식품군 기준으로 정한 1회 분량 */
+  per: '1인분' | '1회';
   /** 검색용 (띄어쓰기·괄호 뺀 이름) */
   key: string;
 }
@@ -61,23 +63,30 @@ const norm = (s: string) => s.replace(/[\s()·_,]/g, '').toLowerCase();
 
 let cache: Promise<{ foods: Food[]; source: string }> | null = null;
 
-/** 음식 목록은 식사 기록 창을 열 때 처음 불러온다 (약 100KB) */
+/** 음식 목록은 식사 기록 창을 열 때 처음 불러온다 (약 150KB) */
 export function loadFoods() {
   cache ??= import('../data/foods.json').then((m) => ({
     source: m.default.source,
-    foods: (m.default.foods as [string, number, string, number, number, number, number, number][]).map(
-      ([name, size, unit, kcal, carb, prot, fat, na]) => ({ name, size, unit, kcal, carb, prot, fat, na, key: norm(name) }),
+    foods: (m.default.foods as [string, number, string, number, number, number, number, number, number?][]).map(
+      ([name, size, unit, kcal, carb, prot, fat, na, raw]) => ({
+        name, size, unit, kcal, carb, prot, fat, na, per: raw ? '1회' : '1인분', key: norm(name),
+      }),
     ),
   }));
   cache.catch(() => (cache = null)); // 실패하면 다음에 다시
   return cache;
 }
 
-/** 이름이 같으면 먼저, 그다음 이름으로 시작, 그다음 포함. 같은 순위면 짧은 이름 먼저 */
+/**
+ * 이름이 같으면 먼저, 그다음 이름으로 시작, 그다음 포함, 그다음 띄어 쓴 낱말이 모두 들어 있는 것
+ * ('삶은 달걀' → '달걀(삶은것)'). 같은 순위면 짧은 이름 먼저
+ */
 export function searchFoods(foods: Food[], q: string, limit = 8): Food[] {
   const k = norm(q);
   if (!k) return [];
-  const score = (f: Food) => (f.key === k ? 0 : f.key.startsWith(k) ? 1 : f.key.includes(k) ? 2 : -1);
+  const words = q.split(/[\s,]+/).map(norm).filter(Boolean);
+  const score = (f: Food) =>
+    f.key === k ? 0 : f.key.startsWith(k) ? 1 : f.key.includes(k) ? 2 : words.length > 1 && words.every((w) => f.key.includes(w)) ? 3 : -1;
   return foods
     .map((f) => ({ f, s: score(f) }))
     .filter((x) => x.s >= 0)

@@ -69,7 +69,7 @@ export function FoodPicker({ foods, onChange, query, onQuery, onError }: Props) 
             <li key={f.n} className={s.pickedRow}>
               <span className={s.pickedMain}>
                 <span className={s.pickedName}>{f.n}</span>
-                <span className={s.pickedSub}>{hasNutri(f) ? `1인분 ${fmt('kcal', f.kcal)}` : '영양 정보 없음'}</span>
+                <span className={s.pickedSub}>{hasNutri(f) ? fmt('kcal', f.kcal) : '영양 정보 없음'}</span>
               </span>
               <button type="button" className={s.remove} aria-label={`${f.n} 빼기`} onClick={() => onChange(foods.filter((x) => x.n !== f.n))}>
                 ×
@@ -109,7 +109,7 @@ export function FoodPicker({ foods, onChange, query, onQuery, onError }: Props) 
             >
               <span className={s.resultName}>{f.name}</span>
               <span className={s.resultSub}>
-                1인분 {f.size}
+                {f.per} {f.size}
                 {f.unit} · {fmt('kcal', f.kcal)}
               </span>
             </button>
@@ -152,7 +152,7 @@ export function MealTotal({ foods, amount }: { foods: MealFood[]; amount: string
       </div>
       <NutriGrid n={total} label="이 식사 영양소" />
       {foods.some((f) => !hasNutri(f)) && <div className={ui.small}>직접 추가한 음식은 계산에서 빠져요.</div>}
-      <div className={s.source}>영양 정보: {FOOD_SOURCE} · 1인분 기준</div>
+      <div className={s.source}>영양 정보: {FOOD_SOURCE} · 1인분(과일·우유 등은 1회 분량) 기준</div>
     </div>
   );
 }
