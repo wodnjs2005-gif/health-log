@@ -10,7 +10,8 @@
     "typecheck": "tsc -b",
     "build:html": "npm run build && node scripts/build-html.mjs",
     "build:sql": "node scripts/build-sql.mjs",
-    "test:export": "node scripts/export-test.mjs"
+    "test:export": "node scripts/export-test.mjs",
+    "update:foods": "node scripts/update-foods.mjs"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

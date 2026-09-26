@@ -187,3 +187,66 @@
   gap: 0.25rem 0.5rem;
   min-width: 0;
 }
+
+/* 음식 목록 관리 */
+.foodRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--card-line);
+}
+
+.foodMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.foodName {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.foodActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.sizeRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.sizeRow > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.nutriForm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem;
+}
+
+.nutriField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* 이용자 관리 위: 직접 적은 음식 알림 */
+.foodNotice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}

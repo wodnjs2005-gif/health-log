@@ -18,17 +18,18 @@
 //     감자·고구마·옥수수 등(곡류 1회 300kcal 의 0.3) 100kcal
 //   날 생선·고기(산지·월별 자료), 가공 전 곡물, 기름·가루·추출물 등은 뺀다.
 //   음식 목록과 이름이 겹치면 음식을 남기되, 그 음식에 실제 1인분 중량이 없으면(100g 기준값뿐) 원재료의 1회 분량을 쓴다.
+//
+// 다른 스크립트에서 쓸 때: import { buildFoods, writeFoods } from './build-foods.mjs'  (update-foods.mjs)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const files = process.argv.slice(2);
-if (!files.length) {
-  console.error('✗ 원본 JSON 파일 경로를 넣어주세요. (scripts/build-foods.mjs 맨 위 설명)');
-  process.exit(1);
-}
-const all = files.flatMap((f) => JSON.parse(readFileSync(f, 'utf8')));
+export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const FOODS_JSON = join(root, 'src', 'data', 'foods.json');
+export const SOURCE = '식품의약품안전처 식품영양성분DB (공공데이터포털 전국통합식품영양성분정보 음식·원재료성식품)';
+
+/** 원본 자료(음식·원재료성식품 섞여도 됨) → { foods, date, dishes, raws } */
+export function buildFoods(all) {
 const rows = all.filter((r) => 'FOOD_SIZE' in r);
 const raws = all.filter((r) => !('FOOD_SIZE' in r));
 
@@ -93,7 +94,23 @@ for (const r of raws) {
 foods.sort((a, b) => a[0].localeCompare(b[0], 'ko'));
 
 const dates = all.map((r) => r.CRTR_YMD).filter(Boolean).sort();
-const out = join(root, 'src', 'data', 'foods.json');
-mkdirSync(dirname(out), { recursive: true });
-writeFileSync(out, JSON.stringify({ source: '식품의약품안전처 식품영양성분DB (공공데이터포털 전국통합식품영양성분정보 음식·원재료성식품)', date: dates.at(-1) ?? '', foods }));
-console.log(`✓ ${out}  ${foods.length}개 = 음식 ${foods.length - rawCount} + 원재료 ${rawCount} (원본 ${all.length}건, 기준일 ${dates.at(-1)})`);
+return { foods, date: dates.at(-1) ?? '', dishes: foods.length - rawCount, raws: rawCount };
+}
+
+export function writeFoods(built) {
+  mkdirSync(dirname(FOODS_JSON), { recursive: true });
+  writeFileSync(FOODS_JSON, JSON.stringify({ source: SOURCE, date: built.date, foods: built.foods }));
+}
+
+// 명령줄에서 직접 실행했을 때
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const files = process.argv.slice(2);
+  if (!files.length) {
+    console.error('✗ 원본 JSON 파일 경로를 넣어주세요. (scripts/build-foods.mjs 맨 위 설명)');
+    process.exit(1);
+  }
+  const all = files.flatMap((f) => JSON.parse(readFileSync(f, 'utf8')));
+  const built = buildFoods(all);
+  writeFoods(built);
+  console.log(`✓ ${FOODS_JSON}  ${built.foods.length}개 = 음식 ${built.dishes} + 원재료 ${built.raws} (원본 ${all.length}건, 기준일 ${built.date})`);
+}

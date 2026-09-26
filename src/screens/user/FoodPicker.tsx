@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../AppContext';
 import { NutriGrid } from '../../components/Nutri';
 import type { MealFood } from '../../lib/backend';
-import { fmt, hasNutri, loadFoods, mealNutri, searchFoods, toMealFood, type Food } from '../../lib/nutrition';
+import { fmt, hasNutri, loadFoods, mealNutri, mergeFoods, searchFoods, toMealFood, type Food } from '../../lib/nutrition';
 import { FOOD_SOURCE } from '../../lib/nutritionSource';
 import ui from '../../styles/ui.module.css';
 import s from './food.module.css';
@@ -20,22 +20,23 @@ interface Props {
 
 /** 식사 기록: 음식 찾아 고르기 → 영양소 자동 계산 */
 export function FoodPicker({ foods, onChange, query, onQuery, onError }: Props) {
-  const { data, me } = useApp();
+  const { be, data, me } = useApp();
   const [list, setList] = useState<Food[] | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    loadFoods()
-      .then((r) => {
+    // 기본 목록 + 관리자가 추가한 음식 (추가한 음식을 못 받아와도 기본 목록은 쓴다)
+    Promise.all([loadFoods(), be.customFoodsGet().catch(() => [])])
+      .then(([r, customs]) => {
         if (!alive) return;
-        setList(r.foods);
+        setList(mergeFoods(r.foods, customs));
       })
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [be]);
 
   // 이 이용자가 자주 고른 음식 (목록에 있는 것만)
   const recent = useMemo(() => {

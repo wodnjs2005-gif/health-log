@@ -3,7 +3,9 @@ import { normCode } from '../code';
 import {
   AuthError,
   type Backend,
+  type CustomFood,
   type Exercise,
+  type FoodRequest,
   type Lesson,
   type GuardianData,
   type Meal,
@@ -125,6 +127,18 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     staffNewGuardianCode: (token, id) => rpc<string>('staff_new_guardian_code', { p_token: token, p_id: id }),
 
     adminAddTrainer: (token, name, rank) => rpc<Trainer>('admin_add_trainer', { p_token: token, p_name: name, p_rank: rank }),
+
+    customFoodsGet: () => rpc<CustomFood[]>('custom_foods_get', {}),
+
+    adminFoodRequests: (token) => rpc<FoodRequest[]>('admin_food_requests', { p_token: token }),
+
+    adminSaveFood: (token, f) =>
+      rpc<{ food: CustomFood; updated: number }>('admin_save_food', {
+        p_token: token, p_name: f.name, p_size: f.size, p_unit: f.unit,
+        p_nutri: { kcal: f.kcal, carb: f.carb, prot: f.prot, fat: f.fat, na: f.na },
+      }),
+
+    adminDelFood: (token, name) => rpc<void>('admin_del_food', { p_token: token, p_name: name }),
 
     staffAddLesson: (token, l) =>
       rpc<Lesson>('staff_add_lesson', { p_token: token, p_name: l.name, p_days: l.days, p_mids: l.mids }),

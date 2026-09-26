@@ -3,12 +3,14 @@
 // 데이터는 이 브라우저의 localStorage, 영상 파일은 IndexedDB 에만 저장된다.
 import { CODE_CHARS, genCode, normCode } from '../code';
 import { addDays, todayYmd } from '../date';
+import { mealNutri, roundNutri } from '../nutrition';
 import { normRank } from '../rank';
 import { normTags, TAGS_PER_MEMBER } from '../tags';
 import {
   AuthError,
   type Backend,
   type DataSet,
+  type CustomFood,
   type Exercise,
   type Lesson,
   type Meal,
@@ -44,6 +46,7 @@ interface DevSession {
 }
 
 interface DevDB extends DataSet {
+  customFoods: CustomFood[];
   admins: DevAdmin[];
   trainers: Trainer[];
   sessions: DevSession[];
@@ -140,6 +143,7 @@ function seed(): DevDB {
       ...(o % 2 ? [{ lid: 'l1', mid: 'm2', date: addDays(today, o) }] : []),
     ]),
     offdays: [],
+    customFoods: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
     sessions: [],
@@ -163,6 +167,7 @@ const load = (): DevDB => {
   d.lessons ??= [];
   d.attendance ??= [];
   d.offdays ??= [];
+  d.customFoods ??= [];
   return d;
 };
 
@@ -513,6 +518,54 @@ export function createDevBackend(): Backend {
       p.mids = next;
       save(d);
       return next;
+    },
+
+    // --- 추가한 음식 -------------------------------------------------------------
+    async customFoodsGet() {
+      return [...load().customFoods].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    },
+
+    async adminFoodRequests(token) {
+      const d = admin(token);
+      const by = new Map<string, { count: number; mids: Set<string>; last: string }>();
+      for (const m of d.meals)
+        for (const f of m.foods ?? []) {
+          if (typeof f.kcal === 'number' || d.customFoods.some((c) => c.name === f.n)) continue;
+          const v = by.get(f.n) ?? { count: 0, mids: new Set<string>(), last: '' };
+          v.count++;
+          v.mids.add(m.mid);
+          if (m.date > v.last) v.last = m.date;
+          by.set(f.n, v);
+        }
+      return [...by.entries()]
+        .map(([name, v]) => ({ name, count: v.count, members: v.mids.size, last: v.last }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ko'));
+    },
+
+    async adminSaveFood(token, f) {
+      const d = admin(token);
+      const name = f.name.trim().slice(0, 40);
+      if (!name) throw new Error('no name');
+      if (!(f.size > 0 && f.size <= 5000)) throw new Error('invalid size');
+      const n = roundNutri(f);
+      const food: CustomFood = { name, size: Math.round(f.size * 10) / 10, unit: f.unit === 'ml' ? 'ml' : 'g', ...n, updatedAt: todayYmd() };
+      d.customFoods = [...d.customFoods.filter((x) => x.name !== name), food];
+      // 이 이름이 들어 있는 식사를 다시 계산 (서버 admin_save_food 와 같게)
+      let updated = 0;
+      for (const m of d.meals) {
+        if (!(m.foods ?? []).some((x) => x.n === name)) continue;
+        m.foods = m.foods!.map((x) => (x.n === name ? { n: name, ...n } : x));
+        m.nutri = mealNutri(m.foods, m.amount);
+        updated++;
+      }
+      save(d);
+      return { food, updated };
+    },
+
+    async adminDelFood(token, name) {
+      const d = admin(token);
+      d.customFoods = d.customFoods.filter((x) => x.name !== name);
+      save(d);
     },
 
     // --- 수업·출석 -------------------------------------------------------------

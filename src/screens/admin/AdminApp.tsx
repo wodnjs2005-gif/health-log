@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { Layout } from '../../components/Layout';
@@ -18,6 +18,7 @@ import { TagSheet } from '../staff/TagSheet';
 import { VideoManage } from '../staff/VideoManage';
 import st from '../staff/staff.module.css';
 import { BirthInput, BirthSheet, EMPTY_BIRTH } from './BirthInput';
+import { FoodManage } from './FoodManage';
 import { IssuedCard } from './IssuedCard';
 import { PasswordSheet } from './PasswordSheet';
 import { TrainerManage } from './TrainerManage';
@@ -53,6 +54,19 @@ export function AdminApp() {
   const [changingPw, setChangingPw] = useState(false);
   /** 기록 내려받기 창: 'all' = 전체로 열기, 이용자 id = 그 사람을 골라 열기 */
   const [exporting, setExporting] = useState<string | null>(null);
+  const [foodOpen, setFoodOpen] = useState(false);
+  /** 이용자가 직접 적은 음식 중 아직 영양 정보를 넣지 않은 것의 수 */
+  const [foodRequests, setFoodRequests] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    be.adminFoodRequests(staffToken)
+      .then((r) => alive && setFoodRequests(r.length))
+      .catch(() => {}); // 알림용이라 실패해도 조용히
+    return () => {
+      alive = false;
+    };
+  }, [be, staffToken]);
   const { filter, setFilter, shown } = useMemberFilter(data.members);
   const confirm = useConfirm();
 
@@ -175,6 +189,14 @@ export function AdminApp() {
         <TrainerManage confirm={confirm} />
       ) : (
         <>
+          {foodRequests > 0 && (
+            <div className={cx(ui.note, s.foodNotice)}>
+              <span>이용자가 목록에 없는 음식을 적었어요 ({foodRequests}가지)</span>
+              <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setFoodOpen(true)}>
+                영양 정보 넣기
+              </button>
+            </div>
+          )}
           <section className={cx(ui.card, s.regCard)}>
             <h2 className={ui.h3} style={{ fontSize: '1.1875rem', fontWeight: 800 }}>
               이용자 등록
@@ -304,6 +326,9 @@ export function AdminApp() {
       )}
 
       <div className={s.accountRow}>
+        <button type="button" className={ui.btnGhost} onClick={() => setFoodOpen(true)}>
+          음식 목록 관리{foodRequests > 0 && ` (새 음식 ${foodRequests})`}
+        </button>
         <button type="button" className={ui.btnGhost} onClick={() => setChangingPw(true)}>
           비밀번호 변경
         </button>
@@ -314,6 +339,7 @@ export function AdminApp() {
       {editingMember && <BirthSheet member={editingMember} onClose={() => setEditingBirth(null)} />}
       {tagging && <TagSheet member={tagging} onClose={() => setTagging(null)} />}
       {changingPw && <PasswordSheet onClose={() => setChangingPw(false)} />}
+      {foodOpen && <FoodManage onClose={() => setFoodOpen(false)} onChanged={setFoodRequests} />}
       {exporting && (
         <ExportSheet color="navy" initialMid={exporting === 'all' ? undefined : exporting} onClose={() => setExporting(null)} />
       )}

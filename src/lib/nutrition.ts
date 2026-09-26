@@ -1,5 +1,5 @@
 // 식사 영양소: 음식 목록(식약처 식품영양성분DB, src/data/foods.json) 검색과 합계 계산
-import type { Meal, MealFood, Nutri } from './backend';
+import type { CustomFood, Meal, MealFood, Nutri } from './backend';
 
 /** 양에 따라 1인분에 곱하는 값 */
 export const AMOUNT_FACTOR: Record<string, number> = { 적게: 0.7, 보통: 1, 많이: 1.3 };
@@ -15,8 +15,10 @@ export interface Food extends Nutri {
   /** 1인분 중량 (예: 200) */
   size: number;
   unit: string;
-  /** '1인분' = 음식 자료의 1인분, '1회' = 원재료(과일·우유 등)에 식품군 기준으로 정한 1회 분량 */
+  /** '1인분' = 음식 자료의 1인분, '1회' = 원재료(과일·우유 등)에 식품군 기준으로 정한 1회 분량이나 관리자가 넣은 분량 */
   per: '1인분' | '1회';
+  /** 관리자가 추가한 음식 */
+  custom?: boolean;
   /** 검색용 (띄어쓰기·괄호 뺀 이름) */
   key: string;
 }
@@ -75,6 +77,24 @@ export function loadFoods() {
   }));
   cache.catch(() => (cache = null)); // 실패하면 다음에 다시
   return cache;
+}
+
+/** 관리자가 추가한 음식을 기본 목록에 합친다. 이름이 같으면 추가한 값을 쓴다 */
+export function mergeFoods(base: Food[], customs: CustomFood[]): Food[] {
+  const names = new Set(customs.map((c) => c.name));
+  return [
+    ...base.filter((f) => !names.has(f.name)),
+    ...customs.map((c): Food => ({
+      name: c.name, size: c.size, unit: c.unit, kcal: c.kcal, carb: c.carb, prot: c.prot, fat: c.fat, na: c.na,
+      per: '1회', custom: true, key: norm(c.name),
+    })),
+  ];
+}
+
+/** 기본 목록에 같은 이름이 있으면 그 음식 (관리자 화면에서 값 미리 채우기) */
+export async function findBaseFood(name: string): Promise<Food | undefined> {
+  const { foods } = await loadFoods();
+  return foods.find((f) => f.name === name.trim());
 }
 
 /**

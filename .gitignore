@@ -5,3 +5,4 @@ dist
 *.local
 *.tsbuildinfo
 export-test
+food-data

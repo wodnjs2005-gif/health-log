@@ -38,6 +38,22 @@ export interface Nutri {
   na: number;
 }
 
+/** 관리자가 추가한 음식 (1회 분량 기준 영양소) */
+export interface CustomFood extends Nutri {
+  name: string;
+  size: number;
+  unit: 'g' | 'ml';
+  updatedAt?: string;
+}
+
+/** 이용자가 목록에 없어 직접 적은 음식: 몇 번, 몇 명이, 마지막 날짜 */
+export interface FoodRequest {
+  name: string;
+  count: number;
+  members: number;
+  last: string;
+}
+
 /** 식사에 고른 음식. 목록에서 고르면 1인분 영양소가 있고, 직접 쓴 음식은 이름만 있다 */
 export type MealFood = { n: string } & Partial<Nutri>;
 
@@ -251,6 +267,12 @@ export interface Backend {
   /** 이미 등록한 영상의 대상 이용자 바꾸기. 저장된 대상 목록을 돌려준다 */
   staffSetProgramMembers(token: string, id: string, mids: string[]): Promise<string[]>;
   videoUrl(p: Program): Promise<{ url: string; revoke?: boolean } | null>;
+  // 음식 목록에 추가한 음식 (누구나 읽기, 관리자만 고치기)
+  customFoodsGet(): Promise<CustomFood[]>;
+  adminFoodRequests(token: string): Promise<FoodRequest[]>;
+  /** 추가·고치기. 그 이름을 적었던 지난 식사도 다시 계산하고, 다시 계산한 식사 수를 돌려준다 */
+  adminSaveFood(token: string, f: Omit<CustomFood, 'updatedAt'>): Promise<{ food: CustomFood; updated: number }>;
+  adminDelFood(token: string, name: string): Promise<void>;
   // 수업·출석 (관리자·트레이너)
   staffAddLesson(token: string, l: NewLesson): Promise<Lesson>;
   staffUpdateLesson(token: string, id: string, l: NewLesson): Promise<Lesson>;
