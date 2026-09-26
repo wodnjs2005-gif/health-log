@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { Layout } from '../../components/Layout';
+import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
 import { ageOf, birthLabel, parseBirth } from '../../lib/age';
-import type { Member } from '../../lib/backend';
+import type { Meal, Member } from '../../lib/backend';
 import { cx } from '../../lib/cx';
+import { sumMeals } from '../../lib/nutrition';
 import ui from '../../styles/ui.module.css';
 import s from './admin.module.css';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
@@ -270,6 +272,7 @@ export function AdminApp() {
                 <div style={{ fontSize: '0.9375rem', color: 'var(--ink-2)' }}>
                   운동 기록 {data.ex.filter((e) => e.mid === m.id).length}건 · 식사 기록 {data.meals.filter((e) => e.mid === m.id).length}건
                 </div>
+                <TodayNutri meals={data.meals.filter((e) => e.mid === m.id && e.date === today)} />
                 <div className={s.actions}>
                   <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setEditingBirth(m.id)}>
                     {m.birth ? '생년월일 수정' : '생년월일 입력'}
@@ -315,5 +318,17 @@ export function AdminApp() {
         <ExportSheet color="navy" initialMid={exporting === 'all' ? undefined : exporting} onClose={() => setExporting(null)} />
       )}
     </Layout>
+  );
+}
+
+/** 이용자 카드: 오늘 먹은 영양소 (음식을 골라 기록한 식사가 있을 때만) */
+function TodayNutri({ meals }: { meals: Meal[] }) {
+  const n = sumMeals(meals);
+  if (!n.counted) return null;
+  return (
+    <div className={ui.sectionHead} style={{ gap: '0.125rem' }}>
+      <span className={ui.small}>오늘 먹은 영양소</span>
+      <NutriLine n={n.sum} />
+    </div>
   );
 }

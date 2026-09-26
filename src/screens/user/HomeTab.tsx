@@ -1,7 +1,9 @@
 import { useApp } from '../../AppContext';
+import { NutriLine } from '../../components/Nutri';
 import { autoMeal, MAIN3, MEALS, WEEK_GOAL } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { mondayOf } from '../../lib/date';
+import { sumMeals } from '../../lib/nutrition';
 import ui from '../../styles/ui.module.css';
 import { MemberLessons } from '../staff/MemberLessons';
 import type { SheetState } from './RecordSheet';
@@ -80,6 +82,12 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
             );
           })}
         </div>
+        {sumMeals(dayMeals).counted > 0 && (
+          <div className={ui.sectionHead} style={{ gap: '0.25rem' }}>
+            <span className={ui.small}>{date === today ? '오늘' : '이 날'} 먹은 영양소</span>
+            <NutriLine n={sumMeals(dayMeals).sum} />
+          </div>
+        )}
         <button type="button" className={cx(ui.btn, ui.orange)} onClick={() => onOpenSheet({ kind: 'meal', meal: autoMeal() })}>
           + 식사 기록하기
         </button>

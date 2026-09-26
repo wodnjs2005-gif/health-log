@@ -29,14 +29,30 @@ export interface Exercise {
   pid?: string | null;
 }
 
+/** 칼로리(kcal)·탄수화물(g)·단백질(g)·지방(g)·나트륨(mg) */
+export interface Nutri {
+  kcal: number;
+  carb: number;
+  prot: number;
+  fat: number;
+  na: number;
+}
+
+/** 식사에 고른 음식. 목록에서 고르면 1인분 영양소가 있고, 직접 쓴 음식은 이름만 있다 */
+export type MealFood = { n: string } & Partial<Nutri>;
+
 export interface Meal {
   id: string;
   mid: string;
   date: string;
   meal: string;
+  /** 음식 이름들 (예전 기록은 직접 쓴 글) */
   menu: string;
   amount: string;
   memo: string;
+  foods?: MealFood[];
+  /** 이 식사의 합계 (양 반영). 음식을 목록에서 고르지 않은 기록은 없음 */
+  nutri?: Nutri | null;
 }
 
 export interface Program {
@@ -142,6 +158,8 @@ export interface NewMeal {
   menu: string;
   amount: string;
   memo: string;
+  foods: MealFood[];
+  nutri: Nutri | null;
 }
 
 export interface NewProgram {

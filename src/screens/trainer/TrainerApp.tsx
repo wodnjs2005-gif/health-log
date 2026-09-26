@@ -6,6 +6,7 @@ import type { Member } from '../../lib/backend';
 import { MAIN3, WEEK_GOAL } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { md, mondayOf } from '../../lib/date';
+import { fmt, sumMeals } from '../../lib/nutrition';
 import { trainerTitle } from '../../lib/rank';
 import type { MemberFilterValue } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
@@ -158,6 +159,7 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
         const week = data.ex.filter((e) => e.mid === m.id && e.date >= mon && e.date <= today).reduce((a, e) => a + e.min, 0);
         const pct = Math.min(100, Math.round((week / WEEK_GOAL) * 100));
         const mealsToday = MAIN3.filter((x) => data.meals.some((e) => e.mid === m.id && e.date === today && e.meal === x)).length;
+        const nutriToday = sumMeals(data.meals.filter((e) => e.mid === m.id && e.date === today));
         const dates = [...data.ex, ...data.meals].filter((e) => e.mid === m.id).map((e) => e.date).sort();
         const last = dates[dates.length - 1];
         return (
@@ -171,7 +173,9 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
               <div className={ui.barFill} style={{ width: `${pct}%` }} />
             </div>
             <div className={s.memberMeta} style={{ width: '100%' }}>
-              <span>오늘 식사 {mealsToday}/3끼</span>
+              <span>
+                오늘 식사 {mealsToday}/3끼{nutriToday.counted > 0 && ` · ${fmt('kcal', nutriToday.sum.kcal)}`}
+              </span>
               <span>{last ? `최근 기록 ${last === today ? '오늘' : md(last)}` : '기록 없음'}</span>
             </div>
           </button>

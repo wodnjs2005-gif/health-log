@@ -1,8 +1,10 @@
-// 기록 내려받기: 엑셀 파일 하나에 시트 4개 (요약 · 운동 기록 · 식사 기록 · 출석).
+// 기록 내려받기: 엑셀 파일 하나에 시트 5개 (요약 · 운동 기록 · 식사 기록 · 영양(일별) · 출석).
 // 요약의 숫자는 다른 시트를 세는 엑셀 수식이고, 계산한 값도 함께 넣어 미리보기 앱에서도 숫자가 보인다.
 // exceljs 가 커서 이 파일은 내려받기 버튼을 눌렀을 때만 불러온다 (ExportSheet 의 import()).
 import ExcelJS from 'exceljs';
 import { ageOf } from './age';
+import { AMOUNT_FACTOR } from './nutrition';
+import { FOOD_SOURCE } from './nutritionSource';
 import type { Member } from './backend';
 import { MEALS } from './constants';
 import { addDays, parseYmd, WD } from './date';
@@ -14,7 +16,15 @@ const C = {
   green: 'FF2E6A4E', greenSoft: 'FFE3EEE7', orange: 'FFB4541F', navy: 'FF3D4F7A', navySoft: 'FFE3E7F0',
   gray: 'FFF4F1EA', line: 'FFCFC8BA', ink: 'FF1E2320', ink3: 'FF5A625D', ink4: 'FF8A918C', red: 'FFB0473A', white: 'FFFFFFFF',
 };
-const SHEET = { sum: '요약', ex: '운동 기록', meal: '식사 기록', att: '출석' };
+const SHEET = { sum: '요약', ex: '운동 기록', meal: '식사 기록', day: '영양(일별)', att: '출석' };
+/** 영양소 열: 식사 기록·영양(일별)·요약에서 같은 순서 */
+const NUT = [
+  { key: 'kcal', head: '칼로리(kcal)', fmt: '#,##0' },
+  { key: 'carb', head: '탄수화물(g)', fmt: '0.0' },
+  { key: 'prot', head: '단백질(g)', fmt: '0.0' },
+  { key: 'fat', head: '지방(g)', fmt: '0.0' },
+  { key: 'na', head: '나트륨(mg)', fmt: '#,##0' },
+] as const;
 const VIDEO = '영상 따라하기';
 
 const thin = { style: 'thin' as const, color: { argb: C.line } };
@@ -128,6 +138,8 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
   const S = [
     ['이름', 12], ['나이', 6], ['해시태그', 18], ['운동 횟수', 9], ['운동 시간(분)', 11], ['영상 따라하기(회)', 11],
     ['식사 기록(끼)', 10], ...MEALS.map((m) => [m, 7] as const), ['수업 출석(회)', 10], ['수업일(회)', 9], ['출석률', 8],
+    ...NUT.map((n) => [`하루 평균
+${n.head}`, 11] as const),
   ] as const;
   const wsS = sheet(SHEET.sum, C.green, S.map((x) => x[1]), 4);
 
@@ -155,7 +167,8 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
   else note(wsE, 5, E.length, '이 기간에 운동 기록이 없어요.');
 
   // ③ 식사 기록 ---------------------------------------------------------------
-  const Mc = [['날짜', 11], ['요일', 6], ['이름', 12], ['끼니', 8], ['메뉴', 32], ['양', 8], ['메모', 24]] as const;
+  const Mc = [['날짜', 11], ['요일', 6], ['이름', 12], ['끼니', 8], ['메뉴', 30], ['양', 8], ...NUT.map((n) => [n.head, 10] as const), ['메모', 20]] as const;
+  const nutCol0 = 7; // 칼로리가 들어가는 열 (G)
   const wsM = sheet(SHEET.meal, C.orange, Mc.map((x) => x[1]), 4);
   title(wsM, one ? `${one.name} 님 · 식사 기록` : '식사 기록', `${period}  ·  ${meals.length}건`, Mc.length);
   header(wsM, 4, Mc.map((x) => x[0]), C.orange);
@@ -168,12 +181,46 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
     body(wsM, r, 4, e.meal, { align: 'center', fill: z });
     body(wsM, r, 5, e.menu, { fill: z, wrap: true });
     body(wsM, r, 6, e.amount, { align: 'center', fill: z });
-    body(wsM, r, 7, e.memo, { fill: z, wrap: true });
+    // 음식을 목록에서 고르지 않은 식사는 빈칸 (영양(일별)의 계산에서 빠진다)
+    NUT.forEach((n, j) => body(wsM, r, nutCol0 + j, e.nutri ? e.nutri[n.key] : null, { align: 'right', fill: z, numFmt: n.fmt }));
+    body(wsM, r, nutCol0 + NUT.length, e.memo, { fill: z, wrap: true });
   });
   if (meals.length) wsM.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + meals.length, column: Mc.length } };
   else note(wsM, 5, Mc.length, '이 기간에 식사 기록이 없어요.');
 
-  // ④ 출석 — 수업마다 한 덩어리: 이름 | 출석 | 수업일 | 출석률 | 날짜들 ----------------------
+  // ④ 영양(일별): 이용자·날짜마다 하루 합계 (식사 기록을 더하는 수식) --------------------------
+  const days = new Map<string, { mid: string; date: string; n: Record<string, number>; count: number }>();
+  for (const e of meals) {
+    if (!e.nutri) continue;
+    const k = e.mid + e.date;
+    const d = days.get(k) ?? { mid: e.mid, date: e.date, n: { kcal: 0, carb: 0, prot: 0, fat: 0, na: 0 }, count: 0 };
+    d.count++;
+    for (const n of NUT) d.n[n.key] += e.nutri[n.key];
+    days.set(k, d);
+  }
+  const dayRows = [...days.values()].sort((a, b) => a.date.localeCompare(b.date) || byName(a, b));
+  const D = [['날짜', 11], ['요일', 6], ['이름', 12], ['계산한 식사(끼)', 10], ...NUT.map((n) => [n.head, 11] as const)] as const;
+  const wsD = sheet(SHEET.day, C.orange, D.map((x) => x[1]), 4);
+  title(wsD, one ? `${one.name} 님 · 하루 영양소` : '하루 영양소', `${period}  ·  음식을 목록에서 고른 식사만 계산`, D.length);
+  header(wsD, 4, D.map((x) => x[0]), C.orange);
+  const M = q(SHEET.meal);
+  dayRows.forEach((d, i) => {
+    const r = 5 + i;
+    const z = i % 2 ? C.gray : undefined;
+    const crit = `${M}!$C:$C,$C${r},${M}!$A:$A,$A${r}`;
+    body(wsD, r, 1, xlDate(d.date), { numFmt: 'yyyy-mm-dd', align: 'center', fill: z });
+    body(wsD, r, 2, wd(d.date), { align: 'center', fill: z });
+    body(wsD, r, 3, label.get(d.mid) ?? '', { fill: z });
+    body(wsD, r, 4, { formula: `COUNTIFS(${crit},${M}!$G:$G,">=0")`, result: d.count }, { align: 'right', fill: z });
+    NUT.forEach((n, j) => {
+      const c = wsM.getColumn(nutCol0 + j).letter;
+      body(wsD, r, 5 + j, { formula: `SUMIFS(${M}!${c}:${c},${crit})`, result: d.n[n.key] }, { align: 'right', fill: z, numFmt: n.fmt });
+    });
+  });
+  if (dayRows.length) wsD.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + dayRows.length, column: D.length } };
+  else note(wsD, 5, D.length, '이 기간에 영양소를 계산한 식사가 없어요. (음식을 목록에서 골라 기록한 식사만 계산돼요)');
+
+  // ⑤ 출석 — 수업마다 한 덩어리: 이름 | 출석 | 수업일 | 출석률 | 날짜들 ----------------------
   const blocks = lessons.map((l) => {
     const mids = l.roster.map((r) => r.mid).filter((mid) => set.has(mid) && label.has(mid)).sort((a, b) => byName({ mid: a }, { mid: b }));
     const off = new Set(data.offdays.filter((x) => x.lid === l.id && inRange(x.date)).map((x) => x.date));
@@ -242,9 +289,11 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
   // ① 요약 채우기 ----------------------------------------------------------
   title(wsS, one ? `${one.name} 님 · 건강 기록` : '나의 건강일지 · 기간 기록', period, S.length);
   header(wsS, 4, S.map((x) => x[0]), C.green);
+  wsS.getRow(4).height = 36;
   const col = (n: number) => wsS.getColumn(n).letter;
   const mealCol0 = 8; // 아침이 들어가는 열 (H)
   const attCol = mealCol0 + MEALS.length; // 수업 출석(회)
+  const nutAvgCol = attCol + 3; // 하루 평균 칼로리
   members.forEach((m, i) => {
     const row = 5 + i;
     const z = i % 2 ? C.gray : undefined;
@@ -269,6 +318,13 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
     F(attCol, `SUMIF(${SHEET.att}!$A:$A,${A},${SHEET.att}!$B:$B)`, pres);
     F(attCol + 1, `SUMIF(${SHEET.att}!$A:$A,${A},${SHEET.att}!$C:$C)`, held);
     F(attCol + 2, `IF(${col(attCol + 1)}${row}=0,"-",${col(attCol)}${row}/${col(attCol + 1)}${row})`, held ? pres / held : '-', { numFmt: '0%' });
+    // 하루 평균 = 영양(일별)에서 이 사람 날들의 평균 (계산한 날이 없으면 -)
+    const myDays = dayRows.filter((d) => d.mid === m.id);
+    NUT.forEach((n, j) => {
+      const dc = wsD.getColumn(5 + j).letter;
+      const avg = myDays.length ? myDays.reduce((a, d) => a + d.n[n.key], 0) / myDays.length : '-';
+      F(nutAvgCol + j, `IFERROR(AVERAGEIF(${q(SHEET.day)}!$C:$C,${A},${q(SHEET.day)}!${dc}:${dc}),"-")`, avg, { numFmt: n.fmt });
+    });
   });
   const last = 4 + members.length;
   const tr = last + 1;
@@ -288,11 +344,14 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
     body(wsS, tr, attCol + 2, { formula: `IF(${col(attCol + 1)}${tr}=0,"-",${col(attCol)}${tr}/${col(attCol + 1)}${tr})`, result: H ? P / H : '-' }, {
       align: 'right', font: { bold: true }, fill: C.greenSoft, numFmt: '0%',
     });
+    NUT.forEach((_, j) => body(wsS, tr, nutAvgCol + j, '', { fill: C.greenSoft }));
   }
   const notesAt = members.length > 1 ? tr + 2 : tr + 1;
   [
     '· 요약의 숫자는 「운동 기록」「식사 기록」「출석」 시트에서 자동으로 계산됩니다. 기록 시트를 고치면 요약도 바뀝니다.',
     '· 출석률 = 수업 출석 ÷ 수업일. 수업일은 수업 요일 중 대상에 들어간 날부터 세며, 휴강한 날은 빠집니다.',
+    `· 영양소는 음식을 목록에서 골라 기록한 식사만 계산합니다. 1인분 기준 × 양(${Object.entries(AMOUNT_FACTOR).map(([k, v]) => `${k} ${v}`).join(' · ')}). 하루 평균은 계산한 식사가 있는 날 기준입니다.`,
+    `· 영양 정보 출처: ${FOOD_SOURCE}`,
   ].forEach((t, i) => note(wsS, notesAt + i, S.length, t));
 
   const buf = await wb.xlsx.writeBuffer();

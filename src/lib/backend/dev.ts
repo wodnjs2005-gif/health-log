@@ -263,7 +263,10 @@ export function createDevBackend(): Backend {
     async userAddMeal(code, r) {
       const d = load();
       const m = who(d, code);
-      const rec: Meal = { id: uid(), mid: m.id, date: r.date, meal: r.meal, menu: r.menu, amount: r.amount, memo: r.memo || '' };
+      const rec: Meal = {
+        id: uid(), mid: m.id, date: r.date, meal: r.meal, menu: r.menu, amount: r.amount, memo: r.memo || '',
+        foods: r.foods.slice(0, 20), nutri: r.foods.length ? r.nutri : null,
+      };
       d.meals.push(rec);
       save(d);
       return rec;

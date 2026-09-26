@@ -76,6 +76,7 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     userAddMeal: (code, r) =>
       rpc<Meal>('user_add_meal', {
         p_code: normCode(code), p_date: r.date, p_meal: r.meal, p_menu: r.menu, p_amount: r.amount, p_memo: r.memo || '',
+        p_foods: r.foods, p_nutri: r.nutri,
       }),
 
     userDelEx: (code, id) => rpc<void>('user_del_ex', { p_code: normCode(code), p_id: id }),

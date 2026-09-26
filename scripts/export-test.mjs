@@ -13,6 +13,9 @@ mkdirSync(out, { recursive: true });
 const server = await createServer({ root, configFile: false, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
 const { buildExport } = await server.ssrLoadModule('/src/lib/exportXlsx.ts');
 const { exportFileName } = await server.ssrLoadModule('/src/lib/exportInfo.ts');
+const { mealNutri, toMealFood } = await server.ssrLoadModule('/src/lib/nutrition.ts');
+const FOODS = (await server.ssrLoadModule('/src/data/foods.json')).default.foods
+  .map(([name, size, unit, kcal, carb, prot, fat, na]) => ({ name, size, unit, kcal, carb, prot, fat, na }));
 
 const TODAY = '2026-09-25';
 const add = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -33,7 +36,15 @@ for (let d = '2026-08-20'; d <= TODAY; d = add(d, 1)) for (const m of members) {
   if (rnd() < m.act) { const [k, mins] = pick(KINDS); ex.push({ id: 'e' + ex.length, mid: m.id, date: d, kind: k, min: pick(mins), level: pick(['가볍게', '보통', '힘들게']), memo: rnd() < 0.2 ? '공원 한 바퀴' : '' }); }
   if (rnd() < m.act * 0.3) ex.push({ id: 'e' + ex.length, mid: m.id, date: d, kind: '스트레칭', min: 10, level: '보통', memo: '영상 따라하기 · 무릎 스트레칭', pid: 'p1' });
   for (const meal of ['아침', '점심', '저녁', '간식']) if (rnd() < (meal === '간식' ? 0.2 : 0.7) * (m.act ? 1 : 0)) {
-    meals.push({ id: 'f' + meals.length, mid: m.id, date: d, meal, menu: pick(['잡곡밥, 된장국', '비빔밥', '죽', '칼국수']), amount: pick(['적게', '보통', '많이']), memo: '' });
+    const amount = pick(['적게', '보통', '많이']);
+    if (d < '2026-09-10') {
+      // 예전 기록: 메뉴 글만 (영양소 없음)
+      meals.push({ id: 'f' + meals.length, mid: m.id, date: d, meal, menu: pick(['잡곡밥, 된장국', '비빔밥', '죽']), amount, memo: '', foods: [], nutri: null });
+    } else {
+      const foods = [...new Set(Array.from({ length: 1 + Math.floor(rnd() * 3) }, () => pick(FOODS)))].map(toMealFood);
+      if (rnd() < 0.15) foods.push({ n: '직접 쓴 반찬' }); // 목록에 없는 음식
+      meals.push({ id: 'f' + meals.length, mid: m.id, date: d, meal, menu: foods.map((x) => x.n).join(', '), amount, memo: '', foods, nutri: mealNutri(foods, amount) });
+    }
   }
 }
 const lessons = [

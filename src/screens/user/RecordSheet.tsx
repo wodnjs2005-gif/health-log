@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useApp } from '../../AppContext';
 import { Sheet } from '../../components/Layout';
 import { AMOUNTS, KINDS, LEVELS, MEALS } from '../../lib/constants';
+import type { MealFood } from '../../lib/backend';
 import { cx } from '../../lib/cx';
+import { mealNutri } from '../../lib/nutrition';
+import { FoodPicker, MealTotal } from './FoodPicker';
 import ui from '../../styles/ui.module.css';
 import s from './user.module.css';
 
@@ -20,7 +23,8 @@ export function RecordSheet({ state, date, onClose }: { state: SheetState; date:
   const [min, setMin] = useState(30);
   const [level, setLevel] = useState('보통');
   const [meal, setMeal] = useState(state.kind === 'meal' ? state.meal : '아침');
-  const [menu, setMenu] = useState('');
+  const [foods, setFoods] = useState<MealFood[]>([]);
+  const [query, setQuery] = useState('');
   const [amount, setAmount] = useState('보통');
   const [memo, setMemo] = useState('');
   const [error, setError] = useState('');
@@ -34,7 +38,10 @@ export function RecordSheet({ state, date, onClose }: { state: SheetState; date:
   const save = async () => {
     if (saving) return;
     if (isEx && !kind) return setError('운동 종류를 골라주세요.');
-    if (!isEx && !menu.trim()) return setError('드신 음식을 적어주세요.');
+    // 찾기 칸에 적어 두고 고르지 않았으면 직접 쓴 음식으로 넣는다
+    const pending = query.trim();
+    const mealFoods = pending && !foods.some((x) => x.n === pending) ? [...foods, { n: pending }] : foods;
+    if (!isEx && !mealFoods.length) return setError('드신 음식을 찾아서 골라주세요.');
     setSaving(true);
     try {
       if (isEx) {
@@ -42,7 +49,12 @@ export function RecordSheet({ state, date, onClose }: { state: SheetState; date:
         setData((d) => ({ ...d, ex: [...d.ex, rec] }));
         toast('운동을 저장했어요');
       } else {
-        const rec = await be.userAddMeal(userCode, { date, meal, menu: menu.trim(), amount, memo: memo.trim() });
+        const rec = await be.userAddMeal(userCode, {
+          date, meal, amount, memo: memo.trim(),
+          menu: mealFoods.map((x) => x.n).join(', '),
+          foods: mealFoods,
+          nutri: mealNutri(mealFoods, amount),
+        });
         setData((d) => ({ ...d, meals: [...d.meals, rec] }));
         toast('식사를 저장했어요');
       }
@@ -115,16 +127,7 @@ export function RecordSheet({ state, date, onClose }: { state: SheetState; date:
               ))}
             </div>
           </div>
-          <label className={ui.field}>
-            <span className={ui.label}>무엇을 드셨나요?</span>
-            <input
-              className={ui.input}
-              value={menu}
-              onChange={(e) => edit(setMenu)(e.target.value)}
-              placeholder="예: 잡곡밥, 된장국, 시금치나물"
-              style={{ outlineColor: 'var(--orange)' }}
-            />
-          </label>
+          <FoodPicker foods={foods} onChange={edit(setFoods)} query={query} onQuery={setQuery} onError={setError} />
           <div className={ui.field}>
             <div className={ui.label}>양은 어땠나요?</div>
             <div className={ui.grid3}>
@@ -135,6 +138,7 @@ export function RecordSheet({ state, date, onClose }: { state: SheetState; date:
               ))}
             </div>
           </div>
+          <MealTotal foods={foods} amount={amount} />
         </>
       )}
       <label className={ui.field}>

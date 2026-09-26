@@ -1,14 +1,26 @@
 import { useApp } from '../../AppContext';
+import { NutriLine } from '../../components/Nutri';
 import { WeekChart } from '../../components/WeekChart';
 import type { ReactNode } from 'react';
 import { ageOf } from '../../lib/age';
-import type { PublicMember } from '../../lib/backend';
+import type { Nutri, PublicMember } from '../../lib/backend';
 import { MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { addDays, md } from '../../lib/date';
+import { sumMeals } from '../../lib/nutrition';
 import ui from '../../styles/ui.module.css';
 import { MemberLessons } from './MemberLessons';
 import s from './staff.module.css';
+
+interface LogRow {
+  id: string;
+  tag: string;
+  cls: string;
+  main: string;
+  sub: string;
+  /** 식사: 음식을 골라 기록했으면 영양소 (계산 못 했으면 v=null) */
+  nutri?: { v: Nutri | null };
+}
 
 interface Props {
   member: PublicMember;
@@ -31,7 +43,7 @@ export function MemberDetail({ member, summary, end: endProp, onGo }: Props) {
 
   const log = Array.from({ length: 7 }, (_, i) => {
     const ds = addDays(end, -i);
-    const rows = [
+    const rows: LogRow[] = [
       ...data.ex
         .filter((e) => e.mid === member.id && e.date === ds)
         .map((e) => ({
@@ -50,9 +62,12 @@ export function MemberDetail({ member, summary, end: endProp, onGo }: Props) {
           cls: ui.badgeOrange,
           main: e.menu,
           sub: [`양 ${e.amount}`, e.memo].filter(Boolean).join(' · '),
+          // 음식을 골라 기록한 식사만 영양소 줄을 보여준다 (예전 기록은 없음)
+          nutri: (e.foods?.length ?? 0) > 0 ? { v: e.nutri ?? null } : undefined,
         })),
     ];
-    return { ds, label: ds === today ? `${md(ds)} · 오늘` : md(ds), rows };
+    const meals = sumMeals(data.meals.filter((e) => e.mid === member.id && e.date === ds));
+    return { ds, label: ds === today ? `${md(ds)} · 오늘` : md(ds), rows, meals };
   }).filter((d) => d.rows.length);
 
   return (
@@ -104,9 +119,18 @@ export function MemberDetail({ member, summary, end: endProp, onGo }: Props) {
               <div className={ui.sectionHead} style={{ flex: 1, minWidth: 0, gap: '0.125rem' }}>
                 <div className={s.logMain}>{r.main}</div>
                 <div className={ui.small}>{r.sub}</div>
+                {r.nutri && <NutriLine n={r.nutri.v} />}
               </div>
             </div>
           ))}
+          {day.meals.counted > 0 && (
+            <div className={cx(ui.divided, ui.sectionHead)} style={{ gap: '0.25rem', paddingTop: '0.5rem' }}>
+              <span className={ui.small}>
+                하루 영양소{day.meals.counted < day.meals.total ? ` (${day.meals.total}끼 중 ${day.meals.counted}끼 계산)` : ''}
+              </span>
+              <NutriLine n={day.meals.sum} />
+            </div>
+          )}
         </section>
       ))}
     </>

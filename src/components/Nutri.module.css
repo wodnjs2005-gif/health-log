@@ -1,0 +1,53 @@
+/* 영양소 표시 (칼로리·탄수화물·단백질·지방·나트륨) */
+
+/* 칸 5개: 좁으면 3+2 로 줄바꿈 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: 0.375rem;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--r-btn-sm);
+  background: var(--orange-soft);
+}
+
+.cellLabel {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--orange-ink);
+}
+
+.cellValue {
+  font-size: 1.125rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 한 줄 요약: 항목마다 끊기지 않게 */
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem 0.625rem;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.line > span {
+  white-space: nowrap;
+}
+
+.lineKcal {
+  font-weight: 800;
+  color: var(--orange-ink);
+}
+
+.none {
+  font-size: 0.875rem;
+  color: var(--ink-4);
+}
