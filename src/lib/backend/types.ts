@@ -350,3 +350,18 @@ export class AuthError extends Error {
 
 export const isAuthError = (e: unknown): boolean =>
   !!e && typeof e === 'object' && (e as { auth?: unknown }).auth === true;
+
+/** 번호를 여러 번 틀려 잠시 막혔을 때 (서버: 1분 안에 15번 이상 틀리면 5분) */
+export class LimitError extends Error {
+  readonly limit = true;
+  constructor(message = 'too many attempts') {
+    super(message);
+    this.name = 'LimitError';
+  }
+}
+
+export const isLimitError = (e: unknown): boolean =>
+  !!e && typeof e === 'object' && (e as { limit?: unknown }).limit === true;
+
+/** 막혔을 때 보여줄 문구 */
+export const LIMIT_MSG = '번호를 여러 번 틀려서 잠시 막혔어요. 5분 뒤에 다시 해주세요.';

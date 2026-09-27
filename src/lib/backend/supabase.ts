@@ -2,6 +2,7 @@
 import { normCode } from '../code';
 import {
   AuthError,
+  LimitError,
   type Backend,
   type CustomFood,
   type Exercise,
@@ -52,9 +53,18 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     if (!r.ok) {
       // 번호가 무효이거나 로그인 표가 끝남 → 로그인 화면으로
       if (/invalid code|not allowed|invalid session/.test(t)) throw new AuthError(t);
+      // 번호를 여러 번 틀려 잠시 막힘
+      if (/too many attempts/.test(t)) throw new LimitError();
       throw new Error(t || r.statusText);
     }
     return (t ? JSON.parse(t) : null) as T;
+  };
+
+  /** 이용자 기록 바꾸기: 번호가 틀리면 서버가 null 을 돌려준다 (틀린 횟수 기록이 취소되지 않도록 오류 대신) */
+  const userRpc = async <T>(fn: string, args: Record<string, unknown>): Promise<T> => {
+    const r = await rpc<T | null>(fn, args);
+    if (r === null) throw new AuthError('invalid code');
+    return r;
   };
 
   const uid = () => {
@@ -77,12 +87,12 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     userGet: (code) => rpc<UserData | null>('user_get', { p_code: normCode(code) }),
 
     userAddEx: (code, r) =>
-      rpc<Exercise>('user_add_ex', {
+      userRpc<Exercise>('user_add_ex', {
         p_code: normCode(code), p_date: r.date, p_kind: r.kind, p_min: r.min, p_level: r.level, p_memo: r.memo || '',
       }),
 
     userAddMeal: (code, r) =>
-      rpc<Meal>('user_add_meal', {
+      userRpc<Meal>('user_add_meal', {
         p_code: normCode(code), p_date: r.date, p_meal: r.meal, p_menu: r.menu, p_amount: r.amount, p_memo: r.memo || '',
         p_foods: r.foods, p_nutri: r.nutri,
       }),
@@ -92,9 +102,9 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     userDelMeal: (code, id) => rpc<void>('user_del_meal', { p_code: normCode(code), p_id: id }),
 
     userAddView: (code, pid, date) =>
-      rpc<{ view: View; ex: Exercise }>('user_add_view', { p_code: normCode(code), p_program: pid, p_date: date }),
+      userRpc<{ view: View; ex: Exercise }>('user_add_view', { p_code: normCode(code), p_program: pid, p_date: date }),
 
-    userAddMeasure: (code, m) => rpc<Measure>('user_add_measure', { p_code: normCode(code), ...measureArgs(m) }),
+    userAddMeasure: (code, m) => userRpc<Measure>('user_add_measure', { p_code: normCode(code), ...measureArgs(m) }),
 
     userDelMeasure: (code, id) => rpc<void>('user_del_measure', { p_code: normCode(code), p_id: id }),
 

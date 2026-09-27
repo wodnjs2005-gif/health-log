@@ -9,6 +9,7 @@ import { normRank, trainerTitle } from '../rank';
 import { normTags, TAGS_PER_MEMBER } from '../tags';
 import {
   AuthError,
+  LimitError,
   type Backend,
   type DataSet,
   type CustomFood,
@@ -193,8 +194,23 @@ const load = (): DevDB => {
 
 const toPublic = (m: Member): PublicMember => ({ id: m.id, name: m.name, age: m.age, birth: m.birth ?? null });
 
+// 번호 대입 막기 (서버 _code_blocked 와 같게: 1분 안에 15번 이상 틀리면 5분). 이 탭에서만 센다
+const fails: number[] = [];
+const codeGuard = () => {
+  const now = Date.now();
+  const blocked = fails.some((f) => f > now - 5 * 60_000 && fails.filter((g) => g > f - 60_000 && g <= f).length >= 15);
+  if (blocked) throw new LimitError();
+};
+/** 번호로 찾기. 막혔으면 LimitError, 틀리면 횟수를 세고 undefined */
+const byCode = <T,>(list: T[], pick: (x: T) => string | undefined, code: string) => {
+  codeGuard();
+  const found = list.find((x) => pick(x) === normCode(code));
+  if (!found) fails.push(Date.now());
+  return found;
+};
+
 const who = (d: DevDB, code: string) => {
-  const m = d.members.find((x) => x.code === normCode(code));
+  const m = byCode(d.members, (x) => x.code, code);
   if (!m) throw new AuthError('invalid code');
   return m;
 };
@@ -290,13 +306,13 @@ export function createDevBackend(): Backend {
 
     async userGet(code) {
       const d = load();
-      const m = d.members.find((x) => x.code === normCode(code));
+      const m = byCode(d.members, (x) => x.code, code);
       return m ? userData(d, m) : null;
     },
 
     async guardianGet(code) {
       const d = load();
-      const m = d.members.find((x) => x.guardianCode === normCode(code));
+      const m = byCode(d.members, (x) => x.guardianCode, code);
       return m ? { ...userData(d, m), member: toPublic(m) } : null;
     },
 
@@ -393,7 +409,7 @@ export function createDevBackend(): Backend {
 
     async trainerLogin(code) {
       const d = load();
-      const t = d.trainers.find((x) => x.code === normCode(code));
+      const t = byCode(d.trainers, (x) => x.code, code);
       if (!t) return null;
       const token = newSession(d, 'trainer', t.id);
       save(d);

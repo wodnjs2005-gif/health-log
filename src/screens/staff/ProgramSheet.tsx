@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '../../AppContext';
 import { Sheet } from '../../components/Layout';
 import { isAuthError } from '../../lib/backend';
@@ -7,27 +7,26 @@ import { cx } from '../../lib/cx';
 import { ytIdOf, ytThumb } from '../../lib/youtube';
 import ui from '../../styles/ui.module.css';
 import { MemberPicker } from './MemberPicker';
-import s from './staff.module.css';
 
 const PMIN_STEP = 5;
 const PMIN_MAX = 180;
 
 export type StaffColor = 'orange' | 'navy';
 
-/** 운동 영상 등록 시트 (트레이너=주황, 관리자=남색). 고른 이용자들만 이 영상을 볼 수 있다. */
+/**
+ * 운동 영상 등록 시트 (트레이너=주황, 관리자=남색). 고른 이용자들만 이 영상을 볼 수 있다.
+ * 영상은 유튜브 링크로만 올린다 (파일 저장소는 보안상 닫아 두었다. 예전에 올린 파일은 계속 재생된다).
+ */
 export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => void; color?: StaffColor }) {
   const { be, data, staffToken, setData, toast, fail } = useApp();
   const [title, setTitle] = useState('');
   const [mids, setMids] = useState<string[]>([]);
   const [kind, setKind] = useState('');
   const [min, setMin] = useState(20);
-  const [src, setSrc] = useState<'file' | 'yt'>('file');
   const [url, setUrl] = useState('');
   const [memo, setMemo] = useState('');
-  const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef<File | null>(null);
 
   const edit = <T,>(fn: (v: T) => void) => (v: T) => {
     fn(v);
@@ -41,27 +40,18 @@ export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => voi
     if (!t) return setError('제목을 입력해주세요.');
     if (!mids.length) return setError('대상 이용자를 골라주세요.');
     if (!kind) return setError('운동 종류를 골라주세요.');
-    if (src === 'yt' && !ytId) return setError('유튜브 링크를 확인해주세요.');
-    if (src === 'file' && !fileRef.current) return setError('영상 파일을 골라주세요.');
+    if (!ytId) return setError('유튜브 링크를 확인해주세요.');
     if (saving) return;
     setSaving(true);
     try {
-      const rec = await be.staffAddProgram(
-        staffToken,
-        { title: t, mids, kind, min, memo: memo.trim(), ytId: src === 'yt' ? ytId : null },
-        src === 'yt' ? null : fileRef.current,
-      );
+      const rec = await be.staffAddProgram(staffToken, { title: t, mids, kind, min, memo: memo.trim(), ytId }, null);
       setData((d) => ({ ...d, programs: [rec, ...d.programs] }));
       toast('영상을 등록했어요');
       onClose();
     } catch (e) {
       setSaving(false);
       if (isAuthError(e)) return fail(e);
-      setError(
-        src === 'yt'
-          ? '저장하지 못했어요. 인터넷을 확인해주세요.'
-          : '영상을 올리지 못했어요. 인터넷을 확인하거나 더 짧은 영상을 올려주세요.',
-      );
+      setError('저장하지 못했어요. 인터넷을 확인해주세요.');
     }
   };
 
@@ -116,47 +106,16 @@ export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => voi
       </div>
 
       <div className={ui.field}>
-        <div className={ui.label}>영상 등록 방법</div>
-        <div className={ui.grid2}>
-          {(
-            [
-              ['file', '영상 파일'],
-              ['yt', '유튜브 링크'],
-            ] as ['file' | 'yt', string][]
-          ).map(([v, l]) => (
-            <button key={v} type="button" className={chip()} aria-pressed={src === v} onClick={() => edit(setSrc)(v)}>
-              {l}
-            </button>
-          ))}
-        </div>
-        {src === 'file' ? (
-          <label className={s.filePick} data-picked={!!fileName}>
-            <input
-              type="file"
-              accept="video/*"
-              className={s.srOnly}
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                fileRef.current = f;
-                setFileName(f ? f.name : '');
-                setError('');
-              }}
-            />
-            <span>{fileName ? `✓ ${fileName}` : '영상 파일 고르기'}</span>
-          </label>
-        ) : (
-          <>
-            <input
-              className={ui.input}
-              value={url}
-              onChange={(e) => edit(setUrl)(e.target.value)}
-              placeholder="유튜브 주소를 붙여넣으세요"
-              inputMode="url"
-              aria-label="유튜브 주소"
-            />
-            {ytId && <div role="img" aria-label="영상 미리보기" className={ui.thumb} style={{ backgroundImage: `url(${ytThumb(ytId)})` }} />}
-          </>
-        )}
+        <div className={ui.label}>유튜브 링크</div>
+        <input
+          className={ui.input}
+          value={url}
+          onChange={(e) => edit(setUrl)(e.target.value)}
+          placeholder="유튜브 주소를 붙여넣으세요"
+          inputMode="url"
+          aria-label="유튜브 주소"
+        />
+        {ytId && <div role="img" aria-label="영상 미리보기" className={ui.thumb} style={{ backgroundImage: `url(${ytThumb(ytId)})` }} />}
       </div>
 
       <label className={ui.field}>
