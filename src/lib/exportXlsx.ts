@@ -81,7 +81,7 @@ export async function buildExport(o: ExportOptions): Promise<Blob> {
   const period = `기간: ${longDate(from)} ~ ${longDate(to)}  ·  대상: ${scope}  ·  만든 날: ${today}`;
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = '나의 건강일지';
+  wb.creator = '맞춤 건강관리';
   wb.created = new Date();
   // 엑셀로 열 때 모든 수식을 다시 계산 (넣어 둔 값은 미리보기 앱용)
   wb.calcProperties.fullCalcOnLoad = true;
@@ -310,7 +310,7 @@ ${n.head}`, 11] as const),
   else note(wsH, 5, Hc.length, '이 기간에 적은 건강 수치가 없어요.');
 
   // ① 요약 채우기 ----------------------------------------------------------
-  title(wsS, one ? `${one.name} 님 · 건강 기록` : '나의 건강일지 · 기간 기록', period, S.length);
+  title(wsS, one ? `${one.name} 님 · 건강 기록` : '맞춤 건강관리 · 기간 기록', period, S.length);
   header(wsS, 4, S.map((x) => x[0]), C.green);
   wsS.getRow(4).height = 36;
   const col = (n: number) => wsS.getColumn(n).letter;

@@ -31,10 +31,10 @@ export function rangePresets(today: string): { label: string; range: Range }[] {
   ];
 }
 
-/** 파일 이름: 건강일지_전체_2026-09-01~2026-09-25.xlsx */
+/** 파일 이름: 맞춤건강관리_전체_2026-09-01~2026-09-25.xlsx */
 export function exportFileName(o: ExportOptions) {
   const who = o.single ? (o.data.members.find((m) => m.id === o.mids[0])?.name ?? '이용자') : '전체';
-  return `건강일지_${who.replace(/[\\/:*?"<>|\s]+/g, '')}_${o.from}~${o.to}.xlsx`;
+  return `맞춤건강관리_${who.replace(/[\\/:*?"<>|\s]+/g, '')}_${o.from}~${o.to}.xlsx`;
 }
 
 /** 내려받기 전에 보여줄 건수 */

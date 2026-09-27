@@ -1,7 +1,7 @@
 {
-  "name": "나의 건강일지",
-  "short_name": "건강일지",
-  "description": "운동과 식사를 기록하는 건강일지",
+  "name": "맞춤 건강관리",
+  "short_name": "맞춤 건강관리",
+  "description": "운동과 식사를 함께 기록하는 맞춤 건강관리",
   "lang": "ko",
   "id": "/",
   "start_url": "/",

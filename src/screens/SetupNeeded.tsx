@@ -9,7 +9,7 @@ export function SetupNeeded() {
   return (
     <div className={layout.shell}>
       <header className={layout.header}>
-        <h1 className={layout.title}>나의 건강일지</h1>
+        <h1 className={layout.title}>맞춤 건강관리</h1>
       </header>
       <main className={layout.main}>
         <div className={ui.pageHead}>

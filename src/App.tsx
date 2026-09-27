@@ -464,7 +464,7 @@ function Main({ be }: { be: Backend }) {
   let screen;
   if (!ready || auth === 'loading') {
     screen = (
-      <Layout title={role ? ROLE_TITLE[role] : '나의 건강일지'} onBack={role ? goEntry : undefined}>
+      <Layout title={role ? ROLE_TITLE[role] : '맞춤 건강관리'} onBack={role ? goEntry : undefined}>
         <Loading />
       </Layout>
     );
