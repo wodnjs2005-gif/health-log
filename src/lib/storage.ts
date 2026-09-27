@@ -6,6 +6,8 @@ export const LS = {
   /** 관리자·트레이너 로그인 표 (비밀번호·번호는 저장하지 않는다) */
   admin: 'healthlog.admin',
   trainer: 'healthlog.trainer',
+  /** 「바탕화면에 추가하기」 안내를 닫았음 */
+  installHide: 'healthlog.installHide',
   /** 예전 공용 비밀번호·체험 모드 데이터 (앱을 열 때 지운다) */
   legacy: ['healthlog.staff', 'healthlog.v1'],
 } as const;

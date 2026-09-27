@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { Layout } from '../../components/Layout';
 import { useConfirm } from '../../hooks/useConfirm';
+import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
 import type { Member } from '../../lib/backend';
 import { MAIN3, WEEK_GOAL } from '../../lib/constants';
 import { cx } from '../../lib/cx';
@@ -10,11 +11,11 @@ import { fmt, sumMeals } from '../../lib/nutrition';
 import { trainerTitle } from '../../lib/rank';
 import type { MemberFilterValue } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
-import { MemberDetail } from '../staff/MemberDetail';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
 import { ExportSheet } from '../staff/ExportSheet';
 import { LessonManage } from '../staff/LessonManage';
-import { TagSheet } from '../staff/TagSheet';
+import { NoticeManage } from '../staff/NoticeManage';
+import { StaffMemberView } from '../staff/StaffMemberView';
 import { VideoManage } from '../staff/VideoManage';
 import s from '../staff/staff.module.css';
 
@@ -27,34 +28,24 @@ export function TrainerApp() {
   const [tView, setTView] = useState<string | null>(null);
   // 상세 화면에 갔다 와도 찾던 조건은 그대로 둔다
   const { filter, setFilter, shown } = useMemberFilter(data.members);
-  const [tagging, setTagging] = useState<Member | null>(null);
-  /** 기록 내려받기 창: 'all' = 전체로 열기, 이용자 id = 그 사람을 골라 열기 */
-  const [exporting, setExporting] = useState<string | null>(null);
-  const exportSheet = exporting && (
-    <ExportSheet initialMid={exporting === 'all' ? undefined : exporting} onClose={() => setExporting(null)} />
-  );
+  const [exportingAll, setExportingAll] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const confirm = useConfirm();
 
   const detail = tView ? data.members.find((m) => m.id === tView) : null;
 
   if (detail) {
     return (
-      <Layout
+      <StaffMemberView
+        member={detail}
         title={title}
-        backLabel="목록"
+        color="orange"
         onBack={() => {
           setTView(null);
           scrollTop();
           void refresh();
         }}
-      >
-        <MemberDetail
-          member={detail}
-          summary={<TagRow member={detail} onEdit={() => setTagging(detail)} onExport={() => setExporting(detail.id)} />}
-        />
-        {tagging && <TagSheet member={tagging} onClose={() => setTagging(null)} />}
-        {exportSheet}
-      </Layout>
+      />
     );
   }
 
@@ -91,7 +82,7 @@ export function TrainerApp() {
           filter={filter}
           onFilter={setFilter}
           shown={shown}
-          onExport={() => setExporting('all')}
+          onExport={() => setExportingAll(true)}
           onOpen={(id) => {
             confirm.reset();
             setTView(id);
@@ -102,28 +93,17 @@ export function TrainerApp() {
         <VideoManage confirm={confirm} />
       )}
 
-      <button type="button" className={ui.btnGhost} onClick={logout}>
-        로그아웃
-      </button>
-      {exportSheet}
-    </Layout>
-  );
-}
-
-/** 상세 화면 이름 아래: 해시태그 + 편집 버튼 */
-function TagRow({ member, onEdit, onExport }: { member: Member; onEdit: () => void; onExport: () => void }) {
-  return (
-    <div className={ui.row} style={{ alignItems: 'center' }}>
-      <TagList tags={member.tags} />
-      <div className={s.actions}>
-        <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={onEdit}>
-          # 해시태그 편집
+      <div className={s.bottomMenu}>
+        <button type="button" className={ui.btnGhost} onClick={() => setNoticeOpen(true)}>
+          {data.notices.length > 0 ? `공지사항 (${data.notices.length})` : '공지사항 올리기'}
         </button>
-        <button type="button" className={ui.btnSmall} onClick={onExport}>
-          기록 내려받기
+        <button type="button" className={ui.btnGhost} onClick={logout}>
+          로그아웃
         </button>
       </div>
-    </div>
+      {exportingAll && <ExportSheet onClose={() => setExportingAll(false)} />}
+      {noticeOpen && <NoticeManage onClose={() => setNoticeOpen(false)} />}
+    </Layout>
   );
 }
 
@@ -138,6 +118,9 @@ interface ListProps {
 function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
   const { data, today } = useApp();
   const mon = mondayOf(today);
+  // 기록이 끊긴 분을 맨 위로
+  const sorted = sortByActivity(shown, data, today);
+  const staleCount = shown.filter((m) => activityOf(data, m.id, today).stale).length;
 
   return (
     <>
@@ -155,19 +138,29 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
         <MemberFilter members={data.members} value={filter} onChange={onFilter} shown={shown.length} />
       )}
       {data.members.length > 0 && shown.length === 0 && <div className={ui.empty}>찾는 이용자가 없어요.</div>}
-      {shown.map((m) => {
+      {staleCount > 0 && (
+        <div className={s.staleNote} role="status">
+          {STALE_DAYS}일 이상 기록이 없는 분이 <b>{staleCount}명</b> 있어요. 맨 위에 모았어요.
+        </div>
+      )}
+      {sorted.map((m) => {
         const week = data.ex.filter((e) => e.mid === m.id && e.date >= mon && e.date <= today).reduce((a, e) => a + e.min, 0);
         const pct = Math.min(100, Math.round((week / WEEK_GOAL) * 100));
         const mealsToday = MAIN3.filter((x) => data.meals.some((e) => e.mid === m.id && e.date === today && e.meal === x)).length;
         const nutriToday = sumMeals(data.meals.filter((e) => e.mid === m.id && e.date === today));
-        const dates = [...data.ex, ...data.meals].filter((e) => e.mid === m.id).map((e) => e.date).sort();
-        const last = dates[dates.length - 1];
+        const act = activityOf(data, m.id, today);
+        const last = act.last;
+        const warn = staleText(act);
         return (
-          <button key={m.id} type="button" className={cx(ui.card, s.memberCard)} onClick={() => onOpen(m.id)}>
+          <button key={m.id} type="button" className={cx(ui.card, s.memberCard, act.stale && s.memberStale)} onClick={() => onOpen(m.id)}>
             <div className={ui.row} style={{ flexWrap: 'nowrap', width: '100%', gap: '0.75rem' }}>
               <span className={s.memberName}>{m.name}</span>
-              <span className={s.memberMin}>{week}분</span>
+              <span className={s.memberMin}>
+                <span className={s.memberMinLabel}>이번 주 </span>
+                {week}분
+              </span>
             </div>
+            {warn && <span className={cx(ui.badge, act.stale ? s.staleBadge : ui.badgeMuted)}>{warn}</span>}
             <TagList tags={m.tags} />
             <div className={cx(ui.bar, ui.barThin)} style={{ width: '100%' }} aria-hidden="true">
               <div className={ui.barFill} style={{ width: `${pct}%` }} />

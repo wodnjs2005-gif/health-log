@@ -50,6 +50,10 @@ export const mergeGuardianData = (list: GuardianData[]): DataSet => {
       lessons: [...lessons.values()],
       attendance: list.flatMap((g) => g.attendance || []),
       offdays: [...offdays.values()],
+      notes: list.flatMap((g) => g.notes || []),
+      measures: list.flatMap((g) => g.measures || []),
+      // 공지는 모두에게 같으므로 한 번씩만
+      notices: [...new Map(list.flatMap((g) => g.notices || []).map((n) => [n.id, n])).values()],
     },
   );
 };

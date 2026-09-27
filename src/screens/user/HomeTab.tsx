@@ -1,8 +1,12 @@
 import { useApp } from '../../AppContext';
+import { InstallCard } from '../../components/InstallCard';
+import { NoteCard } from '../../components/Notes';
+import { NoticeList } from '../../components/Notices';
 import { NutriLine } from '../../components/Nutri';
-import { autoMeal, MAIN3, MEALS, WEEK_GOAL } from '../../lib/constants';
+import { WeekGoal } from '../../components/WeekGoal';
+import { autoMeal, MAIN3, MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
-import { mondayOf } from '../../lib/date';
+import { md, mondayOf } from '../../lib/date';
 import { sumMeals } from '../../lib/nutrition';
 import ui from '../../styles/ui.module.css';
 import { MemberLessons } from '../staff/MemberLessons';
@@ -23,37 +27,27 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
   const dayMin = dayEx.reduce((a, e) => a + e.min, 0);
   const mon = mondayOf(date);
   const weekMin = data.ex.filter((e) => e.mid === me && e.date >= mon && e.date <= date).reduce((a, e) => a + e.min, 0);
-  const weekPct = Math.min(100, Math.round((weekMin / WEEK_GOAL) * 100));
+  const isToday = date === today;
   const mainDone = MAIN3.filter((m) => dayMeals.some((x) => x.meal === m)).length;
   const myProgs = data.programs.filter((p) => me && p.mids.includes(me));
   const todayViews = data.views.filter((v) => v.mid === me && v.date === today).length;
 
   return (
     <>
+      {isToday && <NoticeList notices={data.notices} today={today} />}
+      {isToday && me && <NoteCard mid={me} />}
+
       <section className={cx(ui.card, s.homeCard)}>
         <div className={ui.row}>
           <h2 className={ui.h3}>운동</h2>
           <div className={ui.small}>{dayEx.length}건</div>
         </div>
         <div className={s.big}>
+          <span className={s.bigLabel}>{isToday ? '오늘' : md(date)}</span>
           <span className={s.bigNum}>{dayMin}</span>
           <span className={s.bigUnit}>분</span>
         </div>
-        <div className={ui.sectionHead} style={{ gap: '0.5rem' }}>
-          <div
-            className={ui.bar}
-            role="progressbar"
-            aria-label="이번 주 운동 목표"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={weekPct}
-          >
-            <div className={ui.barFill} style={{ width: `${weekPct}%` }} />
-          </div>
-          <div style={{ fontSize: '1rem', color: 'var(--ink-2)' }}>
-            이번 주 <b>{weekMin}분</b> / 목표 {WEEK_GOAL}분
-          </div>
-        </div>
+        <WeekGoal min={weekMin} thisWeek={mon === mondayOf(today)} />
         <button type="button" className={cx(ui.btn, ui.green)} onClick={() => onOpenSheet({ kind: 'ex' })}>
           + 운동 기록하기
         </button>
@@ -77,7 +71,7 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
                 aria-label={`${m} ${on ? '기록함' : '기록 없음'}, 누르면 기록하기`}
               >
                 <span className={s.mealCellName}>{m}</span>
-                <span className={s.mealCellState}>{on ? '기록함' : '—'}</span>
+                <span className={s.mealCellState}>{on ? '✓ 기록함' : '—'}</span>
               </button>
             );
           })}
@@ -108,6 +102,8 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
       )}
 
       {me && <MemberLessons mid={me} />}
+
+      <InstallCard />
 
       <button type="button" className={ui.btnGhost} onClick={logout}>
         로그아웃 (다른 번호로 들어가기)

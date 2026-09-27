@@ -250,3 +250,32 @@
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
 }
+
+/* 이용자 카드 아래: 기록 보기 · 더보기 */
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cardActions > button {
+  flex: 1 1 auto;
+}
+
+.viewBtn {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.moreList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.moreBtn {
+  min-height: 3rem;
+  font-size: 1.0625rem;
+  white-space: normal;
+}

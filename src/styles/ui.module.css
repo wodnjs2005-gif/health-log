@@ -435,3 +435,14 @@
   background-size: cover;
   background-position: center;
 }
+
+.delBtnDanger {
+  color: var(--danger);
+  border-color: #dba9a3;
+}
+
+.delBtnWide {
+  align-self: stretch;
+  min-height: 3rem;
+  font-size: 1.0625rem;
+}

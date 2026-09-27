@@ -1,0 +1,43 @@
+.box {
+  background: var(--bg);
+  border-radius: 1rem;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.125rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+.value {
+  font-size: 1rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.value b {
+  color: var(--green);
+}
+
+.msg {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.msg[data-done='true'] {
+  color: var(--green);
+}

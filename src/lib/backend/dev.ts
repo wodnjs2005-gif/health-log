@@ -3,8 +3,9 @@
 // 데이터는 이 브라우저의 localStorage, 영상 파일은 IndexedDB 에만 저장된다.
 import { CODE_CHARS, genCode, normCode } from '../code';
 import { addDays, todayYmd } from '../date';
+import { validMeasure } from '../measures';
 import { mealNutri, roundNutri } from '../nutrition';
-import { normRank } from '../rank';
+import { normRank, trainerTitle } from '../rank';
 import { normTags, TAGS_PER_MEMBER } from '../tags';
 import {
   AuthError,
@@ -14,7 +15,11 @@ import {
   type Exercise,
   type Lesson,
   type Meal,
+  type Measure,
   type Member,
+  type NewMeasure,
+  type Note,
+  type Notice,
   type Program,
   type PublicMember,
   type StaffRole,
@@ -143,6 +148,18 @@ function seed(): DevDB {
       ...(o % 2 ? [{ lid: 'l1', mid: 'm2', date: addDays(today, o) }] : []),
     ]),
     offdays: [],
+    notes: [
+      { id: uid(), mid: 'm1', text: '이번 주 걷기 잘하고 계세요! 무릎 아프시면 스트레칭만 하셔도 좋아요.', by: '김코치 팀장', date: addDays(today, -1) },
+    ],
+    measures: [
+      ...[-60, -45, -30, -14, -1].map((o, i): Measure => ({
+        id: uid(), mid: 'm1', date: addDays(today, o), weight: [61.2, 60.8, 60.1, 59.6, 59.2][i],
+        sbp: [138, 135, 132, 130, 128][i], dbp: [86, 84, 84, 82, 80][i], glu: i % 2 ? null : [118, 112, 108][i / 2], by: i === 2 ? '김코치 팀장' : '',
+      })),
+    ],
+    notices: [
+      { id: uid(), text: '다음 주 수요일(10월 7일)은 복지관 행사로 오전 체조를 쉬어요.', by: '관리자', date: addDays(today, -1), until: addDays(today, 10) },
+    ],
     customFoods: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
@@ -168,6 +185,9 @@ const load = (): DevDB => {
   d.attendance ??= [];
   d.offdays ??= [];
   d.customFoods ??= [];
+  d.notes ??= [];
+  d.measures ??= [];
+  d.notices ??= [];
   return d;
 };
 
@@ -190,7 +210,31 @@ const userData = (d: DevDB, m: Member): UserData => ({
   lessons: d.lessons.filter((l) => l.roster.some((r) => r.mid === m.id)).map((l) => ({ ...l, roster: l.roster.filter((r) => r.mid === m.id) })),
   attendance: d.attendance.filter((a) => a.mid === m.id),
   offdays: d.offdays.filter((o) => d.lessons.some((l) => l.id === o.lid && l.roster.some((r) => r.mid === m.id))),
+  notes: d.notes.filter((n) => n.mid === m.id),
+  measures: d.measures.filter((x) => x.mid === m.id).sort(byDate),
+  notices: activeNotices(d, 0),
 });
+
+const byDate = (a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date);
+
+/** 끝나지 않은 공지 (직원에게는 끝난 지 30일까지) */
+const activeNotices = (d: DevDB, graceDays: number) => {
+  const from = addDays(todayYmd(), -graceDays);
+  return d.notices.filter((n) => !n.until || n.until >= from).sort((a, b) => b.date.localeCompare(a.date));
+};
+
+/** 한마디·공지·수치에 남기는 직원 이름 (서버 _staff_label 과 같게) */
+const staffLabel = (d: DevDB, s: DevSession) =>
+  s.role === 'admin'
+    ? (d.admins.find((a) => a.id === s.subject)?.name ?? '관리자')
+    : trainerTitle(d.trainers.find((t) => t.id === s.subject)?.name ?? '', d.trainers.find((t) => t.id === s.subject)?.rank);
+
+const newMeasure = (d: DevDB, mid: string, m: NewMeasure, by: string): Measure => {
+  if (!validMeasure(m, todayYmd())) throw new Error('invalid measure');
+  const rec: Measure = { id: uid(), mid, date: m.date, weight: m.weight === null ? null : Math.round(m.weight * 10) / 10, sbp: m.sbp, dbp: m.dbp, glu: m.glu, by };
+  d.measures.push(rec);
+  return rec;
+};
 
 /** 유효한 로그인 표 (없거나 끝났으면 undefined) */
 const sessionOf = (d: DevDB, token: string) => d.sessions.find((s) => s.token === token && s.expires > new Date().toISOString());
@@ -306,6 +350,20 @@ export function createDevBackend(): Backend {
       return { view, ex };
     },
 
+    async userAddMeasure(code, m) {
+      const d = load();
+      const rec = newMeasure(d, who(d, code).id, m, '');
+      save(d);
+      return rec;
+    },
+
+    async userDelMeasure(code, id) {
+      const d = load();
+      const m = who(d, code);
+      d.measures = d.measures.filter((x) => !(x.id === id && x.mid === m.id && x.by === ''));
+      save(d);
+    },
+
     // --- 로그인 ---------------------------------------------------------------
     async adminLogin(loginId, pw) {
       const d = load();
@@ -382,6 +440,9 @@ export function createDevBackend(): Backend {
         lessons: d.lessons,
         attendance: d.attendance,
         offdays: d.offdays,
+        notes: d.notes,
+        measures: [...d.measures].sort(byDate),
+        notices: activeNotices(d, 30),
       };
     },
 
@@ -403,6 +464,8 @@ export function createDevBackend(): Backend {
       d.programs.forEach((p) => (p.mids = p.mids.filter((x) => x !== id)));
       d.lessons.forEach((l) => (l.roster = l.roster.filter((r) => r.mid !== id)));
       d.attendance = d.attendance.filter((a) => a.mid !== id);
+      d.notes = d.notes.filter((n) => n.mid !== id);
+      d.measures = d.measures.filter((x) => x.mid !== id);
       save(d);
     },
 
@@ -611,6 +674,70 @@ export function createDevBackend(): Backend {
         if (!l.roster.some((r) => r.mid === mid)) throw new Error('not in lesson');
         d.attendance.push({ lid, mid, date });
       }
+      save(d);
+    },
+
+    async staffSetAttendanceMany(token, lid, date, mids) {
+      const { d } = staff(token);
+      const l = d.lessons.find((x) => x.id === lid);
+      if (!l) throw new Error('lesson not found');
+      if (date > todayYmd()) throw new Error('invalid date');
+      let n = 0;
+      for (const mid of new Set(mids)) {
+        if (!l.roster.some((r) => r.mid === mid) || d.attendance.some((a) => a.lid === lid && a.mid === mid && a.date === date)) continue;
+        d.attendance.push({ lid, mid, date });
+        n++;
+      }
+      save(d);
+      return n;
+    },
+
+    // --- 한마디·건강 수치·공지 ---------------------------------------------------
+    async staffAddNote(token, mid, text) {
+      const { d, s } = staff(token);
+      const t = text.trim().slice(0, 200);
+      if (!t) throw new Error('no text');
+      if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      const rec: Note = { id: uid(), mid, text: t, by: staffLabel(d, s), date: todayYmd() };
+      d.notes.push(rec);
+      save(d);
+      return rec;
+    },
+
+    async staffDelNote(token, id) {
+      const { d } = staff(token);
+      d.notes = d.notes.filter((n) => n.id !== id);
+      save(d);
+    },
+
+    async staffAddMeasure(token, mid, m) {
+      const { d, s } = staff(token);
+      if (!d.members.some((x) => x.id === mid)) throw new Error('member not found');
+      const rec = newMeasure(d, mid, m, staffLabel(d, s));
+      save(d);
+      return rec;
+    },
+
+    async staffDelMeasure(token, id) {
+      const { d } = staff(token);
+      d.measures = d.measures.filter((x) => x.id !== id);
+      save(d);
+    },
+
+    async staffAddNotice(token, text, until) {
+      const { d, s } = staff(token);
+      const t = text.trim().slice(0, 300);
+      if (!t) throw new Error('no text');
+      if (until && until < todayYmd()) throw new Error('invalid date');
+      const rec: Notice = { id: uid(), text: t, by: staffLabel(d, s), date: todayYmd(), until };
+      d.notices.push(rec);
+      save(d);
+      return rec;
+    },
+
+    async staffDelNotice(token, id) {
+      const { d } = staff(token);
+      d.notices = d.notices.filter((n) => n.id !== id);
       save(d);
     },
 

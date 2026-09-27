@@ -119,6 +119,43 @@ export interface OffDay {
   date: string;
 }
 
+/** 트레이너·관리자가 이용자에게 남긴 한마디 */
+export interface Note {
+  id: string;
+  mid: string;
+  text: string;
+  /** 남긴 사람 (예: '김코치 팀장') */
+  by: string;
+  date: string;
+}
+
+/** 건강 수치. 적지 않은 항목은 null */
+export interface Measure {
+  id: string;
+  mid: string;
+  date: string;
+  /** 체중 kg */
+  weight: number | null;
+  /** 혈압 수축기·이완기 mmHg */
+  sbp: number | null;
+  dbp: number | null;
+  /** 혈당 mg/dL */
+  glu: number | null;
+  /** '' = 이용자 본인이 적음, 아니면 적은 직원 이름 */
+  by: string;
+}
+
+export type NewMeasure = Pick<Measure, 'date' | 'weight' | 'sbp' | 'dbp' | 'glu'>;
+
+/** 공지사항. until 날까지 보인다 (null = 지울 때까지) */
+export interface Notice {
+  id: string;
+  text: string;
+  by: string;
+  date: string;
+  until: string | null;
+}
+
 export interface NewLesson {
   name: string;
   days: number[];
@@ -134,11 +171,14 @@ export interface DataSet {
   lessons: Lesson[];
   attendance: Attendance[];
   offdays: OffDay[];
+  notes: Note[];
+  measures: Measure[];
+  notices: Notice[];
 }
 
 /**
  * 서버에서 받은 묶음을 화면용 DataSet 으로. 빠진 목록은 빈 목록으로 채운다
- * (새 SQL 을 아직 실행하지 않은 서버는 수업·출석을 보내지 않는다).
+ * (새 SQL 을 아직 실행하지 않은 서버는 수업·출석·한마디·건강 수치·공지를 보내지 않는다).
  */
 export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>>): DataSet => ({
   members,
@@ -149,6 +189,9 @@ export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>
   lessons: d.lessons || [],
   attendance: d.attendance || [],
   offdays: d.offdays || [],
+  notes: d.notes || [],
+  measures: d.measures || [],
+  notices: d.notices || [],
 });
 
 export interface UserData extends Omit<DataSet, 'members'> {
@@ -232,6 +275,9 @@ export interface Backend {
   userDelEx(code: string, id: string): Promise<void>;
   userDelMeal(code: string, id: string): Promise<void>;
   userAddView(code: string, pid: string, date: string): Promise<{ view: View; ex: Exercise }>;
+  userAddMeasure(code: string, m: NewMeasure): Promise<Measure>;
+  /** 이용자는 자기가 적은 수치만 지울 수 있다 */
+  userDelMeasure(code: string, id: string): Promise<void>;
   /** 보호자 번호로 읽기 전용 데이터. 번호가 맞지 않으면 null */
   guardianGet(code: string): Promise<GuardianData | null>;
 
@@ -279,8 +325,18 @@ export interface Backend {
   staffDelLesson(token: string, id: string): Promise<void>;
   /** present=false 면 출석 취소(결석) */
   staffSetAttendance(token: string, lid: string, mid: string, date: string, present: boolean): Promise<void>;
+  /** 여러 이용자를 한 번에 출석으로. 새로 체크한 수를 돌려준다 */
+  staffSetAttendanceMany(token: string, lid: string, date: string, mids: string[]): Promise<number>;
   /** off=true 면 그날 휴강 */
   staffSetOffday(token: string, lid: string, date: string, off: boolean): Promise<void>;
+  // 한마디·건강 수치·공지 (관리자·트레이너)
+  staffAddNote(token: string, mid: string, text: string): Promise<Note>;
+  staffDelNote(token: string, id: string): Promise<void>;
+  staffAddMeasure(token: string, mid: string, m: NewMeasure): Promise<Measure>;
+  staffDelMeasure(token: string, id: string): Promise<void>;
+  /** until: 이 날까지 보인다 (null = 지울 때까지) */
+  staffAddNotice(token: string, text: string, until: string | null): Promise<Notice>;
+  staffDelNotice(token: string, id: string): Promise<void>;
 }
 
 /** 번호가 무효이거나 로그인이 끝났을 때 던지는 오류. 화면에서는 로그인 화면으로 돌려보낸다. */

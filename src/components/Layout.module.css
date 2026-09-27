@@ -9,7 +9,7 @@
 }
 
 .withTabs {
-  padding-bottom: calc(6.5rem + var(--safe-bottom));
+  padding-bottom: calc(7.5rem + var(--safe-bottom));
 }
 
 .header {

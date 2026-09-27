@@ -423,3 +423,37 @@
   width: 100%;
   min-width: 0;
 }
+
+/* ---------- 기록이 끊긴 이용자 ---------- */
+.staleNote {
+  background: #fdf0e6;
+  border: 1px solid #efcfb6;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--orange-ink);
+  text-wrap: pretty;
+}
+
+.memberStale {
+  border: 2px solid #e2a37d;
+}
+
+.staleBadge {
+  align-self: flex-start;
+  background: var(--danger);
+  color: #fff;
+}
+
+.memberMinLabel {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+/* 아래 메뉴 (공지사항 · 로그아웃) */
+.bottomMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

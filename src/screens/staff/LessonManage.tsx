@@ -118,6 +118,7 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
   const [date, setDate] = useState(today);
   const [editing, setEditing] = useState(false);
   const [offBusy, setOffBusy] = useState(false);
+  const [allBusy, setAllBusy] = useState(false);
   // 저장 중인 줄은 다시 눌러도 무시 (빠르게 두 번 눌러 순서가 뒤바뀌지 않게)
   const pending = useRef(new Set<string>());
 
@@ -126,6 +127,7 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
   const off = isOff(data.offdays, lesson.id, date);
   const lessonDay = isLessonDay(lesson, date);
   const presentCount = mids.filter((mid) => isPresent(data.attendance, lesson.id, mid, date)).length;
+  const missing = mids.filter((mid) => !isPresent(data.attendance, lesson.id, mid, date));
 
   const onError = (e: unknown) => {
     if (isAuthError(e)) return fail(e);
@@ -154,6 +156,27 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
       onError(e);
     } finally {
       pending.current.delete(key);
+    }
+  };
+
+  /** 아직 체크하지 않은 분을 한 번에 출석으로 (먼저 화면에 반영하고, 실패하면 되돌린다) */
+  const markAll = async () => {
+    if (allBusy || !missing.length) return;
+    const targets = missing.filter((mid) => !pending.current.has(mid + date));
+    const recs = targets.map((mid) => ({ lid: lesson.id, mid, date }));
+    setAllBusy(true);
+    setData((d) => ({ ...d, attendance: [...d.attendance, ...recs] }));
+    try {
+      await be.staffSetAttendanceMany(staffToken, lesson.id, date, targets);
+      toast(`${targets.length}명을 출석으로 체크했어요`);
+    } catch (e) {
+      setData((d) => ({
+        ...d,
+        attendance: d.attendance.filter((a) => !(a.lid === lesson.id && a.date === date && targets.includes(a.mid))),
+      }));
+      onError(e);
+    } finally {
+      setAllBusy(false);
     }
   };
 
@@ -221,6 +244,12 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
           </span>
           {!lessonDay && <span className={ui.muted}>수업 요일이 아니에요</span>}
         </div>
+      )}
+
+      {!off && missing.length > 0 && mids.length > 1 && (lessonDay || presentCount > 0) && (
+        <button type="button" className={cx(ui.btn, color === 'navy' ? ui.navy : ui.orange)} disabled={allBusy} onClick={() => void markAll()}>
+          {allBusy ? '체크하는 중…' : presentCount === 0 ? `모두 출석 (${missing.length}명)` : `남은 분 모두 출석 (${missing.length}명)`}
+        </button>
       )}
 
       {mids.length === 0 ? (

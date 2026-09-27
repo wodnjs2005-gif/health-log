@@ -61,7 +61,12 @@ for (const l of lessons) for (const r of l.roster) for (let d = r.since; d <= TO
 attendance.push({ lid: 'l1', mid: 'm1', date: '2026-09-13' }); // 일요일 보강
 attendance.push({ lid: 'l1', mid: 'm3', date: '2026-09-02' }); // 대상에서 빠진 이용자의 지난 기록 (출석부에 나오지 않아야 함)
 const offdays = [{ lid: 'l1', date: '2026-09-25' }, { lid: 'l2', date: '2026-09-24' }];
-const data = { members, ex, meals, programs: [], views, lessons, attendance, offdays };
+// 건강 수치: 김순자(m1)는 2주마다, 박영호(m2)는 혈압만 가끔. 트레이너가 적은 것도 섞는다
+const measures = [];
+for (let d = '2026-08-21', i = 0; d <= TODAY; d = add(d, 14), i++)
+  measures.push({ id: 'h' + measures.length, mid: 'm1', date: d, weight: 61 - i * 0.4, sbp: 136 - i * 2, dbp: 86 - i, glu: i % 2 ? null : 115 - i, by: i === 1 ? '김코치 팀장' : '' });
+measures.push({ id: 'h' + measures.length, mid: 'm2', date: '2026-09-15', weight: null, sbp: 128, dbp: 82, glu: null, by: '' });
+const data = { members, ex, meals, programs: [], views, lessons, attendance, offdays, notes: [], measures, notices: [] };
 
 const cases = [
   { mids: members.map((m) => m.id), single: false, from: '2026-09-01', to: TODAY },

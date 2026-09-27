@@ -28,6 +28,8 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [issued, setIssued] = useState<Issued | null>(null);
+  /** 등록 칸 펼침 (평소에는 접어 두어 목록이 먼저 보이게) */
+  const [open, setOpen] = useState(false);
 
   const add = async () => {
     const n = name.trim();
@@ -40,6 +42,7 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
       setName('');
       setRank('');
       setError('');
+      setOpen(false);
       setIssued({ id: t.id, name: t.name, rank: t.rank, code: t.code });
     } catch (e) {
       fail(e);
@@ -76,36 +79,54 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
 
   return (
     <>
-      <section className={cx(ui.card, s.regCard)}>
-        <h2 className={ui.h3} style={{ fontSize: '1.1875rem', fontWeight: 800 }}>
-          트레이너 등록
-        </h2>
-        <label className={ui.field}>
-          <span className={ui.label}>이름</span>
-          <input
-            className={ui.input}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError('');
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void add();
-            }}
-            placeholder="예: 김코치"
-            autoComplete="off"
-          />
-        </label>
-        <RankInput value={rank} onChange={setRank} onEnter={() => void add()} />
-        {error && (
-          <div role="alert" className={ui.error}>
-            {error}
-          </div>
-        )}
-        <button type="button" className={cx(ui.btn, ui.navy)} disabled={saving} onClick={() => void add()}>
-          {saving ? '등록하는 중…' : '등록하기'}
+      {!open ? (
+        <button type="button" className={cx(ui.btn, ui.navy)} onClick={() => setOpen(true)}>
+          + 트레이너 등록
         </button>
-      </section>
+      ) : (
+        <section className={cx(ui.card, s.regCard)}>
+          <div className={ui.row} style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+            <h2 className={ui.h3} style={{ fontSize: '1.1875rem', fontWeight: 800 }}>
+              트레이너 등록
+            </h2>
+            <button
+              type="button"
+              className={ui.btnSmall}
+              onClick={() => {
+                setOpen(false);
+                setError('');
+              }}
+            >
+              접기
+            </button>
+          </div>
+          <label className={ui.field}>
+            <span className={ui.label}>이름</span>
+            <input
+              className={ui.input}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void add();
+              }}
+              placeholder="예: 김코치"
+              autoComplete="off"
+            />
+          </label>
+          <RankInput value={rank} onChange={setRank} onEnter={() => void add()} />
+          {error && (
+            <div role="alert" className={ui.error}>
+              {error}
+            </div>
+          )}
+          <button type="button" className={cx(ui.btn, ui.navy)} disabled={saving} onClick={() => void add()}>
+            {saving ? '등록하는 중…' : '등록하기'}
+          </button>
+        </section>
+      )}
 
       {issued && (
         <IssuedCard

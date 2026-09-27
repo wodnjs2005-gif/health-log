@@ -129,3 +129,7 @@
   background: var(--orange);
   color: #fff;
 }
+
+.check {
+  margin-right: 0.125rem;
+}

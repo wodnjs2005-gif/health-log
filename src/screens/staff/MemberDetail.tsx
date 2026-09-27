@@ -1,4 +1,6 @@
 import { useApp } from '../../AppContext';
+import { MeasureSection } from '../../components/Measures';
+import { NoteCard, NoteWriter } from '../../components/Notes';
 import { NutriLine } from '../../components/Nutri';
 import { WeekChart } from '../../components/WeekChart';
 import type { ReactNode } from 'react';
@@ -30,11 +32,17 @@ interface Props {
   end?: string;
   /** 있으면 그래프 막대를 눌러 그 날짜로 이동 */
   onGo?: (date: string) => void;
+  /** 직원 화면 색 (트레이너=주황, 관리자=남색). 보호자 화면에서는 쓰지 않는다 */
+  color?: 'orange' | 'navy';
 }
 
-/** 한 이용자의 7일 기록 (읽기 전용). 트레이너·보호자 화면에서 함께 쓴다. */
-export function MemberDetail({ member, summary, end: endProp, onGo }: Props) {
-  const { data, today } = useApp();
+/**
+ * 한 이용자의 7일 기록. 트레이너·관리자·보호자 화면에서 함께 쓴다.
+ * 직원은 한마디를 남기고 건강 수치를 적을 수 있고, 보호자는 보기만 한다.
+ */
+export function MemberDetail({ member, summary, end: endProp, onGo, color = 'orange' }: Props) {
+  const { data, today, staffToken } = useApp();
+  const isStaff = !!staffToken;
   const end = endProp ?? today;
   const age = ageOf(member, today);
   const count = (pid: string, day?: string) =>
@@ -77,7 +85,9 @@ export function MemberDetail({ member, summary, end: endProp, onGo }: Props) {
         {age !== null ? <div className={ui.muted}>{age}세</div> : null}
       </div>
       {summary}
+      {isStaff ? <NoteWriter mid={member.id} name={member.name} color={color} /> : <NoteCard mid={member.id} />}
       <WeekChart mid={member.id} end={end} ex={data.ex} meals={data.meals} onGo={onGo} />
+      <MeasureSection mid={member.id} mode={isStaff ? 'staff' : 'view'} color={isStaff ? color : 'green'} />
 
       {progs.length > 0 && (
         <section className={ui.card} style={{ padding: '1.125rem 1rem', gap: '0.5rem' }}>

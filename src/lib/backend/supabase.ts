@@ -9,7 +9,11 @@ import {
   type Lesson,
   type GuardianData,
   type Meal,
+  type Measure,
   type Member,
+  type NewMeasure,
+  type Note,
+  type Notice,
   type Program,
   type StaffData,
   type Trainer,
@@ -59,6 +63,8 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     return Array.from(a, (n) => n.toString(36)).join('').slice(0, 8);
   };
 
+  const measureArgs = (m: NewMeasure) => ({ p_date: m.date, p_weight: m.weight, p_sbp: m.sbp, p_dbp: m.dbp, p_glu: m.glu });
+
   return {
     mode: 'server',
 
@@ -87,6 +93,10 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     userAddView: (code, pid, date) =>
       rpc<{ view: View; ex: Exercise }>('user_add_view', { p_code: normCode(code), p_program: pid, p_date: date }),
+
+    userAddMeasure: (code, m) => rpc<Measure>('user_add_measure', { p_code: normCode(code), ...measureArgs(m) }),
+
+    userDelMeasure: (code, id) => rpc<void>('user_del_measure', { p_code: normCode(code), p_id: id }),
 
     // --- 로그인 ---------------------------------------------------------------
     async adminLogin(loginId, pw) {
@@ -151,8 +161,23 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     staffSetAttendance: (token, lid, mid, date, present) =>
       rpc<void>('staff_set_attendance', { p_token: token, p_lesson: lid, p_member: mid, p_date: date, p_present: present }),
 
+    staffSetAttendanceMany: (token, lid, date, mids) =>
+      rpc<number>('staff_set_attendance_many', { p_token: token, p_lesson: lid, p_date: date, p_members: mids }),
+
     staffSetOffday: (token, lid, date, off) =>
       rpc<void>('staff_set_offday', { p_token: token, p_lesson: lid, p_date: date, p_off: off }),
+
+    staffAddNote: (token, mid, text) => rpc<Note>('staff_add_note', { p_token: token, p_member: mid, p_text: text }),
+
+    staffDelNote: (token, id) => rpc<void>('staff_del_note', { p_token: token, p_id: id }),
+
+    staffAddMeasure: (token, mid, m) => rpc<Measure>('staff_add_measure', { p_token: token, p_member: mid, ...measureArgs(m) }),
+
+    staffDelMeasure: (token, id) => rpc<void>('staff_del_measure', { p_token: token, p_id: id }),
+
+    staffAddNotice: (token, text, until) => rpc<Notice>('staff_add_notice', { p_token: token, p_text: text, p_until: until }),
+
+    staffDelNotice: (token, id) => rpc<void>('staff_del_notice', { p_token: token, p_id: id }),
 
     adminSetTrainerRank: (token, id, rank) => rpc<string>('admin_set_trainer_rank', { p_token: token, p_id: id, p_rank: rank }),
 

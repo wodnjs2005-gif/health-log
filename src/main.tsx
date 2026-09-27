@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { applyFontSize, readSavedFontSize } from './hooks/useFontSize';
+import './lib/install'; // 크롬의 설치 가능 알림을 놓치지 않게 먼저 받아 둔다
 import { LS, lsDel } from './lib/storage';
 import './styles/global.css';
 

@@ -80,6 +80,7 @@ export function WeekChart({ mid, end, ex, meals, onGo }: Props) {
             <div className={s.mealDots}>
               {d.meals.map((m) => (
                 <span key={m.name} className={s.dot} data-on={m.on} aria-label={`${m.name} ${m.on ? '기록함' : '없음'}`}>
+                  {m.on && <span className={s.check} aria-hidden="true">✓</span>}
                   {m.name}
                 </span>
               ))}

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { DateNav } from '../../components/DateNav';
 import { Layout } from '../../components/Layout';
+import { MeasureSection } from '../../components/Measures';
+import { TabIcon } from '../../components/TabIcon';
 import { WeekChart } from '../../components/WeekChart';
 import { useConfirm } from '../../hooks/useConfirm';
 import ui from '../../styles/ui.module.css';
@@ -46,15 +48,17 @@ export function UserApp() {
   const tabbar = (
     <nav className={s.tabbar} aria-label="메뉴">
       {TABS.map(([k, label]) => (
-        <button key={k} type="button" className={s.tab} aria-current={tab === k ? 'page' : undefined} onClick={() => goTab(k)}>
-          {label}
+        <button key={k} type="button" className={s.tab} aria-label={label} aria-current={tab === k ? 'page' : undefined} onClick={() => goTab(k)}>
+          <TabIcon name={k} />
+          <span className={s.tabLabel}>{label}</span>
         </button>
       ))}
     </nav>
   );
 
   return (
-    <Layout title={`${member.name} 님`} onBack={goEntry} headerExtra={dateRow} bottom={tabbar}>
+    // 영상은 날짜와 상관없어 날짜 줄을 숨긴다
+    <Layout title={`${member.name} 님`} onBack={goEntry} headerExtra={tab === 'video' ? undefined : dateRow} bottom={tabbar}>
       {tab === 'home' && (
         <HomeTab
           date={date}
@@ -92,6 +96,7 @@ export function UserApp() {
               goTab('home');
             }}
           />
+          <MeasureSection mid={member.id} mode="user" />
         </>
       )}
       {sheet && <RecordSheet state={sheet} date={date} onClose={() => setSheet(null)} />}

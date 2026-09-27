@@ -45,5 +45,6 @@ export function exportCounts(data: DataSet, mids: string[], from: string, to: st
     ex: data.ex.filter((e) => set.has(e.mid) && inRange(e.date)).length,
     meals: data.meals.filter((e) => set.has(e.mid) && inRange(e.date)).length,
     lessons: data.lessons.filter((l) => l.roster.some((r) => set.has(r.mid))).length,
+    measures: data.measures.filter((e) => set.has(e.mid) && inRange(e.date)).length,
   };
 }

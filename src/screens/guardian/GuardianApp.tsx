@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { DateNav } from '../../components/DateNav';
+import { InstallCard } from '../../components/InstallCard';
 import { Layout, Loading, Sheet } from '../../components/Layout';
+import { NoticeList } from '../../components/Notices';
+import { WeekGoal } from '../../components/WeekGoal';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { PublicMember } from '../../lib/backend';
 import { CODE_LEN } from '../../lib/code';
-import { MAIN3, MEALS, WEEK_GOAL } from '../../lib/constants';
+import { MAIN3, MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { md, mondayOf } from '../../lib/date';
 import ui from '../../styles/ui.module.css';
@@ -48,6 +51,7 @@ export function GuardianApp() {
 
   return (
     <Layout title="보호자" onBack={goEntry} headerExtra={<DateNav date={date} today={today} onChange={moveDate} />}>
+      <NoticeList notices={data.notices} today={today} />
       <div className={s.people} role="tablist" aria-label="보는 사람">
         {people.length > 1 &&
           people.map((m) => (
@@ -78,6 +82,7 @@ export function GuardianApp() {
       />
 
       <div className={s.footer}>
+        <InstallCard />
         {people.length > 1 && (
           <ConfirmButton
             armed={confirm.pending === member.id}
@@ -118,9 +123,7 @@ function DaySummary({ member, date }: { member: PublicMember; date: string }) {
   const dayEx = data.ex.filter((e) => e.mid === member.id && e.date === date);
   const dayMin = dayEx.reduce((a, e) => a + e.min, 0);
   const mon = mondayOf(date);
-  const weekLabel = mon === mondayOf(today) ? '이번 주' : '그 주';
   const weekMin = data.ex.filter((e) => e.mid === member.id && e.date >= mon && e.date <= date).reduce((a, e) => a + e.min, 0);
-  const weekPct = Math.min(100, Math.round((weekMin / WEEK_GOAL) * 100));
   const dayMeals = data.meals.filter((m) => m.mid === member.id && m.date === date);
   const mainDone = MAIN3.filter((m) => dayMeals.some((x) => x.meal === m)).length;
   // 간식은 먹은 날에만 줄을 보여준다
@@ -145,21 +148,7 @@ function DaySummary({ member, date }: { member: PublicMember; date: string }) {
           </span>
         </div>
       </div>
-      <div className={ui.sectionHead} style={{ gap: '0.5rem' }}>
-        <div
-          className={ui.bar}
-          role="progressbar"
-          aria-label={`${weekLabel} 운동 목표`}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={weekPct}
-        >
-          <div className={ui.barFill} style={{ width: `${weekPct}%` }} />
-        </div>
-        <div style={{ fontSize: '1rem', color: 'var(--ink-2)' }}>
-          {weekLabel} <b>{weekMin}분</b> / 목표 {WEEK_GOAL}분
-        </div>
-      </div>
+      <WeekGoal min={weekMin} thisWeek={mon === mondayOf(today)} />
       <div className={cx(s.todayMeals, ui.divided)}>
         {mealRows.map((meal) => {
           const items = dayMeals.filter((x) => x.meal === meal);

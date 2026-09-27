@@ -1,4 +1,4 @@
-// 기록 내려받기: 엑셀 파일 하나에 시트 5개 (요약 · 운동 기록 · 식사 기록 · 영양(일별) · 출석).
+// 기록 내려받기: 엑셀 파일 하나에 시트 6개 (요약 · 운동 기록 · 식사 기록 · 영양(일별) · 출석 · 건강 수치).
 // 요약의 숫자는 다른 시트를 세는 엑셀 수식이고, 계산한 값도 함께 넣어 미리보기 앱에서도 숫자가 보인다.
 // exceljs 가 커서 이 파일은 내려받기 버튼을 눌렀을 때만 불러온다 (ExportSheet 의 import()).
 import ExcelJS from 'exceljs';
@@ -16,7 +16,7 @@ const C = {
   green: 'FF2E6A4E', greenSoft: 'FFE3EEE7', orange: 'FFB4541F', navy: 'FF3D4F7A', navySoft: 'FFE3E7F0',
   gray: 'FFF4F1EA', line: 'FFCFC8BA', ink: 'FF1E2320', ink3: 'FF5A625D', ink4: 'FF8A918C', red: 'FFB0473A', white: 'FFFFFFFF',
 };
-const SHEET = { sum: '요약', ex: '운동 기록', meal: '식사 기록', day: '영양(일별)', att: '출석' };
+const SHEET = { sum: '요약', ex: '운동 기록', meal: '식사 기록', day: '영양(일별)', att: '출석', hm: '건강 수치' };
 /** 영양소 열: 식사 기록·영양(일별)·요약에서 같은 순서 */
 const NUT = [
   { key: 'kcal', head: '칼로리(kcal)', fmt: '#,##0' },
@@ -285,6 +285,29 @@ ${n.head}`, 11] as const),
     }
     r++;
   }
+
+  // ⑥ 건강 수치 (체중·혈압·혈당) ------------------------------------------------
+  const measures = data.measures
+    .filter((e) => set.has(e.mid) && inRange(e.date))
+    .sort((a, b) => a.date.localeCompare(b.date) || byName(a, b));
+  const Hc = [['날짜', 11], ['요일', 6], ['이름', 12], ['체중(kg)', 10], ['혈압 수축기(mmHg)', 12], ['혈압 이완기(mmHg)', 12], ['혈당(mg/dL)', 11], ['적은 사람', 16]] as const;
+  const wsH = sheet(SHEET.hm, C.navy, Hc.map((x) => x[1]), 4);
+  title(wsH, one ? `${one.name} 님 · 건강 수치` : '건강 수치', `${period}  ·  ${measures.length}건  ·  빈칸은 그날 재지 않은 항목`, Hc.length);
+  header(wsH, 4, Hc.map((x) => x[0]), C.navy);
+  measures.forEach((e, i) => {
+    const r = 5 + i;
+    const z = i % 2 ? C.gray : undefined;
+    body(wsH, r, 1, xlDate(e.date), { numFmt: 'yyyy-mm-dd', align: 'center', fill: z });
+    body(wsH, r, 2, wd(e.date), { align: 'center', fill: z });
+    body(wsH, r, 3, label.get(e.mid) ?? '', { fill: z });
+    body(wsH, r, 4, e.weight, { align: 'right', fill: z, numFmt: '0.0' });
+    body(wsH, r, 5, e.sbp, { align: 'right', fill: z });
+    body(wsH, r, 6, e.dbp, { align: 'right', fill: z });
+    body(wsH, r, 7, e.glu, { align: 'right', fill: z });
+    body(wsH, r, 8, e.by || '본인', { align: 'center', fill: z });
+  });
+  if (measures.length) wsH.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + measures.length, column: Hc.length } };
+  else note(wsH, 5, Hc.length, '이 기간에 적은 건강 수치가 없어요.');
 
   // ① 요약 채우기 ----------------------------------------------------------
   title(wsS, one ? `${one.name} 님 · 건강 기록` : '나의 건강일지 · 기간 기록', period, S.length);
