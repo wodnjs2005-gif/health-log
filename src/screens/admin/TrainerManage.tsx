@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
+import { CopyCode } from '../../components/CopyCode';
 import { Sheet } from '../../components/Layout';
 import type { useConfirm } from '../../hooks/useConfirm';
 import { cx } from '../../lib/cx';
@@ -156,7 +157,7 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
           </div>
           <div className={s.codeRow}>
             <span className={cx(ui.small, s.codeLabel)}>트레이너 번호</span>
-            <span className={cx(s.code, s.codeTrainer)}>{t.code}</span>
+            <CopyCode code={t.code} label="트레이너 번호" className={cx(s.code, s.codeTrainer)} />
           </div>
           <div className={s.actions}>
             <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setEditingRank(t)}>

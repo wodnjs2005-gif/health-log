@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
+import { CopyCode } from '../../components/CopyCode';
 import { Layout, Sheet } from '../../components/Layout';
 import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -343,11 +344,11 @@ export function AdminApp() {
                 <TagList tags={m.tags} />
                 <div className={s.codeRow}>
                   <span className={cx(ui.small, s.codeLabel)}>개인 번호</span>
-                  <span className={s.code}>{m.code || '—'}</span>
+                  <CopyCode code={m.code} label="개인 번호" className={s.code} />
                 </div>
                 <div className={s.codeRow}>
                   <span className={cx(ui.small, s.codeLabel)}>보호자 번호</span>
-                  <span className={cx(s.code, s.codeGuardian)}>{m.guardianCode || '—'}</span>
+                  <CopyCode code={m.guardianCode ?? ''} label="보호자 번호" className={cx(s.code, s.codeGuardian)} />
                 </div>
                 <div style={{ fontSize: '0.9375rem', color: 'var(--ink-2)' }}>
                   운동 기록 {data.ex.filter((e) => e.mid === m.id).length}건 · 식사 기록 {data.meals.filter((e) => e.mid === m.id).length}건

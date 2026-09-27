@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
+import { InstallCard } from '../../components/InstallCard';
 import { Layout } from '../../components/Layout';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
@@ -93,6 +94,7 @@ export function TrainerApp() {
         <VideoManage confirm={confirm} />
       )}
 
+      <InstallCard color="orange" />
       <div className={s.bottomMenu}>
         <button type="button" className={ui.btnGhost} onClick={() => setNoticeOpen(true)}>
           {data.notices.length > 0 ? `공지사항 (${data.notices.length})` : '공지사항 올리기'}

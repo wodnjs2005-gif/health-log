@@ -1,3 +1,4 @@
+import { CopyCode } from '../../components/CopyCode';
 import { cx } from '../../lib/cx';
 import s from './admin.module.css';
 
@@ -20,14 +21,12 @@ export function IssuedCard({ heading, label, code, tell, sub, onClose }: Props) 
     <section role="status" className={s.issued}>
       <div className={s.issuedName}>{heading}</div>
       <div className={s.issuedLabel}>{label}</div>
-      <div className={cx(s.issuedCode, code.length > 6 && s.issuedCodeLong)} aria-label={`${label} ${code.split('').join(' ')}`}>
-        {code}
-      </div>
-      <div style={{ fontSize: '1rem', textWrap: 'pretty' }}>{tell}</div>
+      <CopyCode code={code} label={label} className={cx(s.issuedCode, code.length > 6 && s.issuedCodeLong)} />
+      <div style={{ fontSize: '1rem', textWrap: 'pretty' }}>{tell} 번호를 누르면 복사돼요.</div>
       {sub && (
         <div className={s.issuedSub}>
           <span>{sub.label}</span>
-          <span className={s.issuedSubCode}>{sub.code}</span>
+          <CopyCode code={sub.code} label={sub.label} className={s.issuedSubCode} />
         </div>
       )}
       <button type="button" className={s.issuedOk} onClick={onClose}>

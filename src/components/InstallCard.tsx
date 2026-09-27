@@ -62,7 +62,7 @@ function Steps() {
  * 「휴대폰 바탕화면에 추가하기」 안내. 이미 아이콘으로 열었거나 「다음에 할게요」를 누르면 보이지 않는다.
  * 크롬에서는 버튼 하나로 설치 창을 띄우고, 다른 브라우저는 메뉴 위치를 알려준다.
  */
-export function InstallCard() {
+export function InstallCard({ color = 'green' }: { color?: 'green' | 'orange' }) {
   const { toast } = useApp();
   const { canPrompt, installed, prompt } = useInstall();
   const [hidden, setHidden] = useState(() => lsGet(LS.installHide) === '1');
@@ -80,7 +80,7 @@ export function InstallCard() {
   };
 
   return (
-    <section className={s.install} aria-label="바탕화면에 추가하기">
+    <section className={s.install} style={color === 'orange' ? { borderColor: 'var(--orange)' } : undefined} aria-label="바탕화면에 추가하기">
       <div className={s.installHead}>
         <img className={s.installIcon} src="/icon-192.png" alt="" />
         <div className={ui.sectionHead} style={{ gap: '0.125rem', minWidth: 0 }}>
@@ -91,7 +91,7 @@ export function InstallCard() {
       {(showSteps || !canPrompt) && <Steps />}
       <div className={s.installActions}>
         {canPrompt && (
-          <button type="button" className={cx(ui.btn, ui.green)} onClick={() => void install()}>
+          <button type="button" className={cx(ui.btn, color === 'orange' ? ui.orange : ui.green)} onClick={() => void install()}>
             바탕화면에 추가
           </button>
         )}
