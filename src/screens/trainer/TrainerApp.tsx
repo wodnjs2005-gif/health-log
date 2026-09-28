@@ -132,7 +132,7 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
   // 기록이 끊긴 분을 맨 위로
   const sorted = sortByActivity(shown, data, today);
   const staleCount = shown.filter((m) => activityOf(data, m.id, today).stale).length;
-  // 목록(자세히) / 타일(사진·이름만, 두 칸씩). 고른 것은 기기에 기억한다
+  // 목록(자세히) / 타일(사진·이름만, 세 칸씩). 고른 것은 기기에 기억한다
   const [tile, setTile] = useState(() => lsGet(LS.memberView) === 'tile');
   const pickView = (t: boolean) => {
     setTile(t);
@@ -152,19 +152,22 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
       {data.members.length === 0 ? (
         <div className={ui.empty}>등록된 이용자가 없어요.</div>
       ) : (
-        <MemberFilter members={data.members} value={filter} onChange={onFilter} shown={shown.length} />
-      )}
-      {shown.length > 0 && (
-        <div className={s.viewSwitch} role="group" aria-label="보기 방식">
-          <button type="button" className={s.viewBtn} aria-pressed={!tile} onClick={() => pickView(false)}>
-            <ViewIcon tile={false} />
-            목록
-          </button>
-          <button type="button" className={s.viewBtn} aria-pressed={tile} onClick={() => pickView(true)}>
-            <ViewIcon tile />
-            타일
-          </button>
-        </div>
+        <MemberFilter
+          members={data.members}
+          value={filter}
+          onChange={onFilter}
+          shown={shown.length}
+          side={
+            <div className={s.viewSwitch} role="group" aria-label="보기 방식">
+              <button type="button" className={s.viewBtn} aria-pressed={!tile} aria-label="목록으로 보기" title="목록" onClick={() => pickView(false)}>
+                <ViewIcon tile={false} />
+              </button>
+              <button type="button" className={s.viewBtn} aria-pressed={tile} aria-label="타일로 보기" title="타일" onClick={() => pickView(true)}>
+                <ViewIcon tile />
+              </button>
+            </div>
+          }
+        />
       )}
       {data.members.length > 0 && shown.length === 0 && <div className={ui.empty}>찾는 이용자가 없어요.</div>}
       {staleCount > 0 && (
@@ -182,10 +185,12 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
               <button key={m.id} type="button" className={cx(ui.card, s.tile, act.stale && s.memberStale)} onClick={() => onOpen(m.id)}>
                 <Avatar id={m.id} name={m.name} size="lg" tone="orange" />
                 <span className={s.tileName}>{m.name}</span>
-                <span className={s.tileInfo}>
-                  이번 주 <b className={s.tileMin}>{week}분</b>
+                <span className={s.tileInfo} title="이번 주 운동">
+                  운동 <b className={s.tileMin}>{week}분</b>
                 </span>
-                <span className={s.tileInfo}>오늘 식사 {mealsToday}/3끼</span>
+                <span className={s.tileInfo} title="오늘 식사">
+                  식사 {mealsToday}/3
+                </span>
                 {act.stale && <span className={cx(ui.badge, s.staleBadge, s.tileBadge)}>{act.last ? '기록 끊김' : '기록 없음'}</span>}
               </button>
             );
