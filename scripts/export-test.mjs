@@ -67,10 +67,14 @@ for (let d = '2026-08-21', i = 0; d <= TODAY; d = add(d, 14), i++)
   measures.push({ id: 'h' + measures.length, mid: 'm1', date: d, weight: 61 - i * 0.4, sbp: 136 - i * 2, dbp: 86 - i, glu: i % 2 ? null : 115 - i, by: i === 1 ? '김코치 팀장' : '' });
 measures.push({ id: 'h' + measures.length, mid: 'm2', date: '2026-09-15', weight: null, sbp: 128, dbp: 82, glu: null, by: '' });
 // 체력 측정: 항목 3개, 김순자(m1)는 두 번, 박영호(m2)는 한 번(악력만)
+const testCategories = [{ id: 'tc1', name: '신체징후(Vital Sign)', sort: 1 }, { id: 'tc5', name: '기초·기능 평가', sort: 5 }, { id: 'tc6', name: '체형분석', sort: 6 }];
 const testItems = [
-  { id: 'ti1', name: '악력', unit: 'kg', better: 'high' },
-  { id: 'ti2', name: '30초 의자 일어서기', unit: '회', better: 'high' },
-  { id: 'ti3', name: '일어나 걷기(TUG)', unit: '초', better: 'low' },
+  { id: 'ti1', name: '악력', unit: 'kg', better: 'high', category: 'tc5', kind: 'number' },
+  { id: 'ti2', name: '30초 의자 일어서기', unit: '회', better: 'high', category: 'tc5', kind: 'number' },
+  { id: 'ti3', name: '일어나 걷기(TUG)', unit: '초', better: 'low', category: 'tc5', kind: 'number' },
+  { id: 'ti4', name: '수축기 혈압', unit: 'mmHg', better: 'none', category: 'tc1', kind: 'number' },
+  { id: 'ti5', name: '체형 소견', unit: '', better: 'none', category: 'tc6', kind: 'text' },
+  { id: 'ti6', name: '예전 항목', unit: '', better: 'none', category: null, kind: 'number' },
 ];
 const tests = [
   ...[['2026-09-02', 20.5, 11, 9.8], ['2026-09-23', 21.25, 13, 9.1]].flatMap(([date, a, b, c]) => [
@@ -79,8 +83,11 @@ const tests = [
     { id: 't' + date + 3, mid: 'm1', item: 'ti3', date, value: c, by: '김코치 팀장' },
   ]),
   { id: 'tx', mid: 'm2', item: 'ti1', date: '2026-09-10', value: 30, by: '이코치 트레이너' },
+  { id: 'ty', mid: 'm1', item: 'ti4', date: '2026-09-23', value: 132, by: '김코치 팀장' },
+  { id: 'tz', mid: 'm1', item: 'ti5', date: '2026-09-23', value: null, text: '오른쪽 어깨가 조금 높음, 거북목 있음', by: '김코치 팀장' },
+  { id: 'tw', mid: 'm2', item: 'ti6', date: '2026-09-10', value: 7, by: '이코치 트레이너' },
 ];
-const data = { members, ex, meals, programs: [], views, lessons, attendance, offdays, notes: [], measures, notices: [], testItems, tests, photos: {} };
+const data = { members, ex, meals, programs: [], views, lessons, attendance, offdays, notes: [], measures, notices: [], testCategories, testItems, tests, photos: {} };
 
 const cases = [
   { mids: members.map((m) => m.id), single: false, from: '2026-09-01', to: TODAY },

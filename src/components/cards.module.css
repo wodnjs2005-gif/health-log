@@ -190,3 +190,48 @@
 .installActions > button {
   flex: 1 1 auto;
 }
+
+/* 한마디 남기기: 눌러서 펼치고 접기 */
+.toggle {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.toggleText {
+  flex: 1;
+  min-width: 0;
+}
+
+.toggleCount {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.chev {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  transition: transform 0.15s;
+}
+
+.chev[data-open='true'] {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chev {
+    transition: none;
+  }
+}

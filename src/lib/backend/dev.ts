@@ -21,6 +21,7 @@ import {
   type NewMeasure,
   type Note,
   type Notice,
+  type TestCategory,
   type TestItem,
   type TestResult,
   type Program,
@@ -165,10 +166,14 @@ function seed(): DevDB {
     notices: [
       { id: uid(), text: '다음 주 수요일(10월 7일)은 복지관 행사로 오전 체조를 쉬어요.', by: '관리자', date: addDays(today, -1), until: addDays(today, 10) },
     ],
+    testCategories: DEFAULT_CATEGORIES.map((name, i) => ({ id: 'tc' + (i + 1), name, sort: i + 1 })),
     testItems: [
-      { id: 'ti1', name: '악력', unit: 'kg', better: 'high' },
-      { id: 'ti2', name: '30초 의자 일어서기', unit: '회', better: 'high' },
-      { id: 'ti3', name: '일어나 걷기(TUG)', unit: '초', better: 'low' },
+      { id: 'ti4', name: '수축기 혈압', unit: 'mmHg', better: 'none', category: 'tc1', kind: 'number' },
+      { id: 'ti5', name: '체지방률', unit: '%', better: 'low', category: 'tc2', kind: 'number' },
+      { id: 'ti1', name: '악력', unit: 'kg', better: 'high', category: 'tc5', kind: 'number' },
+      { id: 'ti2', name: '30초 의자 일어서기', unit: '회', better: 'high', category: 'tc5', kind: 'number' },
+      { id: 'ti3', name: '일어나 걷기(TUG)', unit: '초', better: 'low', category: 'tc5', kind: 'number' },
+      { id: 'ti6', name: '체형 소견', unit: '', better: 'none', category: 'tc6', kind: 'text' },
     ],
     tests: [
       ...([[-60, 20.5, 11, 9.8], [-30, 21.2, 13, 9.1], [-2, 22.0, 14, 8.6]] as const).flatMap(([o, a, b, c]) => [
@@ -176,6 +181,7 @@ function seed(): DevDB {
         { id: uid(), mid: 'm1', item: 'ti2', date: addDays(today, o), value: b, by: '김코치 팀장' },
         { id: uid(), mid: 'm1', item: 'ti3', date: addDays(today, o), value: c, by: '김코치 팀장' },
       ]),
+      { id: uid(), mid: 'm1', item: 'ti6', date: addDays(today, -2), value: null, text: '오른쪽 어깨가 조금 높음, 거북목 있음', by: '김코치 팀장' },
     ],
     photos: {},
     photoData: {},
@@ -207,7 +213,9 @@ const load = (): DevDB => {
   d.notes ??= [];
   d.measures ??= [];
   d.notices ??= [];
+  d.testCategories ??= DEFAULT_CATEGORIES.map((name, i) => ({ id: 'tc' + (i + 1), name, sort: i + 1 }));
   d.testItems ??= [];
+  d.testItems = d.testItems.map((i) => ({ ...i, category: i.category ?? null, kind: i.kind ?? 'number' }));
   d.tests ??= [];
   d.photos ??= {};
   d.photoData ??= {};
@@ -251,6 +259,7 @@ const userData = (d: DevDB, m: Member): UserData => ({
   notes: d.notes.filter((n) => n.mid === m.id),
   measures: d.measures.filter((x) => x.mid === m.id).sort(byDate),
   notices: activeNotices(d, 0),
+  testCategories: d.testCategories,
   testItems: d.testItems,
   tests: d.tests.filter((t) => t.mid === m.id),
   photos: photoVersFor(d, m.id),
@@ -300,8 +309,12 @@ const checkItem = (it: TestItem): TestItem => {
   const name = it.name.trim().slice(0, 30);
   if (!name) throw new Error('no name');
   if (!['high', 'low', 'none'].includes(it.better)) throw new Error('invalid better');
-  return { id: it.id, name, unit: it.unit.trim().slice(0, 10), better: it.better };
+  const text = it.kind === 'text';
+  return { id: it.id, name, unit: text ? '' : it.unit.trim().slice(0, 10), better: text ? 'none' : it.better, category: it.category, kind: text ? 'text' : 'number' };
 };
+
+/** 서버 20261009000000_test_categories.sql 의 기본 분류와 같게 */
+const DEFAULT_CATEGORIES = ['신체징후(Vital Sign)', '신체구성(Body comp.)', '자율신경(HRV, 혈관건강)', '관절가동성(ROM)', '기초·기능 평가', '체형분석', '보행평가'];
 
 /** 서버 staff_add_lesson 과 같은 검사·정리 */
 const checkLesson = (d: DevDB, l: { name: string; days: number[]; mids: string[] }) => {
@@ -505,6 +518,7 @@ export function createDevBackend(): Backend {
         notes: d.notes,
         measures: [...d.measures].sort(byDate),
         notices: activeNotices(d, 30),
+        testCategories: d.testCategories,
         testItems: d.testItems,
         tests: d.tests,
         photos: d.photos,
@@ -812,8 +826,37 @@ export function createDevBackend(): Backend {
     },
 
     // --- 체력 측정 ---------------------------------------------------------------
+    async adminAddTestCategory(token, name) {
+      const d = admin(token);
+      const n = name.trim().slice(0, 40);
+      if (!n) throw new Error('no name');
+      const rec: TestCategory = { id: 'tc' + uid(), name: n, sort: Math.max(0, ...d.testCategories.map((c) => c.sort)) + 1 };
+      d.testCategories.push(rec);
+      save(d);
+      return rec;
+    },
+
+    async adminUpdateTestCategory(token, id, name) {
+      const d = admin(token);
+      const c = d.testCategories.find((x) => x.id === id);
+      if (!c) throw new Error('category not found');
+      const n = name.trim().slice(0, 40);
+      if (!n) throw new Error('no name');
+      c.name = n;
+      save(d);
+      return c;
+    },
+
+    async adminDelTestCategory(token, id) {
+      const d = admin(token);
+      if (d.testItems.some((i) => i.category === id)) throw new Error('category not empty');
+      d.testCategories = d.testCategories.filter((x) => x.id !== id);
+      save(d);
+    },
+
     async adminAddTestItem(token, it) {
       const d = admin(token);
+      if (it.category && !d.testCategories.some((c) => c.id === it.category)) throw new Error('category not found');
       const rec = checkItem({ id: 'ti' + uid(), ...it });
       d.testItems.push(rec);
       save(d);
@@ -824,7 +867,8 @@ export function createDevBackend(): Backend {
       const d = admin(token);
       const i = d.testItems.findIndex((x) => x.id === id);
       if (i < 0) throw new Error('item not found');
-      d.testItems[i] = checkItem({ id, ...it });
+      if (it.category && !d.testCategories.some((c) => c.id === it.category)) throw new Error('category not found');
+      d.testItems[i] = checkItem({ id, ...it, kind: d.testItems[i].kind }); // 종류는 바꾸지 않는다
       save(d);
       return d.testItems[i];
     },
@@ -840,12 +884,20 @@ export function createDevBackend(): Backend {
       const { d, s } = trainer(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
       if (date > todayYmd()) throw new Error('invalid date');
-      if (values.some((v) => Math.abs(v.value) > 100000)) throw new Error('invalid value');
+      if (values.some((v) => typeof v.value === 'number' && Math.abs(v.value) > 100000)) throw new Error('invalid value');
       d.tests = d.tests.filter((t) => !(t.mid === mid && t.date === date));
       const by = staffLabel(d, s);
-      const recs: TestResult[] = values
-        .filter((v) => Number.isFinite(v.value) && d.testItems.some((i) => i.id === v.item))
-        .map((v) => ({ id: uid(), mid, item: v.item, date, value: Math.round(v.value * 100) / 100, by }));
+      const recs: TestResult[] = [];
+      for (const v of values) {
+        const it = d.testItems.find((i) => i.id === v.item);
+        if (!it || recs.some((r) => r.item === it.id)) continue;
+        if (it.kind === 'text') {
+          const t = (v.text ?? '').trim().slice(0, 200);
+          if (t) recs.push({ id: uid(), mid, item: it.id, date, value: null, text: t, by });
+        } else if (typeof v.value === 'number' && Number.isFinite(v.value)) {
+          recs.push({ id: uid(), mid, item: it.id, date, value: Math.round(v.value * 100) / 100, by });
+        }
+      }
       d.tests.push(...recs);
       save(d);
       return recs;

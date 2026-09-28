@@ -5,7 +5,8 @@ import ExcelJS from 'exceljs';
 import { ageOf } from './age';
 import { AMOUNT_FACTOR } from './nutrition';
 import { FOOD_SOURCE } from './nutritionSource';
-import type { Member } from './backend';
+import type { Member, TestItem, TestResult } from './backend';
+import { NO_CATEGORY, orderedItems } from './tests';
 import { MEALS } from './constants';
 import { addDays, parseYmd, WD } from './date';
 import { daysLabel, isLessonDay, sessionDays } from './lessons';
@@ -309,32 +310,55 @@ ${n.head}`, 11] as const),
   if (measures.length) wsH.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + measures.length, column: Hc.length } };
   else note(wsH, 5, Hc.length, '이 기간에 적은 건강 수치가 없어요.');
 
-  // ⑦ 체력 측정: 이용자·날짜마다 한 줄, 항목마다 한 칸 --------------------------------------
+  // ⑦ 체력 측정: 이용자·날짜마다 한 줄, 항목마다 한 칸. 4행에 분류, 5행에 항목 ----------------------------
   const tests = data.tests.filter((t) => set.has(t.mid) && inRange(t.date));
-  const tItems = data.testItems.filter((i) => tests.some((t) => t.item === i.id));
-  const sessions = new Map<string, { mid: string; date: string; by: string; v: Map<string, number> }>();
+  const tItems = orderedItems(data.testCategories, data.testItems).filter((i) => tests.some((t) => t.item === i.id));
+  const catName = (i: TestItem) => data.testCategories.find((c) => c.id === i.category)?.name ?? NO_CATEGORY;
+  const sessions = new Map<string, { mid: string; date: string; by: string; v: Map<string, TestResult> }>();
   for (const t of tests) {
     const k = t.mid + t.date;
-    const x = sessions.get(k) ?? { mid: t.mid, date: t.date, by: t.by, v: new Map<string, number>() };
-    x.v.set(t.item, t.value);
+    const x = sessions.get(k) ?? { mid: t.mid, date: t.date, by: t.by, v: new Map<string, TestResult>() };
+    x.v.set(t.item, t);
     sessions.set(k, x);
   }
   const tRows = [...sessions.values()].sort((a, b) => byName(a, b) || a.date.localeCompare(b.date));
-  const Tc = [['이름', 12], ['날짜', 11], ['요일', 6], ...tItems.map((i) => [i.unit ? `${i.name}(${i.unit})` : i.name, 12] as const), ['적은 사람', 16]] as const;
-  const wsT = sheet(SHEET.tst, C.orange, Tc.map((x) => x[1]), 4);
+  const Tc = [['이름', 12], ['날짜', 11], ['요일', 6], ...tItems.map((i) => [i.unit ? `${i.name}(${i.unit})` : i.name, i.kind === 'text' ? 26 : 12] as const), ['적은 사람', 16]] as const;
+  const wsT = sheet(SHEET.tst, C.orange, Tc.map((x) => x[1]), 5);
   title(wsT, one ? `${one.name} 님 · 체력 측정` : '체력 측정', `${period}  ·  ${tRows.length}번 측정  ·  빈칸은 그날 재지 않은 항목`, Math.max(Tc.length, 6));
+  // 4행: 분류 (같은 분류 항목 위를 합친다), 5행: 항목
+  // 이름·날짜·요일·적은 사람은 두 줄을 합친다 (합친 칸은 위 칸의 글자를 쓰므로 4행에도 같은 제목을 넣어 둔다)
   header(wsT, 4, Tc.map((x) => x[0]), C.orange);
+  header(wsT, 5, Tc.map((x) => x[0]), C.orange);
+  for (const c of [1, 2, 3, Tc.length]) {
+    wsT.mergeCells(4, c, 5, c);
+  }
+  let c0 = 0;
+  while (c0 < tItems.length) {
+    let c1 = c0;
+    while (c1 + 1 < tItems.length && catName(tItems[c1 + 1]) === catName(tItems[c0])) c1++;
+    if (c1 > c0) wsT.mergeCells(4, 4 + c0, 4, 4 + c1);
+    Object.assign(wsT.getCell(4, 4 + c0), {
+      value: catName(tItems[c0]), font: font({ bold: true, color: { argb: C.white } }), fill: fill(C.navy), border: box,
+      alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    });
+    c0 = c1 + 1;
+  }
+  wsT.getRow(4).height = 30;
   tRows.forEach((x, i) => {
-    const r = 5 + i;
+    const r = 6 + i;
     const z = i % 2 ? C.gray : undefined;
     body(wsT, r, 1, label.get(x.mid) ?? '', { fill: z, font: { bold: true } });
     body(wsT, r, 2, xlDate(x.date), { numFmt: 'yyyy-mm-dd', align: 'center', fill: z });
     body(wsT, r, 3, wd(x.date), { align: 'center', fill: z });
-    tItems.forEach((it, j) => body(wsT, r, 4 + j, x.v.get(it.id) ?? null, { align: 'right', fill: z, numFmt: '0.##' }));
+    tItems.forEach((it, j) => {
+      const res = x.v.get(it.id);
+      if (it.kind === 'text') body(wsT, r, 4 + j, res?.text ?? null, { fill: z, wrap: true });
+      else body(wsT, r, 4 + j, res?.value ?? null, { align: 'right', fill: z, numFmt: '0.##' });
+    });
     body(wsT, r, 4 + tItems.length, x.by, { align: 'center', fill: z });
   });
-  if (tRows.length) wsT.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + tRows.length, column: Tc.length } };
-  else note(wsT, 5, Math.max(Tc.length, 6), '이 기간에 체력 측정 기록이 없어요.');
+  if (tRows.length) wsT.autoFilter = { from: { row: 5, column: 1 }, to: { row: 5 + tRows.length, column: Tc.length } };
+  else note(wsT, 6, Math.max(Tc.length, 6), '이 기간에 체력 측정 기록이 없어요.');
 
   // ① 요약 채우기 ----------------------------------------------------------
   title(wsS, one ? `${one.name} 님 · 건강 기록` : '맞춤 건강관리 · 기간 기록', period, S.length);

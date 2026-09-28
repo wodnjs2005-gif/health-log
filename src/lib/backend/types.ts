@@ -131,12 +131,24 @@ export interface Note {
   date: string;
 }
 
-/** 체력 측정 항목 (관리자가 만든다). better: 높을수록/낮을수록 좋음, none = 해당 없음 */
+/** 측정 분류 (예: 신체징후(Vital Sign)). 관리자가 이름을 고치거나 새로 만든다 */
+export interface TestCategory {
+  id: string;
+  name: string;
+  sort: number;
+}
+
+/**
+ * 체력 측정 항목 (관리자가 만든다). better: 높을수록/낮을수록 좋음, none = 해당 없음.
+ * kind: number = 숫자, text = 글(소견). category 가 null 이면 분류 없음
+ */
 export interface TestItem {
   id: string;
   name: string;
   unit: string;
   better: 'high' | 'low' | 'none';
+  category: string | null;
+  kind: 'number' | 'text';
 }
 export type NewTestItem = Omit<TestItem, 'id'>;
 
@@ -147,9 +159,15 @@ export interface TestResult {
   /** 측정 항목 id */
   item: string;
   date: string;
-  value: number;
+  /** 숫자 항목의 값 (글 항목이면 null) */
+  value: number | null;
+  /** 글 항목의 내용 */
+  text?: string | null;
   by: string;
 }
+
+/** 측정 저장: 숫자 항목은 value, 글 항목은 text */
+export type TestValue = { item: string; value?: number; text?: string };
 
 export type PhotoKind = 'member' | 'trainer';
 
@@ -198,6 +216,7 @@ export interface DataSet {
   notes: Note[];
   measures: Measure[];
   notices: Notice[];
+  testCategories: TestCategory[];
   testItems: TestItem[];
   tests: TestResult[];
   /** 사진이 있는 이용자·트레이너 id → 사진 버전 (사진 자체는 따로 받는다) */
@@ -220,7 +239,8 @@ export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>
   notes: d.notes || [],
   measures: d.measures || [],
   notices: d.notices || [],
-  testItems: d.testItems || [],
+  testCategories: d.testCategories || [],
+  testItems: (d.testItems || []).map((i) => ({ ...i, category: i.category ?? null, kind: i.kind ?? 'number' })),
   tests: d.tests || [],
   photos: d.photos || {},
 });
@@ -370,13 +390,18 @@ export interface Backend {
   /** until: 이 날까지 보인다 (null = 지울 때까지) */
   staffAddNotice(token: string, text: string, until: string | null): Promise<Notice>;
   staffDelNotice(token: string, id: string): Promise<void>;
-  // 체력 측정: 항목은 관리자, 결과는 트레이너만
+  // 체력 측정: 분류·항목은 관리자, 결과는 트레이너만
+  adminAddTestCategory(token: string, name: string): Promise<TestCategory>;
+  adminUpdateTestCategory(token: string, id: string, name: string): Promise<TestCategory>;
+  /** 항목이 남아 있는 분류는 지울 수 없다 */
+  adminDelTestCategory(token: string, id: string): Promise<void>;
   adminAddTestItem(token: string, it: NewTestItem): Promise<TestItem>;
+  /** 종류(숫자/글)는 바꿀 수 없다 */
   adminUpdateTestItem(token: string, id: string, it: NewTestItem): Promise<TestItem>;
   /** 항목을 지우면 그 항목의 지난 결과도 지워진다 */
   adminDelTestItem(token: string, id: string): Promise<void>;
   /** 그 날의 측정을 통째로 저장 (값이 없는 항목은 그 날 결과에서 빠진다). 저장된 그 날 결과를 돌려준다 */
-  trainerSaveTests(token: string, mid: string, date: string, values: { item: string; value: number }[]): Promise<TestResult[]>;
+  trainerSaveTests(token: string, mid: string, date: string, values: TestValue[]): Promise<TestResult[]>;
   trainerDelTests(token: string, mid: string, date: string): Promise<void>;
   // 프로필 사진 (작게 줄인 JPEG data URL)
   /** data 가 null 이면 지운다. 새 사진 버전을 돌려준다 (지웠으면 null) */

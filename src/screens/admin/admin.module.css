@@ -279,3 +279,41 @@
   font-size: 1.0625rem;
   white-space: normal;
 }
+
+/* 체력 측정 항목 관리: 분류마다 한 덩어리 */
+.catBlock {
+  border: 1px solid var(--card-line);
+  border-radius: 1rem;
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.catHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.catName {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--navy);
+  text-wrap: pretty;
+}
+
+.catActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.smallChip {
+  min-height: 2.75rem;
+  font-size: 0.9375rem;
+}

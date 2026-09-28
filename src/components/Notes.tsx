@@ -76,6 +76,8 @@ export function NoteWriter({ mid, name, color }: { mid: string; name: string; co
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  /** 펼침 (평소에는 접어 두어 기록이 먼저 보이게) */
+  const [open, setOpen] = useState(false);
   const confirm = useConfirm();
   const list = latestFirst(data.notes, mid);
   const shown = showAll ? list : list.slice(0, 3);
@@ -110,9 +112,17 @@ export function NoteWriter({ mid, name, color }: { mid: string; name: string; co
   return (
     <section className={s.noteCard}>
       <h3 className={s.noteTitle}>
-        <Icon />
-        한마디 남기기
+        <button type="button" className={s.toggle} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          <Icon />
+          <span className={s.toggleText}>한마디 남기기</span>
+          {list.length > 0 && <span className={s.toggleCount}>{list.length}개</span>}
+          <svg className={s.chev} data-open={open} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
       </h3>
+      {open && (
+      <>
       <div className={ui.small}>남긴 글은 {name} 님과 보호자 화면에 보여요.</div>
       <div className={s.phrases}>
         {PHRASES.map((p) => (
@@ -152,6 +162,8 @@ export function NoteWriter({ mid, name, color }: { mid: string; name: string; co
             </button>
           )}
         </div>
+      )}
+      </>
       )}
     </section>
   );

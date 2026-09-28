@@ -15,6 +15,7 @@ import {
   type NewMeasure,
   type Note,
   type Notice,
+  type TestCategory,
   type TestItem,
   type TestResult,
   type Program,
@@ -191,11 +192,21 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     staffDelNotice: (token, id) => rpc<void>('staff_del_notice', { p_token: token, p_id: id }),
 
+    adminAddTestCategory: (token, name) => rpc<TestCategory>('admin_add_test_category', { p_token: token, p_name: name }),
+
+    adminUpdateTestCategory: (token, id, name) => rpc<TestCategory>('admin_update_test_category', { p_token: token, p_id: id, p_name: name }),
+
+    adminDelTestCategory: (token, id) => rpc<void>('admin_del_test_category', { p_token: token, p_id: id }),
+
     adminAddTestItem: (token, it) =>
-      rpc<TestItem>('admin_add_test_item', { p_token: token, p_name: it.name, p_unit: it.unit, p_better: it.better }),
+      rpc<TestItem>('admin_add_test_item', {
+        p_token: token, p_name: it.name, p_unit: it.unit, p_better: it.better, p_category: it.category, p_kind: it.kind,
+      }),
 
     adminUpdateTestItem: (token, id, it) =>
-      rpc<TestItem>('admin_update_test_item', { p_token: token, p_id: id, p_name: it.name, p_unit: it.unit, p_better: it.better }),
+      rpc<TestItem>('admin_update_test_item', {
+        p_token: token, p_id: id, p_name: it.name, p_unit: it.unit, p_better: it.better, p_category: it.category,
+      }),
 
     adminDelTestItem: (token, id) => rpc<void>('admin_del_test_item', { p_token: token, p_id: id }),
 
