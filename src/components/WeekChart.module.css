@@ -133,3 +133,37 @@
 .check {
   font-size: 0.8em;
 }
+
+/* 식사 기록 ‹ 9/26 ~ 9/28 › */
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pageBtn {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--input-line);
+  background: var(--card);
+  border-radius: var(--r-btn-sm);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+}
+
+.pageRange {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
