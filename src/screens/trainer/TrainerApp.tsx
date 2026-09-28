@@ -35,7 +35,17 @@ export function TrainerApp() {
   const [tTab, setTTab] = useState<TTab>('members');
   const [tView, setTView] = useState<string | null>(null);
   // 상세 화면에 갔다 와도 찾던 조건은 그대로 둔다
-  const { filter, setFilter, shown } = useMemberFilter(data.members);
+  const { filter, setFilter, shown: found } = useMemberFilter(data.members);
+  // 「내 담당」: 담당 이용자가 있으면 처음에는 켜 두고, 고른 것은 기억한다
+  const myCount = data.members.filter((m) => data.assign[m.id] === staffId).length;
+  const [mineSaved, setMineSaved] = useState(() => lsGet(LS.mineOnly));
+  const mineOn = myCount > 0 && mineSaved !== 'off';
+  const shown = mineOn ? found.filter((m) => data.assign[m.id] === staffId) : found;
+  const toggleMine = () => {
+    const v = mineOn ? 'off' : 'on';
+    setMineSaved(v);
+    lsSet(LS.mineOnly, v);
+  };
   const [exportingAll, setExportingAll] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const confirm = useConfirm();
@@ -104,6 +114,7 @@ export function TrainerApp() {
           filter={filter}
           onFilter={setFilter}
           shown={shown}
+          mine={myCount > 0 ? { on: mineOn, count: myCount, onToggle: toggleMine } : undefined}
           onExport={() => setExportingAll(true)}
           onOpen={(id) => {
             confirm.reset();
@@ -137,9 +148,10 @@ interface ListProps {
   shown: Member[];
   onFilter: (f: MemberFilterValue) => void;
   onOpen: (id: string) => void;
+  mine?: { on: boolean; count: number; onToggle: () => void };
 }
 
-function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
+function MemberList({ filter, onFilter, shown, onOpen, onExport, mine }: ListProps) {
   const { data, today } = useApp();
   const mon = mondayOf(today);
   // 기록이 끊긴 분을 맨 위로
@@ -170,6 +182,7 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
           value={filter}
           onChange={onFilter}
           shown={shown.length}
+          mine={mine}
           side={
             <div className={s.viewSwitch} role="group" aria-label="보기 방식">
               <button type="button" className={s.viewBtn} aria-pressed={!tile} aria-label="목록으로 보기" title="목록" onClick={() => pickView(false)}>

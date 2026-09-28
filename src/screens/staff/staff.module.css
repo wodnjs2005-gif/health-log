@@ -142,8 +142,8 @@
 .tag {
   font-size: 0.875rem;
   font-weight: 700;
-  background: var(--navy-soft);
-  color: var(--navy);
+  background: var(--tag-bg, var(--navy-soft));
+  color: var(--tag-ink, var(--navy));
   border-radius: 1rem;
   padding: 0.125rem 0.5rem;
   white-space: nowrap;
@@ -261,6 +261,31 @@
   color: #fff;
 }
 
+/* 해시태그 버튼: 해시태그마다 다른 색. 고르면 진한 색으로 채운다 */
+.tagBtnColor {
+  background: var(--tag-bg);
+  border-color: var(--tag-bg);
+  color: var(--tag-ink);
+}
+
+.tagBtnColor[aria-pressed='true'] {
+  background: var(--tag-ink);
+  border-color: var(--tag-ink);
+  color: #fff;
+}
+
+/* 트레이너 「내 담당」 */
+.mineBtn {
+  border-color: var(--orange);
+  color: var(--orange-ink);
+}
+
+.mineBtn[aria-pressed='true'] {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
+
 .tagCount {
   font-weight: 600;
   opacity: 0.75;
@@ -280,7 +305,7 @@
   font-size: 1.0625rem;
   font-weight: 700;
   border: none;
-  background: var(--navy);
+  background: var(--tag-ink, var(--navy));
   color: #fff;
   white-space: nowrap;
   display: inline-flex;

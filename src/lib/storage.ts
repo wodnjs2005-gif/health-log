@@ -10,6 +10,8 @@ export const LS = {
   installHide: 'healthlog.installHide',
   /** 트레이너 이용자 목록 보기: 'tile' 이면 타일 (없으면 목록) */
   memberView: 'healthlog.memberView',
+  /** 트레이너 「내 담당」만 보기: 'on' / 'off' (없으면 담당이 있을 때 켬) */
+  mineOnly: 'healthlog.mineOnly',
   /** 예전 공용 비밀번호·체험 모드 데이터 (앱을 열 때 지운다) */
   legacy: ['healthlog.staff', 'healthlog.v1'],
 } as const;

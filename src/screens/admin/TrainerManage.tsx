@@ -23,7 +23,7 @@ interface Issued {
 
 /** 관리자 · 트레이너 관리: 등록하면 8자리 트레이너 번호가 발급된다 */
 export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfirm> }) {
-  const { be, staffToken, trainers, setTrainers, toast, fail } = useApp();
+  const { be, data, setData, staffToken, trainers, setTrainers, toast, fail } = useApp();
   const [name, setName] = useState('');
   const [rank, setRank] = useState('');
   const [editingRank, setEditingRank] = useState<Trainer | null>(null);
@@ -75,6 +75,8 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
         return fail(e);
       }
       setTrainers((list) => list.filter((x) => x.id !== id));
+      // 그 트레이너가 맡던 이용자는 담당 없음으로
+      setData((d) => ({ ...d, assign: Object.fromEntries(Object.entries(d.assign).filter(([, tid]) => tid !== id)) }));
       setIssued((j) => (j && j.id === id ? null : j));
       toast('트레이너를 삭제했어요');
     });
@@ -154,7 +156,7 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
               {t.rank && <span className={cx(ui.badge, ui.badgeNavy)}>{t.rank}</span>}
             </span>
             <span className={ui.muted} style={{ whiteSpace: 'nowrap' }}>
-              {md(t.createdAt)} 등록
+              담당 {Object.values(data.assign).filter((x) => x === t.id).length}명 · {md(t.createdAt)} 등록
             </span>
           </div>
           <div className={s.codeRow}>

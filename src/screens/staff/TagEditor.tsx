@@ -1,6 +1,8 @@
 import { useId, type ReactNode } from 'react';
 import { useApp } from '../../AppContext';
 import { cx } from '../../lib/cx';
+import { tagStyle } from '../../lib/tagColors';
+import { useTagColors } from './MemberFilter';
 import { allTags, normTag, TAG_MAX_LEN, TAGS_PER_MEMBER } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
 import s from './staff.module.css';
@@ -48,6 +50,7 @@ export function TagEditor({ value, onChange, onError, label }: Props) {
     onError('');
   };
 
+  const colors = useTagColors();
   return (
     <>
       {tags.length > 0 && (
@@ -59,6 +62,7 @@ export function TagEditor({ value, onChange, onError, label }: Props) {
                 key={t}
                 type="button"
                 className={s.editTag}
+                style={tagStyle(colors.get(t))}
                 aria-label={`#${t} 빼기`}
                 onClick={() => {
                   onChange({ ...value, tags: tags.filter((x) => x !== t) });

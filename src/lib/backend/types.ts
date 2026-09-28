@@ -201,6 +201,13 @@ export interface ChatRange {
 
 export const CHAT_MAX = 500;
 
+/** 이용자에게 보여주는 담당 트레이너 */
+export interface ChatTrainer {
+  id: string;
+  name: string;
+  rank: string;
+}
+
 /** 보호자가 적은 관계 (예: 딸). 적은 이용자만 온다 */
 export interface GuardianInfo {
   mid: string;
@@ -258,6 +265,8 @@ export interface DataSet {
   /** 사진이 있는 이용자·트레이너·관리자·보호자(g+이용자 id) → 사진 버전 (사진 자체는 따로 받는다) */
   photos: Record<string, string>;
   guardians: GuardianInfo[];
+  /** 담당 트레이너: 이용자 id → 트레이너 id (담당이 있는 이용자만) */
+  assign: Record<string, string>;
 }
 
 /**
@@ -281,6 +290,7 @@ export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>
   tests: d.tests || [],
   photos: d.photos || {},
   guardians: d.guardians || [],
+  assign: d.assign || {},
 });
 
 export interface UserData extends Omit<DataSet, 'members'> {
@@ -454,13 +464,15 @@ export interface Backend {
   /** 보호자 관계 (비우면 지움). 저장된 글을 돌려준다 */
   guardianSetRelation(code: string, relation: string): Promise<string>;
   // 대화 (이용자 ↔ 트레이너). 관리자는 보기만
-  /** 안 읽은 수와 초인종 채널 */
-  userChatStatus(code: string): Promise<{ key: string; unread: number }>;
+  /** 안 읽은 수, 초인종 채널, 담당 트레이너 (없으면 null: 대화를 보낼 수 없다) */
+  userChatStatus(code: string): Promise<{ key: string; unread: number; trainer: ChatTrainer | null }>;
   /** 보면 읽은 것으로 */
   userChatGet(code: string, range?: ChatRange): Promise<ChatMessage[]>;
   userChatSend(code: string, text: string): Promise<ChatMessage>;
   staffChatList(token: string): Promise<{ key: string; rooms: ChatRoom[] }>;
-  /** 트레이너가 보면 읽은 것으로 (관리자는 보기만) */
+  /** 담당 트레이너 정하기 (관리자). tid 가 null 이면 담당 없음 */
+  adminSetMemberTrainer(token: string, mid: string, tid: string | null): Promise<void>;
+  /** 트레이너는 담당 이용자만, 보면 읽은 것으로 (관리자는 모두 보기만) */
   staffChatGet(token: string, mid: string, range?: ChatRange): Promise<ChatMessage[]>;
   trainerChatSend(token: string, mid: string, text: string): Promise<ChatMessage>;
   /** 초인종 채널을 듣는다. 새 메시지 신호가 오면 onRing. 돌려준 함수로 그만 듣는다 */

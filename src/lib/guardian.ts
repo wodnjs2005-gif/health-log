@@ -60,6 +60,7 @@ export const mergeGuardianData = (list: GuardianData[]): DataSet => {
       tests: list.flatMap((g) => g.tests || []),
       photos: Object.assign({}, ...list.map((g) => g.photos || {})),
       guardians: list.flatMap((g) => g.guardians || []),
+      assign: Object.assign({}, ...list.map((g) => g.assign || {})),
     },
   );
 };

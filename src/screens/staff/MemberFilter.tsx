@@ -1,4 +1,6 @@
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useApp } from '../../AppContext';
+import { tagColorMap, tagStyle } from '../../lib/tagColors';
 import type { Member } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import { allTags, EMPTY_FILTER, matchMember, type MemberFilterValue } from '../../lib/tags';
@@ -16,13 +18,20 @@ export function useMemberFilter(members: Member[]) {
   return { filter, setFilter, shown };
 }
 
+/** 해시태그마다 다른 색 (모든 이용자의 해시태그 기준) */
+export function useTagColors() {
+  const { data } = useApp();
+  return useMemo(() => tagColorMap(data.members), [data.members]);
+}
+
 /** #오전반 #무릎조심 … (보기 전용) */
 export function TagList({ tags }: { tags?: string[] }) {
+  const colors = useTagColors();
   if (!tags?.length) return null;
   return (
     <div className={s.tagList} aria-label="해시태그">
       {tags.map((t) => (
-        <span key={t} className={s.tag}>
+        <span key={t} className={s.tag} style={tagStyle(colors.get(t))}>
           #{t}
         </span>
       ))}
@@ -38,11 +47,14 @@ interface Props {
   shown?: number;
   /** 해시태그 줄 오른쪽에 붙일 것 (예: 목록·타일 버튼) */
   side?: ReactNode;
+  /** 트레이너: 「내 담당」 버튼 (맨 앞) */
+  mine?: { on: boolean; count: number; onToggle: () => void };
 }
 
 /** 이름·초성·#해시태그 검색 + 해시태그별로 골라 보기 */
-export function MemberFilter({ members, value, onChange, shown, side }: Props) {
+export function MemberFilter({ members, value, onChange, shown, side, mine }: Props) {
   const tags = allTags(members);
+  const colors = useTagColors();
   const filtering = !!value.q.trim() || !!value.tag;
   // 해시태그가 한 줄을 넘으면 한 줄만 보이고 ▼ 로 펼친다
   const [open, setOpen] = useState(false);
@@ -75,7 +87,7 @@ export function MemberFilter({ members, value, onChange, shown, side }: Props) {
         autoComplete="off"
         enterKeyHint="search"
       />
-      {(tags.length > 0 || side) && (
+      {(tags.length > 0 || side || mine) && (
         <div className={cx(s.tagRow, more && open && s.tagRowOpen)}>
           {/* 펼치면 버튼은 오른쪽 위에 두고 해시태그가 그 둘레로 흐르도록 버튼을 먼저 둔다 (닫혔을 때는 order 로 뒤에) */}
           {side && <div className={s.tagSide}>{side}</div>}
@@ -93,16 +105,24 @@ export function MemberFilter({ members, value, onChange, shown, side }: Props) {
               </svg>
             </button>
           )}
-          {tags.length > 0 && (
+          {(tags.length > 0 || mine) && (
             <div ref={tagRef} id={tagId} className={cx(s.tagFilter, more && !open && s.tagFilterShut)} role="group" aria-label="해시태그로 골라 보기">
-              <button type="button" className={s.tagBtn} aria-pressed={!value.tag} onClick={() => onChange({ ...value, tag: null })}>
-                전체<span className={s.tagCount}>{members.length}</span>
-              </button>
+              {mine && (
+                <button type="button" className={cx(s.tagBtn, s.mineBtn)} aria-pressed={mine.on} onClick={mine.onToggle}>
+                  내 담당<span className={s.tagCount}>{mine.count}</span>
+                </button>
+              )}
+              {tags.length > 0 && (
+                <button type="button" className={s.tagBtn} aria-pressed={!value.tag} onClick={() => onChange({ ...value, tag: null })}>
+                  전체<span className={s.tagCount}>{members.length}</span>
+                </button>
+              )}
               {tags.map(({ tag, n }) => (
                 <button
                   key={tag}
                   type="button"
-                  className={s.tagBtn}
+                  className={cx(s.tagBtn, s.tagBtnColor)}
+                  style={tagStyle(colors.get(tag))}
                   aria-pressed={value.tag === tag}
                   onClick={() => onChange({ ...value, tag: value.tag === tag ? null : tag })}
                 >

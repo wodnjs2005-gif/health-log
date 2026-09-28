@@ -157,6 +157,17 @@
   white-space: nowrap;
 }
 
+/* 보내지 못했을 때 안내 */
+.sendError {
+  flex: none;
+  padding: 0.625rem 1rem;
+  background: #fbe3e1;
+  color: var(--danger);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
 /* 적는 칸 */
 .inputBar {
   flex: none;

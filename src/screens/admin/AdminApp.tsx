@@ -8,6 +8,8 @@ import { ChatScreen } from '../../components/Chat';
 import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
 import { useStaffChat } from '../../hooks/useChat';
 import { ChatList } from '../staff/ChatList';
+import { AssignSheet } from './AssignSheet';
+import { trainerTitle } from '../../lib/rank';
 import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
@@ -75,6 +77,7 @@ export function AdminApp() {
   const [regOpen, setRegOpen] = useState(false);
   /** 더보기 창을 연 이용자 */
   const [more, setMore] = useState<Member | null>(null);
+  const [assigning, setAssigning] = useState<Member | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatWith, setChatWith] = useState<Member | null>(null);
   // 관리자는 대화 기록을 열었을 때만 연결한다
@@ -364,6 +367,7 @@ export function AdminApp() {
                 </div>
                 {warn && <span className={cx(ui.badge, act.stale ? st.staleBadge : ui.badgeMuted)}>{warn}</span>}
                 <TagList tags={m.tags} />
+                <AssignRow mid={m.id} onPick={() => setAssigning(m)} />
                 <div className={s.codeRow}>
                   <span className={cx(ui.small, s.codeLabel)}>개인 번호</span>
                   <CopyCode code={m.code} label="개인 번호" className={s.code} />
@@ -427,6 +431,7 @@ export function AdminApp() {
       {testItemsOpen && <TestItemManage onClose={() => setTestItemsOpen(false)} />}
       {myPhoto && staffId && <PhotoSheet target={{ kind: 'admin', id: staffId }} name={staffName} title="내 사진" tone="navy" onClose={() => setMyPhoto(false)} />}
       {photoMember && <PhotoSheet target={{ kind: 'member', id: photoMember.id }} name={`${photoMember.name} 님`} tone="navy" onClose={() => setPhotoMember(null)} />}
+      {assigning && <AssignSheet member={assigning} onClose={() => setAssigning(null)} />}
       {chatOpen && (
         <Sheet title="대화 기록" onClose={() => setChatOpen(false)}>
           <ChatList mode="admin" chat={adminChat} heading={false} />
@@ -504,6 +509,21 @@ function MoreSheet({ member, onClose, onBirth, onPhoto, onChat, onTags, onExport
         <ConfirmButton armed={confirm.pending === 'd'} onClick={twice('d', onDelete)} label="이용자 삭제" danger wide />
       </div>
     </Sheet>
+  );
+}
+
+/** 이용자 카드: 담당 트레이너 (누르면 바꾸기) */
+function AssignRow({ mid, onPick }: { mid: string; onPick: () => void }) {
+  const { data, trainers } = useApp();
+  const t = trainers.find((x) => x.id === data.assign[mid]);
+  return (
+    <div className={s.assignRow}>
+      <span className={cx(ui.small, s.codeLabel)}>담당</span>
+      <button type="button" className={cx(s.assignPick, !t && s.assignPickEmpty)} onClick={onPick} aria-haspopup="dialog">
+        {t && <Avatar id={t.id} name={t.name} size="sm" tone="navy" />}
+        {t ? trainerTitle(t.name, t.rank) : '담당 트레이너 정하기'}
+      </button>
+    </div>
   );
 }
 

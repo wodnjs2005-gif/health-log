@@ -194,6 +194,7 @@ function seed(): DevDB {
     photos: {},
     photoData: {},
     guardians: [{ mid: 'm1', relation: '딸' }],
+    assign: { m1: 't1', m2: 't1' },
     chat: [
       { id: uid(), mid: 'm1', from: 'member', tid: null, by: '', text: '어제 운동하고 무릎이 조금 뻐근해요. 오늘도 해도 될까요?', at: new Date(Date.now() - 26 * 3600e3).toISOString() },
       { id: uid(), mid: 'm1', from: 'trainer', tid: 't1', by: '김코치 팀장', text: '오늘은 걷기만 20분 가볍게 하시고, 계속 아프면 말씀해 주세요.', at: new Date(Date.now() - 25 * 3600e3).toISOString() },
@@ -239,6 +240,7 @@ const load = (): DevDB => {
   d.chat ??= [];
   d.chatSeen ??= {};
   d.chatReads ??= {};
+  d.assign ??= {};
   return d;
 };
 
@@ -271,6 +273,7 @@ const ring = (topic: string) => {
 };
 const STAFF_TOPIC = 'dev-staff';
 const memberTopic = (mid: string) => 'dev-chat-' + mid;
+const trainerTopic = (tid: string) => 'dev-tr-' + tid;
 
 /** 경계 시각도 포함 (서버와 같게) */
 const chatPage = (d: DevDB, mid: string, r: ChatRange = {}) => {
@@ -287,6 +290,7 @@ const chatPut = (d: DevDB, msg: Omit<ChatMessage, 'id' | 'at'>) => {
   d.chat.push(c);
   save(d);
   ring(memberTopic(c.mid));
+  if (d.assign[c.mid]) ring(trainerTopic(d.assign[c.mid]));
   ring(STAFF_TOPIC);
   return c;
 };
@@ -316,6 +320,7 @@ const userData = (d: DevDB, m: Member): UserData => ({
   tests: d.tests.filter((t) => t.mid === m.id),
   photos: photoVersFor(d, m.id),
   guardians: d.guardians.filter((g) => g.mid === m.id),
+  assign: d.assign[m.id] ? { [m.id]: d.assign[m.id] } : {},
 });
 
 /** 이용자·보호자에게는 그분·그분 보호자·트레이너 사진만 (직원은 전부) */
@@ -594,6 +599,7 @@ export function createDevBackend(): Backend {
         tests: d.tests,
         photos: d.photos,
         guardians: d.guardians,
+        assign: d.assign,
       };
     },
 
@@ -620,6 +626,7 @@ export function createDevBackend(): Backend {
       d.tests = d.tests.filter((x) => x.mid !== id);
       d.guardians = d.guardians.filter((g) => g.mid !== id);
       d.chat = d.chat.filter((c) => c.mid !== id);
+      delete d.assign[id];
       for (const k of [id, guardianPhotoId(id)]) {
         delete d.photos[k];
         delete d.photoData[k];
@@ -692,6 +699,7 @@ export function createDevBackend(): Backend {
     async adminDelTrainer(token, id) {
       const d = admin(token);
       d.trainers = d.trainers.filter((t) => t.id !== id);
+      for (const [mid, tid] of Object.entries(d.assign)) if (tid === id) delete d.assign[mid];
       d.sessions = d.sessions.filter((s) => !(s.role === 'trainer' && s.subject === id));
       delete d.photos[id];
       delete d.photoData[id];
@@ -1044,7 +1052,12 @@ export function createDevBackend(): Backend {
       const d = load();
       const m = who(d, code);
       const seen = d.chatSeen[m.id] ?? '';
-      return { key: memberTopic(m.id), unread: d.chat.filter((c) => c.mid === m.id && c.from === 'trainer' && c.at > seen).length };
+      const t = d.trainers.find((x) => x.id === d.assign[m.id]);
+      return {
+        key: memberTopic(m.id),
+        unread: d.chat.filter((c) => c.mid === m.id && c.from === 'trainer' && c.at > seen).length,
+        trainer: t ? { id: t.id, name: t.name, rank: t.rank ?? '' } : null,
+      };
     },
 
     async userChatGet(code, r) {
@@ -1060,6 +1073,7 @@ export function createDevBackend(): Backend {
     async userChatSend(code, text) {
       const d = load();
       const m = who(d, code);
+      if (!d.trainers.some((t) => t.id === d.assign[m.id])) throw new Error('no trainer');
       const c = chatPut(d, { mid: m.id, from: 'member', tid: null, by: '', text });
       d.chatSeen[m.id] = c.at;
       save(d);
@@ -1069,19 +1083,21 @@ export function createDevBackend(): Backend {
     async staffChatList(token) {
       const { d, s } = staff(token);
       const last = new Map<string, ChatMessage>();
-      for (const c of [...d.chat].sort((a, b) => a.at.localeCompare(b.at))) last.set(c.mid, c);
+      // 트레이너는 담당 이용자 대화만
+      for (const c of [...d.chat].sort((a, b) => a.at.localeCompare(b.at))) if (s.role === 'admin' || d.assign[c.mid] === s.subject) last.set(c.mid, c);
       const rooms = [...last.values()]
         .sort((a, b) => b.at.localeCompare(a.at))
         .map((l) => {
           const seen = d.chatReads[s.subject + '|' + l.mid] ?? '';
           return { mid: l.mid, last: l, unread: s.role === 'trainer' ? d.chat.filter((c) => c.mid === l.mid && c.from === 'member' && c.at > seen).length : 0 };
         });
-      return { key: STAFF_TOPIC, rooms };
+      return { key: s.role === 'admin' ? STAFF_TOPIC : trainerTopic(s.subject), rooms };
     },
 
     async staffChatGet(token, mid, r) {
       const { d, s } = staff(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
       if (s.role === 'trainer' && !r?.before) {
         d.chatReads[s.subject + '|' + mid] = new Date().toISOString();
         save(d);
@@ -1092,10 +1108,22 @@ export function createDevBackend(): Backend {
     async trainerChatSend(token, mid, text) {
       const { d, s } = trainer(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      if (d.assign[mid] !== s.subject) throw new Error('not assigned');
       const c = chatPut(d, { mid, from: 'trainer', tid: s.subject, by: staffLabel(d, s), text });
       d.chatReads[s.subject + '|' + mid] = c.at;
       save(d);
       return c;
+    },
+
+    async adminSetMemberTrainer(token, mid, tid) {
+      const d = admin(token);
+      if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      if (tid && !d.trainers.some((t) => t.id === tid)) throw new Error('trainer not found');
+      if (tid) {
+        d.assign[mid] = tid;
+        d.chatReads[tid + '|' + mid] ??= new Date().toISOString();
+      } else delete d.assign[mid];
+      save(d);
     },
 
     chatListen(key, onRing) {

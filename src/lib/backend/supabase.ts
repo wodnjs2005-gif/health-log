@@ -11,6 +11,7 @@ import {
   type GuardianData,
   type Meal,
   type ChatMessage,
+  type ChatTrainer,
   type ChatRoom,
   type Measure,
   type Member,
@@ -230,7 +231,12 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     guardianSetPhoto: async (code, data) => (await userRpc<{ v: string | null }>('guardian_set_photo', { p_code: normCode(code), p_data: data })).v,
 
-    userChatStatus: (code) => userRpc<{ key: string; unread: number }>('user_chat_status', { p_code: normCode(code) }),
+    userChatStatus: async (code) => {
+      const r = await userRpc<{ key: string; unread: number; trainer?: ChatTrainer | null }>('user_chat_status', { p_code: normCode(code) });
+      return { ...r, trainer: r.trainer ?? null };
+    },
+
+    adminSetMemberTrainer: (token, mid, tid) => rpc<void>('admin_set_member_trainer', { p_token: token, p_member: mid, p_trainer: tid }),
 
     userChatGet: (code, r = {}) => userRpc<ChatMessage[]>('user_chat_get', { p_code: normCode(code), p_after: r.after ?? null, p_before: r.before ?? null }),
 

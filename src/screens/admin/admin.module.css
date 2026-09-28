@@ -317,3 +317,63 @@
   min-height: 2.75rem;
   font-size: 0.9375rem;
 }
+
+/* 담당 트레이너 */
+.assignList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.assignBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  text-align: left;
+}
+
+.assignName {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.assignCount {
+  flex: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.assignNone {
+  align-self: flex-start;
+}
+
+.assignRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.assignPick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.375rem;
+  border-radius: var(--r-chip);
+  border: 2px solid var(--input-line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.assignPickEmpty {
+  border-style: dashed;
+  border-color: var(--danger);
+  color: var(--danger);
+  padding-left: 0.75rem;
+}
