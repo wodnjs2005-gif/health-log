@@ -110,7 +110,7 @@ export function NoteWriter({ mid, name, color }: { mid: string; name: string; co
     });
 
   return (
-    <section className={s.noteCard}>
+    <section className={cx(s.noteCard, s.noteWriter)} data-open={open}>
       <h3 className={s.noteTitle}>
         <button type="button" className={s.toggle} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           <Icon />

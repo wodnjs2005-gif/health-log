@@ -57,6 +57,15 @@
   gap: 0.625rem;
 }
 
+/* 한마디 남기기 (직원): 접혀 있을 때는 제목 줄만 얇게 */
+.noteWriter {
+  padding: 0.125rem 1rem;
+}
+
+.noteWriter[data-open='true'] {
+  padding-bottom: 1rem;
+}
+
 .noteTitle {
   margin: 0;
   display: flex;
