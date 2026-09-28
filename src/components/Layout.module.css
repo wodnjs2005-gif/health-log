@@ -71,17 +71,46 @@
   gap: 0.25rem;
 }
 
-/* 좁은 화면에서 줄이 바뀌면 라벨을 버튼 옆으로 옮겨 헤더 높이를 줄인다 */
+/* 좁은 화면에서 줄이 바뀌면 라벨을 버튼 옆으로 옮겨 헤더 높이를 줄인다 (그래도 좁으면 앱 설치 버튼이 다음 줄로) */
 .top[data-stacked='true'] .fsGroup {
   flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
+  max-width: 100%;
 }
 
 .fsLabel {
   font-size: 0.8125rem;
   color: var(--ink-3);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.fsRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+}
+
+/* 맨 위 「앱 설치」 (이미 설치해서 열었으면 없음) */
+.install {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  padding: 0 0.625rem;
+  border: 1px solid var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+  border-radius: var(--r-btn-sm);
+  font-size: 0.9375rem;
+  font-weight: 800;
   white-space: nowrap;
 }
 

@@ -126,8 +126,32 @@ export interface Note {
   text: string;
   /** 남긴 사람 (예: '김코치 팀장') */
   by: string;
+  /** 남긴 트레이너 id (사진을 보여줄 때). 관리자나 예전 한마디는 없음 */
+  byId?: string | null;
   date: string;
 }
+
+/** 체력 측정 항목 (관리자가 만든다). better: 높을수록/낮을수록 좋음, none = 해당 없음 */
+export interface TestItem {
+  id: string;
+  name: string;
+  unit: string;
+  better: 'high' | 'low' | 'none';
+}
+export type NewTestItem = Omit<TestItem, 'id'>;
+
+/** 체력 측정 결과 (트레이너만 적는다) */
+export interface TestResult {
+  id: string;
+  mid: string;
+  /** 측정 항목 id */
+  item: string;
+  date: string;
+  value: number;
+  by: string;
+}
+
+export type PhotoKind = 'member' | 'trainer';
 
 /** 건강 수치. 적지 않은 항목은 null */
 export interface Measure {
@@ -174,6 +198,10 @@ export interface DataSet {
   notes: Note[];
   measures: Measure[];
   notices: Notice[];
+  testItems: TestItem[];
+  tests: TestResult[];
+  /** 사진이 있는 이용자·트레이너 id → 사진 버전 (사진 자체는 따로 받는다) */
+  photos: Record<string, string>;
 }
 
 /**
@@ -192,6 +220,9 @@ export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>
   notes: d.notes || [],
   measures: d.measures || [],
   notices: d.notices || [],
+  testItems: d.testItems || [],
+  tests: d.tests || [],
+  photos: d.photos || {},
 });
 
 export interface UserData extends Omit<DataSet, 'members'> {
@@ -249,6 +280,8 @@ export interface StaffSession {
   name: string;
   /** 트레이너 직급 */
   rank?: string;
+  /** 트레이너 id (자기 사진) */
+  id?: string;
 }
 
 export type AdminLoginResult =
@@ -258,7 +291,7 @@ export type AdminLoginResult =
 
 /** 직원(관리자·트레이너) 화면 데이터. 관리자에게만 번호와 트레이너 목록이 들어 있다 */
 export interface StaffData extends DataSet {
-  me: { role: StaffRole; name: string; rank?: string };
+  me: { role: StaffRole; name: string; rank?: string; id?: string };
   trainers?: Trainer[] | null;
 }
 
@@ -337,6 +370,21 @@ export interface Backend {
   /** until: 이 날까지 보인다 (null = 지울 때까지) */
   staffAddNotice(token: string, text: string, until: string | null): Promise<Notice>;
   staffDelNotice(token: string, id: string): Promise<void>;
+  // 체력 측정: 항목은 관리자, 결과는 트레이너만
+  adminAddTestItem(token: string, it: NewTestItem): Promise<TestItem>;
+  adminUpdateTestItem(token: string, id: string, it: NewTestItem): Promise<TestItem>;
+  /** 항목을 지우면 그 항목의 지난 결과도 지워진다 */
+  adminDelTestItem(token: string, id: string): Promise<void>;
+  /** 그 날의 측정을 통째로 저장 (값이 없는 항목은 그 날 결과에서 빠진다). 저장된 그 날 결과를 돌려준다 */
+  trainerSaveTests(token: string, mid: string, date: string, values: { item: string; value: number }[]): Promise<TestResult[]>;
+  trainerDelTests(token: string, mid: string, date: string): Promise<void>;
+  // 프로필 사진 (작게 줄인 JPEG data URL)
+  /** data 가 null 이면 지운다. 새 사진 버전을 돌려준다 (지웠으면 null) */
+  staffSetPhoto(token: string, kind: PhotoKind, id: string, data: string | null): Promise<string | null>;
+  staffPhotos(token: string, ids: string[]): Promise<Record<string, string>>;
+  /** 이용자·보호자: 그분 사진과 트레이너 사진만 온다 */
+  userPhotos(code: string, ids: string[]): Promise<Record<string, string>>;
+  guardianPhotos(code: string, ids: string[]): Promise<Record<string, string>>;
 }
 
 /** 번호가 무효이거나 로그인이 끝났을 때 던지는 오류. 화면에서는 로그인 화면으로 돌려보낸다. */

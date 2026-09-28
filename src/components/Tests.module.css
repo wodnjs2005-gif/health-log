@@ -1,0 +1,152 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.trends {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.trend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.trend + .trend {
+  border-top: 1px solid var(--divider);
+  padding-top: 0.625rem;
+}
+
+.trendTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  flex-wrap: wrap;
+}
+
+.itemName {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.unit {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin-left: 0.125rem;
+}
+
+.trendSub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.change {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  border-radius: 1rem;
+  padding: 0.125rem 0.5rem;
+  white-space: nowrap;
+}
+
+.good {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.bad {
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+}
+
+.flat {
+  background: var(--bg);
+  color: var(--ink-3);
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.day {
+  background: var(--bg);
+  border-radius: 0.875rem;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.dayHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dayDate {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.dayValues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+
+.dayValue b {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.dayActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.inputLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.withUnit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.unitText {
+  flex: none;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  white-space: nowrap;
+}

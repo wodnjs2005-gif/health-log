@@ -66,7 +66,21 @@ const measures = [];
 for (let d = '2026-08-21', i = 0; d <= TODAY; d = add(d, 14), i++)
   measures.push({ id: 'h' + measures.length, mid: 'm1', date: d, weight: 61 - i * 0.4, sbp: 136 - i * 2, dbp: 86 - i, glu: i % 2 ? null : 115 - i, by: i === 1 ? '김코치 팀장' : '' });
 measures.push({ id: 'h' + measures.length, mid: 'm2', date: '2026-09-15', weight: null, sbp: 128, dbp: 82, glu: null, by: '' });
-const data = { members, ex, meals, programs: [], views, lessons, attendance, offdays, notes: [], measures, notices: [] };
+// 체력 측정: 항목 3개, 김순자(m1)는 두 번, 박영호(m2)는 한 번(악력만)
+const testItems = [
+  { id: 'ti1', name: '악력', unit: 'kg', better: 'high' },
+  { id: 'ti2', name: '30초 의자 일어서기', unit: '회', better: 'high' },
+  { id: 'ti3', name: '일어나 걷기(TUG)', unit: '초', better: 'low' },
+];
+const tests = [
+  ...[['2026-09-02', 20.5, 11, 9.8], ['2026-09-23', 21.25, 13, 9.1]].flatMap(([date, a, b, c]) => [
+    { id: 't' + date + 1, mid: 'm1', item: 'ti1', date, value: a, by: '김코치 팀장' },
+    { id: 't' + date + 2, mid: 'm1', item: 'ti2', date, value: b, by: '김코치 팀장' },
+    { id: 't' + date + 3, mid: 'm1', item: 'ti3', date, value: c, by: '김코치 팀장' },
+  ]),
+  { id: 'tx', mid: 'm2', item: 'ti1', date: '2026-09-10', value: 30, by: '이코치 트레이너' },
+];
+const data = { members, ex, meals, programs: [], views, lessons, attendance, offdays, notes: [], measures, notices: [], testItems, tests, photos: {} };
 
 const cases = [
   { mids: members.map((m) => m.id), single: false, from: '2026-09-01', to: TODAY },

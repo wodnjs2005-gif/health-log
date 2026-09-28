@@ -1,0 +1,101 @@
+.avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--bg);
+  border: 1px solid var(--card-line);
+  color: var(--ink-2);
+  user-select: none;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.9375rem;
+}
+
+.md {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.125rem;
+}
+
+.lg {
+  width: 3.75rem;
+  height: 3.75rem;
+  font-size: 1.5rem;
+}
+
+.xl {
+  width: 8rem;
+  height: 8rem;
+  font-size: 3rem;
+}
+
+.green {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: transparent;
+}
+
+.orange {
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+  border-color: transparent;
+}
+
+.navy {
+  background: var(--navy-soft);
+  color: var(--navy);
+  border-color: transparent;
+}
+
+.plum {
+  background: var(--plum-soft);
+  color: var(--plum);
+  border-color: transparent;
+}
+
+/* 누르면 사진을 바꿀 수 있는 사진 (직원 화면) */
+.editBtn {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.editBadge {
+  position: absolute;
+  right: -0.125rem;
+  bottom: -0.125rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--input-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+
+.editBadge svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}

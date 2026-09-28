@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
+import { Avatar } from '../../components/Avatar';
 import { InstallCard } from '../../components/InstallCard';
+import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
 import { Layout } from '../../components/Layout';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
@@ -23,7 +25,8 @@ import s from '../staff/staff.module.css';
 type TTab = 'members' | 'lessons' | 'videos';
 
 export function TrainerApp() {
-  const { data, goEntry, refresh, logout, staffName, staffRank } = useApp();
+  const { data, goEntry, refresh, logout, staffName, staffRank, staffId } = useApp();
+  const [myPhoto, setMyPhoto] = useState(false);
   const title = staffName ? trainerTitle(staffName, staffRank) : '트레이너';
   const [tTab, setTTab] = useState<TTab>('members');
   const [tView, setTView] = useState<string | null>(null);
@@ -51,7 +54,11 @@ export function TrainerApp() {
   }
 
   return (
-    <Layout title={title} onBack={goEntry}>
+    <Layout
+      title={title}
+      onBack={goEntry}
+      avatar={staffId ? <EditableAvatar id={staffId} name={staffName} size="md" onEdit={() => setMyPhoto(true)} /> : undefined}
+    >
       <div role="tablist" aria-label="트레이너 메뉴" className={s.switch}>
         {(
           [
@@ -105,6 +112,7 @@ export function TrainerApp() {
       </div>
       {exportingAll && <ExportSheet onClose={() => setExportingAll(false)} />}
       {noticeOpen && <NoticeManage onClose={() => setNoticeOpen(false)} />}
+      {myPhoto && staffId && <PhotoSheet kind="trainer" id={staffId} name={`${title} 내`} onClose={() => setMyPhoto(false)} />}
     </Layout>
   );
 }
@@ -155,8 +163,11 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
         const warn = staleText(act);
         return (
           <button key={m.id} type="button" className={cx(ui.card, s.memberCard, act.stale && s.memberStale)} onClick={() => onOpen(m.id)}>
-            <div className={ui.row} style={{ flexWrap: 'nowrap', width: '100%', gap: '0.75rem' }}>
-              <span className={s.memberName}>{m.name}</span>
+            <div className={s.memberHead}>
+              <Avatar id={m.id} name={m.name} tone="orange" />
+              <span className={s.memberName} style={{ flex: '1 0 auto' }}>
+                {m.name}
+              </span>
               <span className={s.memberMin}>
                 <span className={s.memberMinLabel}>이번 주 </span>
                 {week}분

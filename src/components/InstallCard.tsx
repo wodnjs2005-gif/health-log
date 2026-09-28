@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Sheet } from './Layout';
 import { useApp } from '../AppContext';
 import { cx } from '../lib/cx';
 import { platform, useInstall } from '../lib/install';
@@ -7,7 +8,7 @@ import ui from '../styles/ui.module.css';
 import s from './cards.module.css';
 
 /** 방법 안내 (브라우저마다 메뉴 위치가 다르다) */
-function Steps() {
+export function InstallSteps() {
   const p = platform();
   if (p === 'kakao')
     return (
@@ -88,7 +89,7 @@ export function InstallCard({ color = 'green' }: { color?: 'green' | 'orange' })
           <span className={ui.small}>다음부터 아이콘만 누르면 바로 열려요.</span>
         </div>
       </div>
-      {(showSteps || !canPrompt) && <Steps />}
+      {(showSteps || !canPrompt) && <InstallSteps />}
       <div className={s.installActions}>
         {canPrompt && (
           <button type="button" className={cx(ui.btn, color === 'orange' ? ui.orange : ui.green)} onClick={() => void install()}>
@@ -100,5 +101,39 @@ export function InstallCard({ color = 'green' }: { color?: 'green' | 'orange' })
         </button>
       </div>
     </section>
+  );
+}
+
+/** 맨 위 「앱 설치」 버튼. 이미 바탕화면 아이콘으로 열었으면 보이지 않는다 */
+export function InstallButton({ className }: { className?: string }) {
+  const { toast } = useApp();
+  const { canPrompt, installed, prompt } = useInstall();
+  const [open, setOpen] = useState(false);
+  if (installed) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className={className}
+        onClick={async () => {
+          if (!canPrompt) return setOpen(true);
+          if (await prompt()) toast('바탕화면에 추가했어요');
+        }}
+      >
+        <svg viewBox="0 0 24 24" width="1.125em" height="1.125em" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+        </svg>
+        앱 설치
+      </button>
+      {open && (
+        <Sheet title="휴대폰 바탕화면에 추가하기" onClose={() => setOpen(false)}>
+          <div className={ui.lead}>바탕화면에 아이콘을 만들면 다음부터 아이콘만 누르면 바로 열려요.</div>
+          <InstallSteps />
+          <button type="button" className={cx(ui.btn, ui.green)} onClick={() => setOpen(false)}>
+            확인
+          </button>
+        </Sheet>
+      )}
+    </>
   );
 }

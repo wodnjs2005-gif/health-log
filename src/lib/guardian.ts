@@ -54,6 +54,10 @@ export const mergeGuardianData = (list: GuardianData[]): DataSet => {
       measures: list.flatMap((g) => g.measures || []),
       // 공지는 모두에게 같으므로 한 번씩만
       notices: [...new Map(list.flatMap((g) => g.notices || []).map((n) => [n.id, n])).values()],
+      // 측정 항목은 모두에게 같다
+      testItems: list.find((g) => g.testItems?.length)?.testItems ?? [],
+      tests: list.flatMap((g) => g.tests || []),
+      photos: Object.assign({}, ...list.map((g) => g.photos || {})),
     },
   );
 };

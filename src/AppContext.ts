@@ -1,5 +1,5 @@
 import { createContext, useContext, type Dispatch, type SetStateAction } from 'react';
-import type { Backend, DataSet, Trainer } from './lib/backend';
+import type { Backend, DataSet, StaffRole, Trainer } from './lib/backend';
 import type { GuardianLink } from './lib/guardian';
 
 export interface AppCtx {
@@ -16,6 +16,14 @@ export interface AppCtx {
   staffName: string;
   /** 트레이너 직급 (없으면 '') */
   staffRank: string;
+  /** 직원 화면: 'admin' / 'trainer' (이용자·보호자 화면에서는 null) */
+  staffRole: StaffRole | null;
+  /** 로그인한 트레이너 id (자기 사진) */
+  staffId: string;
+  /** 이용자·트레이너 사진 (data URL). 없거나 아직 못 받았으면 undefined */
+  photoOf: (id: string | null | undefined) => string | undefined;
+  /** 사진을 올리거나 지운 뒤 화면에 바로 반영 (version·data 가 null 이면 지움) */
+  setPhotoLocal: (id: string, version: string | null, data: string | null) => void;
   /** 트레이너 목록 (관리자 화면에서만) */
   trainers: Trainer[];
   setTrainers: Dispatch<SetStateAction<Trainer[]>>;

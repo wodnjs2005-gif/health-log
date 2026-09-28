@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useApp } from '../AppContext';
 import { useConfirm } from '../hooks/useConfirm';
+import { Avatar } from './Avatar';
 import type { Note } from '../lib/backend';
 import { cx } from '../lib/cx';
 import { md } from '../lib/date';
@@ -31,7 +32,8 @@ function NoteItem({ n, action }: { n: Note; action?: ReactNode }) {
     <div className={s.noteItem}>
       <div className={s.noteText}>{n.text}</div>
       <div className={s.noteFoot}>
-        <span className={s.byline}>
+        <span className={s.byline} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+          {n.byId && <Avatar id={n.byId} name={n.by} size="sm" tone="orange" />}
           {md(n.date)} · {n.by}
         </span>
         {action}

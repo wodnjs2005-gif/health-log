@@ -71,7 +71,7 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
                 aria-label={`${m} ${on ? '기록함' : '기록 없음'}, 누르면 기록하기`}
               >
                 <span className={s.mealCellName}>{m}</span>
-                <span className={s.mealCellState}>{on ? '✓ 기록함' : '—'}</span>
+                <span className={s.mealCellState}>{on ? '✓ 기록' : '—'}</span>
               </button>
             );
           })}

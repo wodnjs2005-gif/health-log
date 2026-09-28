@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { useApp } from '../AppContext';
 import { FONT_SIZES } from '../hooks/useFontSize';
 import { cx } from '../lib/cx';
+import { InstallButton } from './InstallCard';
 import s from './Layout.module.css';
 import ui from '../styles/ui.module.css';
 
@@ -11,16 +12,18 @@ interface LayoutProps {
   backLabel?: string;
   /** 헤더 아래 줄 (이용자 화면의 날짜 이동) */
   headerExtra?: ReactNode;
+  /** 제목 앞의 프로필 사진 */
+  avatar?: ReactNode;
   /** 화면 아래 고정 영역 (이용자 탭바) */
   bottom?: ReactNode;
   children: ReactNode;
 }
 
-export function Layout({ title, onBack, backLabel = '처음', headerExtra, bottom, children }: LayoutProps) {
+export function Layout({ title, onBack, backLabel = '처음', headerExtra, avatar, bottom, children }: LayoutProps) {
   return (
     <div className={cx(s.shell, bottom ? s.withTabs : undefined)}>
       <header className={s.header}>
-        <HeaderTop title={title} onBack={onBack} backLabel={backLabel} />
+        <HeaderTop title={title} onBack={onBack} backLabel={backLabel} avatar={avatar} />
         {headerExtra}
       </header>
       <main className={s.main}>{children}</main>
@@ -29,7 +32,7 @@ export function Layout({ title, onBack, backLabel = '처음', headerExtra, botto
   );
 }
 
-function HeaderTop({ title, onBack, backLabel }: { title: string; onBack?: () => void; backLabel: string }) {
+function HeaderTop({ title, onBack, backLabel, avatar }: { title: string; onBack?: () => void; backLabel: string; avatar?: ReactNode }) {
   const { fs, setFs } = useApp();
   const rowRef = useRef<HTMLDivElement>(null);
   const [stacked, setStacked] = useState(false);
@@ -56,6 +59,7 @@ function HeaderTop({ title, onBack, backLabel }: { title: string; onBack?: () =>
             ‹ {backLabel}
           </button>
         )}
+        {avatar}
         <h1 className={s.title}>
           {title}
         </h1>
@@ -64,6 +68,8 @@ function HeaderTop({ title, onBack, backLabel }: { title: string; onBack?: () =>
         <div className={s.fsLabel} aria-hidden="true">
           글자 크기
         </div>
+        <div className={s.fsRow}>
+        <InstallButton className={s.install} />
         <div role="group" aria-label="글자 크기" className={s.fsButtons}>
           {FONT_SIZES.map((o, i) => (
             <button
@@ -78,6 +84,7 @@ function HeaderTop({ title, onBack, backLabel }: { title: string; onBack?: () =>
               가
             </button>
           ))}
+        </div>
         </div>
       </div>
     </div>

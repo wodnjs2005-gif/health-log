@@ -81,6 +81,10 @@ function Main({ be }: { be: Backend }) {
   const [me, setMe] = useState<string | null>(null);
   const [data, setData] = useState<DataSet>(EMPTY);
   const [guardianEntries, setGuardianEntries] = useState<GuardianEntry[]>([]);
+  /** 받은 사진: id → { 버전, data URL } */
+  const [photoData, setPhotoData] = useState<Record<string, { v: string; data: string }>>({});
+  /** 받는 중이거나 받은 사진 (id+버전). 같은 사진을 두 번 받지 않게 */
+  const photoFetching = useRef(new Set<string>());
 
   const [codeInput, setCodeInput] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -113,6 +117,8 @@ function Main({ be }: { be: Backend }) {
     setStaff(null);
     setTrainers([]);
     setGuardianEntries([]);
+    setPhotoData({});
+    photoFetching.current.clear();
     setLoggingIn(false);
   }, []);
 
@@ -253,7 +259,7 @@ function Main({ be }: { be: Backend }) {
 
   // --- 트레이너·관리자 ------------------------------------------------------------
   const applyStaff = useCallback((token: string, d: StaffData) => {
-    setStaff({ token, role: d.me.role, name: d.me.name, rank: d.me.rank ?? '' });
+    setStaff({ token, role: d.me.role, name: d.me.name, rank: d.me.rank ?? '', id: d.me.id });
     setTrainers(d.trainers ?? []);
     setData(toDataSet(d.members || [], d));
   }, []);
@@ -444,6 +450,65 @@ function Main({ be }: { be: Backend }) {
     showToast('로그아웃했어요');
   }, [be, goEntry, showToast]);
 
+  // 사진: 버전이 바뀐(새로 생긴) 것만 받는다. 이용자·보호자는 번호로, 직원은 로그인 표로
+  useEffect(() => {
+    const want = Object.entries(data.photos)
+      .filter(([id, v]) => photoData[id]?.v !== v && !photoFetching.current.has(id + v))
+      .map(([id]) => id);
+    if (!want.length) return;
+    const vers = { ...data.photos };
+    want.forEach((id) => photoFetching.current.add(id + vers[id]));
+    const sid = session.current;
+    const s = cur.current;
+    const load = async (): Promise<Record<string, string>> => {
+      if (s.staff) return be.staffPhotos(s.staff.token, want);
+      if (s.role === 'user' && s.userCode) return be.userPhotos(s.userCode, want);
+      if (s.role === 'guardian') {
+        // 보호자는 번호마다 그분 사진 + 트레이너 사진만 받을 수 있다
+        const mine = new Set(s.guardianEntries.map((g) => g.d.member.id));
+        const parts = await Promise.all(
+          s.guardianEntries.map((g, i) =>
+            be.guardianPhotos(g.code, want.filter((id) => id === g.d.member.id || (i === 0 && !mine.has(id)))),
+          ),
+        );
+        return Object.assign({}, ...parts);
+      }
+      return {};
+    };
+    load()
+      .then((got) => {
+        if (sid !== session.current) return;
+        setPhotoData((p) => {
+          const next = { ...p };
+          for (const id of want) if (got[id]) next[id] = { v: vers[id], data: got[id] };
+          return next;
+        });
+      })
+      .catch(() => {
+        want.forEach((id) => photoFetching.current.delete(id + vers[id])); // 다음에 다시
+      });
+  }, [be, data.photos, photoData]);
+
+  const photoOf = useCallback(
+    (id: string | null | undefined) => (id && data.photos[id] ? photoData[id]?.data : undefined),
+    [data.photos, photoData],
+  );
+
+  const setPhotoLocal = useCallback((id: string, version: string | null, dataUrl: string | null) => {
+    setData((d) => {
+      const photos = { ...d.photos };
+      if (version) photos[id] = version;
+      else delete photos[id];
+      return { ...d, photos };
+    });
+    setPhotoData((p) => {
+      const next = { ...p };
+      if (version && dataUrl) next[id] = { v: version, data: dataUrl };
+      else delete next[id];
+      return next;
+    });
+  }, []);
+
   const guardians: GuardianLink[] = useMemo(
     () => guardianEntries.map((x) => ({ code: x.code, mid: x.d.member.id })),
     [guardianEntries],
@@ -453,9 +518,10 @@ function Main({ be }: { be: Backend }) {
     () => ({
       be, today, data, setData, userCode, me, guardians, addGuardian, removeGuardian,
       staffToken: staff?.token ?? '', staffName: staff?.name ?? '', staffRank: staff?.rank ?? '', trainers, setTrainers,
+      staffRole: staff?.role ?? null, staffId: staff?.id ?? '', photoOf, setPhotoLocal,
       toast: showToast, fail, refresh, logout, goEntry, fs, setFs,
     }),
-    [be, today, data, userCode, me, guardians, addGuardian, removeGuardian, staff, trainers, showToast, fail, refresh, logout, goEntry, fs, setFs],
+    [be, today, data, userCode, me, guardians, addGuardian, removeGuardian, staff, trainers, photoOf, setPhotoLocal, showToast, fail, refresh, logout, goEntry, fs, setFs],
   );
 
   const onCodeChange = (v: string, len: number, submit: (v: string) => void) => {

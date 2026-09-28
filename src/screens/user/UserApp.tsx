@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { DateNav } from '../../components/DateNav';
+import { Avatar } from '../../components/Avatar';
 import { Layout } from '../../components/Layout';
 import { MeasureSection } from '../../components/Measures';
 import { TabIcon } from '../../components/TabIcon';
+import { TestSection } from '../../components/Tests';
 import { WeekChart } from '../../components/WeekChart';
 import { useConfirm } from '../../hooks/useConfirm';
 import ui from '../../styles/ui.module.css';
@@ -58,7 +60,13 @@ export function UserApp() {
 
   return (
     // 영상은 날짜와 상관없어 날짜 줄을 숨긴다
-    <Layout title={`${member.name} 님`} onBack={goEntry} headerExtra={tab === 'video' ? undefined : dateRow} bottom={tabbar}>
+    <Layout
+      title={`${member.name} 님`}
+      onBack={goEntry}
+      avatar={<Avatar id={member.id} name={member.name} />}
+      headerExtra={tab === 'video' ? undefined : dateRow}
+      bottom={tabbar}
+    >
       {tab === 'home' && (
         <HomeTab
           date={date}
@@ -97,6 +105,7 @@ export function UserApp() {
             }}
           />
           <MeasureSection mid={member.id} mode="user" />
+          <TestSection mid={member.id} name={member.name} mode="view" />
         </>
       )}
       {sheet && <RecordSheet state={sheet} date={date} onClose={() => setSheet(null)} />}

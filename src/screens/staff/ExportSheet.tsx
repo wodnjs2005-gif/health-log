@@ -153,7 +153,7 @@ export function ExportSheet({ onClose, color = 'orange', initialMid }: Props) {
 
       {counts && mids.length > 0 && (
         <div className={ui.note}>
-          {scope === 'one' && picked ? `${picked.name} 님` : `전체 ${mids.length}명`} · 운동 {counts.ex}건 · 식사 {counts.meals}건 · 수업 {counts.lessons}개{counts.measures > 0 && ` · 건강 수치 ${counts.measures}건`}
+          {scope === 'one' && picked ? `${picked.name} 님` : `전체 ${mids.length}명`} · 운동 {counts.ex}건 · 식사 {counts.meals}건 · 수업 {counts.lessons}개{counts.measures > 0 && ` · 건강 수치 ${counts.measures}건`}{counts.tests > 0 && ` · 체력 측정 ${counts.tests}번`}
         </div>
       )}
 

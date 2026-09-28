@@ -15,6 +15,8 @@ import {
   type NewMeasure,
   type Note,
   type Notice,
+  type TestItem,
+  type TestResult,
   type Program,
   type StaffData,
   type Trainer,
@@ -188,6 +190,27 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     staffAddNotice: (token, text, until) => rpc<Notice>('staff_add_notice', { p_token: token, p_text: text, p_until: until }),
 
     staffDelNotice: (token, id) => rpc<void>('staff_del_notice', { p_token: token, p_id: id }),
+
+    adminAddTestItem: (token, it) =>
+      rpc<TestItem>('admin_add_test_item', { p_token: token, p_name: it.name, p_unit: it.unit, p_better: it.better }),
+
+    adminUpdateTestItem: (token, id, it) =>
+      rpc<TestItem>('admin_update_test_item', { p_token: token, p_id: id, p_name: it.name, p_unit: it.unit, p_better: it.better }),
+
+    adminDelTestItem: (token, id) => rpc<void>('admin_del_test_item', { p_token: token, p_id: id }),
+
+    trainerSaveTests: (token, mid, date, values) =>
+      rpc<TestResult[]>('trainer_save_tests', { p_token: token, p_member: mid, p_date: date, p_values: values }),
+
+    trainerDelTests: (token, mid, date) => rpc<void>('trainer_del_tests', { p_token: token, p_member: mid, p_date: date }),
+
+    staffSetPhoto: (token, kind, id, data) => rpc<string | null>('staff_set_photo', { p_token: token, p_kind: kind, p_id: id, p_data: data }),
+
+    staffPhotos: (token, ids) => rpc<Record<string, string>>('staff_photos', { p_token: token, p_ids: ids }),
+
+    userPhotos: (code, ids) => userRpc<Record<string, string>>('user_photos', { p_code: normCode(code), p_ids: ids }),
+
+    guardianPhotos: (code, ids) => userRpc<Record<string, string>>('guardian_photos', { p_code: normCode(code), p_ids: ids }),
 
     adminSetTrainerRank: (token, id, rank) => rpc<string>('admin_set_trainer_rank', { p_token: token, p_id: id, p_rank: rank }),
 

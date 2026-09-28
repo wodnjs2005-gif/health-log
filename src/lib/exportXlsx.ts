@@ -1,4 +1,4 @@
-// 기록 내려받기: 엑셀 파일 하나에 시트 6개 (요약 · 운동 기록 · 식사 기록 · 영양(일별) · 출석 · 건강 수치).
+// 기록 내려받기: 엑셀 파일 하나에 시트 7개 (요약 · 운동 기록 · 식사 기록 · 영양(일별) · 출석 · 건강 수치 · 체력 측정).
 // 요약의 숫자는 다른 시트를 세는 엑셀 수식이고, 계산한 값도 함께 넣어 미리보기 앱에서도 숫자가 보인다.
 // exceljs 가 커서 이 파일은 내려받기 버튼을 눌렀을 때만 불러온다 (ExportSheet 의 import()).
 import ExcelJS from 'exceljs';
@@ -16,7 +16,7 @@ const C = {
   green: 'FF2E6A4E', greenSoft: 'FFE3EEE7', orange: 'FFB4541F', navy: 'FF3D4F7A', navySoft: 'FFE3E7F0',
   gray: 'FFF4F1EA', line: 'FFCFC8BA', ink: 'FF1E2320', ink3: 'FF5A625D', ink4: 'FF8A918C', red: 'FFB0473A', white: 'FFFFFFFF',
 };
-const SHEET = { sum: '요약', ex: '운동 기록', meal: '식사 기록', day: '영양(일별)', att: '출석', hm: '건강 수치' };
+const SHEET = { sum: '요약', ex: '운동 기록', meal: '식사 기록', day: '영양(일별)', att: '출석', hm: '건강 수치', tst: '체력 측정' };
 /** 영양소 열: 식사 기록·영양(일별)·요약에서 같은 순서 */
 const NUT = [
   { key: 'kcal', head: '칼로리(kcal)', fmt: '#,##0' },
@@ -308,6 +308,33 @@ ${n.head}`, 11] as const),
   });
   if (measures.length) wsH.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + measures.length, column: Hc.length } };
   else note(wsH, 5, Hc.length, '이 기간에 적은 건강 수치가 없어요.');
+
+  // ⑦ 체력 측정: 이용자·날짜마다 한 줄, 항목마다 한 칸 --------------------------------------
+  const tests = data.tests.filter((t) => set.has(t.mid) && inRange(t.date));
+  const tItems = data.testItems.filter((i) => tests.some((t) => t.item === i.id));
+  const sessions = new Map<string, { mid: string; date: string; by: string; v: Map<string, number> }>();
+  for (const t of tests) {
+    const k = t.mid + t.date;
+    const x = sessions.get(k) ?? { mid: t.mid, date: t.date, by: t.by, v: new Map<string, number>() };
+    x.v.set(t.item, t.value);
+    sessions.set(k, x);
+  }
+  const tRows = [...sessions.values()].sort((a, b) => byName(a, b) || a.date.localeCompare(b.date));
+  const Tc = [['이름', 12], ['날짜', 11], ['요일', 6], ...tItems.map((i) => [i.unit ? `${i.name}(${i.unit})` : i.name, 12] as const), ['적은 사람', 16]] as const;
+  const wsT = sheet(SHEET.tst, C.orange, Tc.map((x) => x[1]), 4);
+  title(wsT, one ? `${one.name} 님 · 체력 측정` : '체력 측정', `${period}  ·  ${tRows.length}번 측정  ·  빈칸은 그날 재지 않은 항목`, Math.max(Tc.length, 6));
+  header(wsT, 4, Tc.map((x) => x[0]), C.orange);
+  tRows.forEach((x, i) => {
+    const r = 5 + i;
+    const z = i % 2 ? C.gray : undefined;
+    body(wsT, r, 1, label.get(x.mid) ?? '', { fill: z, font: { bold: true } });
+    body(wsT, r, 2, xlDate(x.date), { numFmt: 'yyyy-mm-dd', align: 'center', fill: z });
+    body(wsT, r, 3, wd(x.date), { align: 'center', fill: z });
+    tItems.forEach((it, j) => body(wsT, r, 4 + j, x.v.get(it.id) ?? null, { align: 'right', fill: z, numFmt: '0.##' }));
+    body(wsT, r, 4 + tItems.length, x.by, { align: 'center', fill: z });
+  });
+  if (tRows.length) wsT.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + tRows.length, column: Tc.length } };
+  else note(wsT, 5, Math.max(Tc.length, 6), '이 기간에 체력 측정 기록이 없어요.');
 
   // ① 요약 채우기 ----------------------------------------------------------
   title(wsS, one ? `${one.name} 님 · 건강 기록` : '맞춤 건강관리 · 기간 기록', period, S.length);

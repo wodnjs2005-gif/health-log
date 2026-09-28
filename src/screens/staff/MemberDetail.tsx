@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { useApp } from '../../AppContext';
+import { Avatar } from '../../components/Avatar';
 import { MeasureSection } from '../../components/Measures';
+import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
+import { TestSection } from '../../components/Tests';
 import { NoteCard, NoteWriter } from '../../components/Notes';
 import { NutriLine } from '../../components/Nutri';
 import { WeekChart } from '../../components/WeekChart';
@@ -41,8 +45,9 @@ interface Props {
  * 직원은 한마디를 남기고 건강 수치를 적을 수 있고, 보호자는 보기만 한다.
  */
 export function MemberDetail({ member, summary, end: endProp, onGo, color = 'orange' }: Props) {
-  const { data, today, staffToken } = useApp();
+  const { data, today, staffToken, staffRole } = useApp();
   const isStaff = !!staffToken;
+  const [photoOpen, setPhotoOpen] = useState(false);
   const end = endProp ?? today;
   const age = ageOf(member, today);
   const count = (pid: string, day?: string) =>
@@ -80,14 +85,23 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
 
   return (
     <>
-      <div className={ui.row}>
-        <h2 className={ui.h2}>{member.name} 님</h2>
+      <div className={s.detailHead}>
+        {isStaff ? (
+          <EditableAvatar id={member.id} name={member.name} tone={color} onEdit={() => setPhotoOpen(true)} />
+        ) : (
+          <Avatar id={member.id} name={member.name} size="lg" tone="plum" />
+        )}
+        <h2 className={ui.h2} style={{ flex: 1, minWidth: 0 }}>
+          {member.name} 님
+        </h2>
         {age !== null ? <div className={ui.muted}>{age}세</div> : null}
       </div>
+      {photoOpen && <PhotoSheet kind="member" id={member.id} name={`${member.name} 님`} tone={color} onClose={() => setPhotoOpen(false)} />}
       {summary}
       {isStaff ? <NoteWriter mid={member.id} name={member.name} color={color} /> : <NoteCard mid={member.id} />}
       <WeekChart mid={member.id} end={end} ex={data.ex} meals={data.meals} onGo={onGo} />
       <MeasureSection mid={member.id} mode={isStaff ? 'staff' : 'view'} color={isStaff ? color : 'green'} />
+      <TestSection mid={member.id} name={member.name} mode={staffRole === 'trainer' ? 'trainer' : 'view'} />
 
       {progs.length > 0 && (
         <section className={ui.card} style={{ padding: '1.125rem 1rem', gap: '0.5rem' }}>

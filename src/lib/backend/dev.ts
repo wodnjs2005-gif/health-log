@@ -21,6 +21,8 @@ import {
   type NewMeasure,
   type Note,
   type Notice,
+  type TestItem,
+  type TestResult,
   type Program,
   type PublicMember,
   type StaffRole,
@@ -53,6 +55,8 @@ interface DevSession {
 
 interface DevDB extends DataSet {
   customFoods: CustomFood[];
+  /** 사진 자체 (DataSet.photos 는 버전만) */
+  photoData: Record<string, string>;
   admins: DevAdmin[];
   trainers: Trainer[];
   sessions: DevSession[];
@@ -161,6 +165,20 @@ function seed(): DevDB {
     notices: [
       { id: uid(), text: '다음 주 수요일(10월 7일)은 복지관 행사로 오전 체조를 쉬어요.', by: '관리자', date: addDays(today, -1), until: addDays(today, 10) },
     ],
+    testItems: [
+      { id: 'ti1', name: '악력', unit: 'kg', better: 'high' },
+      { id: 'ti2', name: '30초 의자 일어서기', unit: '회', better: 'high' },
+      { id: 'ti3', name: '일어나 걷기(TUG)', unit: '초', better: 'low' },
+    ],
+    tests: [
+      ...([[-60, 20.5, 11, 9.8], [-30, 21.2, 13, 9.1], [-2, 22.0, 14, 8.6]] as const).flatMap(([o, a, b, c]) => [
+        { id: uid(), mid: 'm1', item: 'ti1', date: addDays(today, o), value: a, by: '김코치 팀장' },
+        { id: uid(), mid: 'm1', item: 'ti2', date: addDays(today, o), value: b, by: '김코치 팀장' },
+        { id: uid(), mid: 'm1', item: 'ti3', date: addDays(today, o), value: c, by: '김코치 팀장' },
+      ]),
+    ],
+    photos: {},
+    photoData: {},
     customFoods: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
@@ -189,6 +207,10 @@ const load = (): DevDB => {
   d.notes ??= [];
   d.measures ??= [];
   d.notices ??= [];
+  d.testItems ??= [];
+  d.tests ??= [];
+  d.photos ??= {};
+  d.photoData ??= {};
   return d;
 };
 
@@ -229,7 +251,17 @@ const userData = (d: DevDB, m: Member): UserData => ({
   notes: d.notes.filter((n) => n.mid === m.id),
   measures: d.measures.filter((x) => x.mid === m.id).sort(byDate),
   notices: activeNotices(d, 0),
+  testItems: d.testItems,
+  tests: d.tests.filter((t) => t.mid === m.id),
+  photos: photoVersFor(d, m.id),
 });
+
+/** 이용자·보호자에게는 그분 사진과 트레이너 사진만 */
+const photoVersFor = (d: DevDB, mid: string | null) =>
+  Object.fromEntries(Object.entries(d.photos).filter(([id]) => mid === null || id === mid || d.trainers.some((t) => t.id === id)));
+
+const photosOf = (d: DevDB, ids: string[], mid: string | null) =>
+  Object.fromEntries(ids.filter((id) => d.photoData[id] && (mid === null || id === mid || d.trainers.some((t) => t.id === id))).map((id) => [id, d.photoData[id]]));
 
 const byDate = (a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date);
 
@@ -263,6 +295,14 @@ const newSession = (d: DevDB, role: StaffRole, subject: string) => {
   return token;
 };
 
+/** 서버 _check_test_item 과 같은 검사·정리 */
+const checkItem = (it: TestItem): TestItem => {
+  const name = it.name.trim().slice(0, 30);
+  if (!name) throw new Error('no name');
+  if (!['high', 'low', 'none'].includes(it.better)) throw new Error('invalid better');
+  return { id: it.id, name, unit: it.unit.trim().slice(0, 10), better: it.better };
+};
+
 /** 서버 staff_add_lesson 과 같은 검사·정리 */
 const checkLesson = (d: DevDB, l: { name: string; days: number[]; mids: string[] }) => {
   const name = l.name.trim().slice(0, 30);
@@ -281,6 +321,12 @@ export function createDevBackend(): Backend {
     const s = sessionOf(d, token);
     if (!s) throw new AuthError('invalid session');
     return { d, s };
+  };
+  /** 트레이너만 (관리자는 'trainer only') */
+  const trainer = (token: string) => {
+    const r = staff(token);
+    if (r.s.role !== 'trainer') throw new Error('trainer only');
+    return r;
   };
   /** 관리자만 */
   const admin = (token: string) => {
@@ -445,7 +491,7 @@ export function createDevBackend(): Backend {
       if (!name) return null; // 지워진 계정
       const isAdmin = s.role === 'admin';
       return {
-        me: { role: s.role, name, rank: tr?.rank ?? '' },
+        me: { role: s.role, name, rank: tr?.rank ?? '', id: s.subject },
         // 트레이너에게는 개인·보호자 번호를 보내지 않는다
         members: isAdmin ? d.members : d.members.map(({ code: _c, guardianCode: _g, ...m }) => ({ ...m, code: '' })),
         trainers: isAdmin ? d.trainers : null,
@@ -459,6 +505,9 @@ export function createDevBackend(): Backend {
         notes: d.notes,
         measures: [...d.measures].sort(byDate),
         notices: activeNotices(d, 30),
+        testItems: d.testItems,
+        tests: d.tests,
+        photos: d.photos,
       };
     },
 
@@ -482,6 +531,9 @@ export function createDevBackend(): Backend {
       d.attendance = d.attendance.filter((a) => a.mid !== id);
       d.notes = d.notes.filter((n) => n.mid !== id);
       d.measures = d.measures.filter((x) => x.mid !== id);
+      d.tests = d.tests.filter((x) => x.mid !== id);
+      delete d.photos[id];
+      delete d.photoData[id];
       save(d);
     },
 
@@ -547,6 +599,8 @@ export function createDevBackend(): Backend {
       const d = admin(token);
       d.trainers = d.trainers.filter((t) => t.id !== id);
       d.sessions = d.sessions.filter((s) => !(s.role === 'trainer' && s.subject === id));
+      delete d.photos[id];
+      delete d.photoData[id];
       save(d);
     },
 
@@ -714,7 +768,7 @@ export function createDevBackend(): Backend {
       const t = text.trim().slice(0, 200);
       if (!t) throw new Error('no text');
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
-      const rec: Note = { id: uid(), mid, text: t, by: staffLabel(d, s), date: todayYmd() };
+      const rec: Note = { id: uid(), mid, text: t, by: staffLabel(d, s), byId: s.role === 'trainer' ? s.subject : null, date: todayYmd() };
       d.notes.push(rec);
       save(d);
       return rec;
@@ -755,6 +809,91 @@ export function createDevBackend(): Backend {
       const { d } = staff(token);
       d.notices = d.notices.filter((n) => n.id !== id);
       save(d);
+    },
+
+    // --- 체력 측정 ---------------------------------------------------------------
+    async adminAddTestItem(token, it) {
+      const d = admin(token);
+      const rec = checkItem({ id: 'ti' + uid(), ...it });
+      d.testItems.push(rec);
+      save(d);
+      return rec;
+    },
+
+    async adminUpdateTestItem(token, id, it) {
+      const d = admin(token);
+      const i = d.testItems.findIndex((x) => x.id === id);
+      if (i < 0) throw new Error('item not found');
+      d.testItems[i] = checkItem({ id, ...it });
+      save(d);
+      return d.testItems[i];
+    },
+
+    async adminDelTestItem(token, id) {
+      const d = admin(token);
+      d.testItems = d.testItems.filter((x) => x.id !== id);
+      d.tests = d.tests.filter((x) => x.item !== id);
+      save(d);
+    },
+
+    async trainerSaveTests(token, mid, date, values) {
+      const { d, s } = trainer(token);
+      if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      if (date > todayYmd()) throw new Error('invalid date');
+      if (values.some((v) => Math.abs(v.value) > 100000)) throw new Error('invalid value');
+      d.tests = d.tests.filter((t) => !(t.mid === mid && t.date === date));
+      const by = staffLabel(d, s);
+      const recs: TestResult[] = values
+        .filter((v) => Number.isFinite(v.value) && d.testItems.some((i) => i.id === v.item))
+        .map((v) => ({ id: uid(), mid, item: v.item, date, value: Math.round(v.value * 100) / 100, by }));
+      d.tests.push(...recs);
+      save(d);
+      return recs;
+    },
+
+    async trainerDelTests(token, mid, date) {
+      const { d } = trainer(token);
+      d.tests = d.tests.filter((t) => !(t.mid === mid && t.date === date));
+      save(d);
+    },
+
+    // --- 프로필 사진 --------------------------------------------------------------
+    async staffSetPhoto(token, kind, id, data) {
+      const { d, s } = staff(token);
+      if (kind === 'member' && !d.members.some((m) => m.id === id)) throw new Error('member not found');
+      if (kind === 'trainer') {
+        if (!d.trainers.some((t) => t.id === id)) throw new Error('trainer not found');
+        if (s.role !== 'admin' && s.subject !== id) throw new Error('own photo only');
+      }
+      if (data === null) {
+        delete d.photos[id];
+        delete d.photoData[id];
+        save(d);
+        return null;
+      }
+      if (data.length > 120000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(data)) throw new Error('invalid photo');
+      const v = String(Date.now());
+      d.photos[id] = v;
+      d.photoData[id] = data;
+      save(d);
+      return v;
+    },
+
+    async staffPhotos(token, ids) {
+      const { d } = staff(token);
+      return photosOf(d, ids, null);
+    },
+
+    async userPhotos(code, ids) {
+      const d = load();
+      return photosOf(d, ids, who(d, code).id);
+    },
+
+    async guardianPhotos(code, ids) {
+      const d = load();
+      const m = byCode(d.members, (x) => x.guardianCode, code);
+      if (!m) throw new AuthError('invalid code');
+      return photosOf(d, ids, m.id);
     },
 
     async staffSetOffday(token, lid, date, off) {

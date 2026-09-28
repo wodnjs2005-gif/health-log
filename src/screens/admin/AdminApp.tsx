@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
+import { Avatar } from '../../components/Avatar';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { CopyCode } from '../../components/CopyCode';
 import { Layout, Sheet } from '../../components/Layout';
+import { PhotoSheet } from '../../components/PhotoSheet';
 import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
@@ -26,6 +28,7 @@ import { BirthInput, BirthSheet, EMPTY_BIRTH } from './BirthInput';
 import { FoodManage } from './FoodManage';
 import { IssuedCard } from './IssuedCard';
 import { PasswordSheet } from './PasswordSheet';
+import { TestItemManage } from './TestItemManage';
 import { TrainerManage } from './TrainerManage';
 
 type ATab = 'members' | 'trainers' | 'lessons' | 'videos';
@@ -61,6 +64,9 @@ export function AdminApp() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [foodOpen, setFoodOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [testItemsOpen, setTestItemsOpen] = useState(false);
+  /** 사진 창을 연 이용자 */
+  const [photoMember, setPhotoMember] = useState<Member | null>(null);
   /** 이용자 등록 칸 펼침 (평소에는 접어 두어 목록이 먼저 보이게) */
   const [regOpen, setRegOpen] = useState(false);
   /** 더보기 창을 연 이용자 */
@@ -161,6 +167,7 @@ export function AdminApp() {
       programs: d.programs.map((p) => ({ ...p, mids: p.mids.filter((x) => x !== id) })),
       notes: d.notes.filter((n) => n.mid !== id),
       measures: d.measures.filter((x) => x.mid !== id),
+      tests: d.tests.filter((x) => x.mid !== id),
     }));
     setIssued((j) => (j && j.id === id ? null : j));
     toast('이용자를 삭제했어요');
@@ -331,8 +338,11 @@ export function AdminApp() {
             const warn = staleText(act);
             return (
               <div key={m.id} className={cx(ui.card, s.memberCard, act.stale && st.memberStale)}>
-                <div className={ui.row} style={{ gap: '0.25rem 0.75rem' }}>
-                  <span className={s.name}>{m.name}</span>
+                <div className={ui.row} style={{ gap: '0.25rem 0.75rem', alignItems: 'center' }}>
+                  <span className={s.nameRank}>
+                    <Avatar id={m.id} name={m.name} tone="navy" />
+                    <span className={s.name}>{m.name}</span>
+                  </span>
                   {(m.birth || age !== null) && (
                     <span className={ui.muted} style={{ whiteSpace: 'nowrap' }}>
                       {m.birth && `${birthLabel(m.birth)} · `}
@@ -381,6 +391,9 @@ export function AdminApp() {
         <button type="button" className={ui.btnGhost} onClick={() => setNoticeOpen(true)}>
           {data.notices.length > 0 ? `공지사항 (${data.notices.length})` : '공지사항 올리기'}
         </button>
+        <button type="button" className={ui.btnGhost} onClick={() => setTestItemsOpen(true)}>
+          체력 측정 항목 관리{data.testItems.length > 0 && ` (${data.testItems.length})`}
+        </button>
         <button type="button" className={ui.btnGhost} onClick={() => setFoodOpen(true)}>
           음식 목록 관리{foodRequests > 0 && ` (새 음식 ${foodRequests})`}
         </button>
@@ -396,11 +409,14 @@ export function AdminApp() {
       {changingPw && <PasswordSheet onClose={() => setChangingPw(false)} />}
       {foodOpen && <FoodManage onClose={() => setFoodOpen(false)} onChanged={setFoodRequests} />}
       {noticeOpen && <NoticeManage color="navy" onClose={() => setNoticeOpen(false)} />}
+      {testItemsOpen && <TestItemManage onClose={() => setTestItemsOpen(false)} />}
+      {photoMember && <PhotoSheet kind="member" id={photoMember.id} name={`${photoMember.name} 님`} tone="navy" onClose={() => setPhotoMember(null)} />}
       {more && (
         <MoreSheet
           member={more}
           onClose={() => setMore(null)}
           onBirth={() => setEditingBirth(more.id)}
+          onPhoto={() => setPhotoMember(more)}
           onTags={() => setTagging(more)}
           onExport={() => setExporting(more.id)}
           onNewCode={() => void newCode(more.id)}
@@ -419,6 +435,7 @@ interface MoreProps {
   member: Member;
   onClose: () => void;
   onBirth: () => void;
+  onPhoto: () => void;
   onTags: () => void;
   onExport: () => void;
   onNewCode: () => void;
@@ -427,7 +444,7 @@ interface MoreProps {
 }
 
 /** 이용자 카드의 「더보기」: 자주 쓰지 않는 기능과 되돌릴 수 없는 기능 (번호 새로 발급·삭제는 두 번 눌러야 실행) */
-function MoreSheet({ member, onClose, onBirth, onTags, onExport, onNewCode, onNewGuardianCode, onDelete }: MoreProps) {
+function MoreSheet({ member, onClose, onBirth, onPhoto, onTags, onExport, onNewCode, onNewGuardianCode, onDelete }: MoreProps) {
   const confirm = useConfirm();
   const then = (fn: () => void) => () => {
     onClose();
@@ -437,6 +454,9 @@ function MoreSheet({ member, onClose, onBirth, onTags, onExport, onNewCode, onNe
   return (
     <Sheet title={`${member.name} 님`} onClose={onClose}>
       <div className={s.moreList}>
+        <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.moreBtn)} onClick={then(onPhoto)}>
+          사진 등록·바꾸기
+        </button>
         <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.moreBtn)} onClick={then(onBirth)}>
           {member.birth ? '생년월일 수정' : '생년월일 입력'}
         </button>

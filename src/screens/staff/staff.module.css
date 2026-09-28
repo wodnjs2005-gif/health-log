@@ -457,3 +457,25 @@
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* 이용자 상세 맨 위: 사진 · 이름 · 나이 */
+.detailHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 이용자 목록 카드: 사진 + 이름 줄 */
+.memberHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 이름이 글자 단위로 끊기지 않게 (좁으면 「이번 주 ○분」이 다음 줄로) */
+.memberHead .memberName {
+  white-space: nowrap;
+}
