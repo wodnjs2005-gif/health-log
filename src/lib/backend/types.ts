@@ -201,6 +201,12 @@ export interface ChatRange {
 
 export const CHAT_MAX = 500;
 
+/** 양쪽이 마지막으로 읽은 때 (ISO, 읽은 적 없으면 null). 메시지 시각이 이보다 늦지 않으면 읽은 것 */
+export interface ChatSeen {
+  member: string | null;
+  trainer: string | null;
+}
+
 /** 이용자에게 보여주는 담당 트레이너 */
 export interface ChatTrainer {
   id: string;
@@ -469,6 +475,9 @@ export interface Backend {
   /** 보면 읽은 것으로 */
   userChatGet(code: string, range?: ChatRange): Promise<ChatMessage[]>;
   userChatSend(code: string, text: string): Promise<ChatMessage>;
+  /** 읽음 표시용: 양쪽이 마지막으로 읽은 때 */
+  userChatSeen(code: string): Promise<ChatSeen>;
+  staffChatSeen(token: string, mid: string): Promise<ChatSeen>;
   staffChatList(token: string): Promise<{ key: string; rooms: ChatRoom[] }>;
   /** 담당 트레이너 정하기 (관리자). tid 가 null 이면 담당 없음 */
   adminSetMemberTrainer(token: string, mid: string, tid: string | null): Promise<void>;

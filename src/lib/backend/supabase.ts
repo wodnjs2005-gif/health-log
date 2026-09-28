@@ -11,6 +11,7 @@ import {
   type GuardianData,
   type Meal,
   type ChatMessage,
+  type ChatSeen,
   type ChatTrainer,
   type ChatRoom,
   type Measure,
@@ -241,6 +242,10 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     userChatGet: (code, r = {}) => userRpc<ChatMessage[]>('user_chat_get', { p_code: normCode(code), p_after: r.after ?? null, p_before: r.before ?? null }),
 
     userChatSend: (code, text) => userRpc<ChatMessage>('user_chat_send', { p_code: normCode(code), p_text: text }),
+
+    userChatSeen: (code) => userRpc<ChatSeen>('user_chat_seen', { p_code: normCode(code) }),
+
+    staffChatSeen: (token, mid) => rpc<ChatSeen>('staff_chat_seen', { p_token: token, p_member: mid }),
 
     staffChatList: (token) => rpc<{ key: string; rooms: ChatRoom[] }>('staff_chat_list', { p_token: token }),
 

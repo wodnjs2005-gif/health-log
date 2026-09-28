@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useApp } from '../AppContext';
-import { CHAT_MAX, type ChatMessage, type ChatRange, type ChatTrainer } from '../lib/backend';
+import { CHAT_MAX, type ChatMessage, type ChatRange, type ChatSeen, type ChatTrainer } from '../lib/backend';
 import { trainerTitle } from '../lib/rank';
 import { cx } from '../lib/cx';
 import ui from '../styles/ui.module.css';
@@ -50,6 +50,7 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
+  const [seen, setSeen] = useState<ChatSeen>({ member: null, trainer: null });
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const lastAt = useRef<string | undefined>(undefined);
@@ -62,6 +63,17 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
     (r?: ChatRange) => (mode === 'user' ? be.userChatGet(userCode, r) : be.staffChatGet(staffToken, mid, r)),
     [be, mode, userCode, staffToken, mid],
   );
+
+  const getSeen = useCallback(
+    () => (mode === 'user' ? be.userChatSeen(userCode) : be.staffChatSeen(staffToken, mid)),
+    [be, mode, userCode, staffToken, mid],
+  );
+  /** 읽음 표시는 따로 가져온다 (실패해도 대화는 그대로) */
+  const loadSeen = useCallback(() => {
+    getSeen()
+      .then(setSeen)
+      .catch(() => {});
+  }, [getSeen]);
 
   const merge = (list: ChatMessage[]) =>
     setMsgs((prev) => {
@@ -88,6 +100,7 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
       }
       setLoaded(true);
       setError(false);
+      loadSeen();
     } catch (e) {
       if (!lastAt.current) {
         setLoaded(true);
@@ -95,7 +108,7 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
       }
       if ((e as { auth?: boolean })?.auth) fail(e);
     }
-  }, [get, fail]);
+  }, [get, fail, loadSeen]);
 
   useEffect(() => {
     void loadNew();
@@ -164,6 +177,7 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
       merge([m]);
       setText('');
       setSendError('');
+      loadSeen();
     } catch (e) {
       const t = e instanceof Error ? e.message : '';
       if (/no trainer/.test(t)) setSendError('아직 담당 트레이너가 정해지지 않았어요. 관리자에게 알려 주세요.');
@@ -175,6 +189,14 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
 
   /** 오른쪽(내 쪽)에 둘 메시지: 이용자는 자기가 보낸 것, 직원 화면은 트레이너가 보낸 것 */
   const right = (m: ChatMessage) => (mode === 'user' ? m.from === 'member' : m.from === 'trainer');
+
+  /** 상대가 읽었나: 이용자가 보낸 것은 트레이너가, 트레이너가 보낸 것은 이용자가 */
+  const readBy = (m: ChatMessage) => {
+    const t = m.from === 'member' ? seen.trainer : seen.member;
+    return !!t && t >= m.at;
+  };
+  // 읽음 표시는 내 쪽(오른쪽) 메시지에만, 관리자는 양쪽 모두
+  const showRead = (m: ChatMessage) => mode === 'admin' || right(m);
 
   const rows: React.ReactNode[] = [];
   msgs.forEach((m, i) => {
@@ -201,7 +223,10 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
           {showName && <div className={s.name}>{who}</div>}
           <div className={s.line}>
             <div className={s.bubble}>{m.text}</div>
-            <span className={s.time}>{chatTime(m.at)}</span>
+            <span className={s.meta}>
+              {showRead(m) && <ReadMark read={readBy(m)} />}
+              <span className={s.time}>{chatTime(m.at)}</span>
+            </span>
           </div>
         </div>
       </div>,
@@ -229,7 +254,12 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
         <h2 className={s.title}>{mode === 'user' ? (trainer ? `${trainerName}님` : '트레이너와 대화') : `${name} 님`}</h2>
       </div>
       <div ref={listRef} className={s.list} aria-live="polite">
-        <div className={s.note}>{note}</div>
+        <div className={s.note}>
+          {note}
+          <span className={s.legend}>
+            안 읽었으면 <ReadMark read={false} />, 읽으면 <ReadMark read /> 가 보여요.
+          </span>
+        </div>
         {hasOlder && (
           <button type="button" className={cx(ui.btnSmall, s.older)} disabled={loadingOlder} onClick={() => void loadOlder()}>
             {loadingOlder ? '불러오는 중…' : '이전 대화 더 보기'}
@@ -271,5 +301,20 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
         </form>
       )}
     </div>
+  );
+}
+
+/** 읽음 표시: 상대가 안 읽었으면 1, 읽었으면 체크 */
+function ReadMark({ read }: { read: boolean }) {
+  return read ? (
+    <span className={s.read} role="img" aria-label="읽음" title="읽음">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 12.5l4.5 4.5L19 7.5" />
+      </svg>
+    </span>
+  ) : (
+    <span className={s.unread} role="img" aria-label="안 읽음" title="안 읽음">
+      1
+    </span>
   );
 }

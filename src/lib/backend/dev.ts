@@ -201,7 +201,8 @@ function seed(): DevDB {
       { id: uid(), mid: 'm1', from: 'member', tid: null, by: '', text: '네 알겠습니다 감사합니다', at: new Date(Date.now() - 2 * 3600e3).toISOString() },
     ],
     chatSeen: {},
-    chatReads: {},
+    // 김코치는 첫 메시지를 읽고 답했다
+    chatReads: { 't1|m1': new Date(Date.now() - 25 * 3600e3).toISOString() },
     customFoods: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
@@ -279,6 +280,15 @@ const trainerTopic = (tid: string) => 'dev-tr-' + tid;
 const chatPage = (d: DevDB, mid: string, r: ChatRange = {}) => {
   const all = d.chat.filter((c) => c.mid === mid && (!r.after || c.at >= r.after) && (!r.before || c.at <= r.before)).sort((a, b) => a.at.localeCompare(b.at));
   return r.after ? all.slice(0, 500) : all.slice(-50);
+};
+
+/** 양쪽이 마지막으로 읽은 때 (트레이너는 누구든 가장 늦게 읽은 때) */
+const chatSeenOf = (d: DevDB, mid: string) => {
+  const reads = Object.entries(d.chatReads)
+    .filter(([k]) => k.endsWith('|' + mid))
+    .map(([, v]) => v)
+    .sort();
+  return { member: d.chatSeen[mid] ?? null, trainer: reads.at(-1) ?? null };
 };
 
 const chatPut = (d: DevDB, msg: Omit<ChatMessage, 'id' | 'at'>) => {
@@ -1063,11 +1073,25 @@ export function createDevBackend(): Backend {
     async userChatGet(code, r) {
       const d = load();
       const m = who(d, code);
-      if (!r?.before) {
+      // 안 읽은 트레이너 메시지가 있었을 때만 읽음으로 하고 담당 트레이너에게 알린다 (서버와 같게)
+      if (!r?.before && d.chat.some((c) => c.mid === m.id && c.from === 'trainer' && c.at > (d.chatSeen[m.id] ?? ''))) {
         d.chatSeen[m.id] = new Date().toISOString();
         save(d);
+        if (d.assign[m.id]) ring(trainerTopic(d.assign[m.id]));
       }
       return chatPage(d, m.id, r);
+    },
+
+    async userChatSeen(code) {
+      const d = load();
+      return chatSeenOf(d, who(d, code).id);
+    },
+
+    async staffChatSeen(token, mid) {
+      const { d, s } = staff(token);
+      if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
+      return chatSeenOf(d, mid);
     },
 
     async userChatSend(code, text) {
@@ -1099,8 +1123,13 @@ export function createDevBackend(): Backend {
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
       if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
       if (s.role === 'trainer' && !r?.before) {
-        d.chatReads[s.subject + '|' + mid] = new Date().toISOString();
-        save(d);
+        const prev = d.chatReads[s.subject + '|' + mid];
+        const fresh = d.chat.some((c) => c.mid === mid && c.from === 'member' && c.at > (prev ?? ''));
+        if (!prev || fresh) {
+          d.chatReads[s.subject + '|' + mid] = new Date().toISOString();
+          save(d);
+          if (fresh) ring(memberTopic(mid));
+        }
       }
       return chatPage(d, mid, r);
     },

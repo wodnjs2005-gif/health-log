@@ -11,7 +11,7 @@ declare f record;
 begin
   for f in select p.oid::regprocedure sig from pg_proc p
            where p.pronamespace = 'public'::regnamespace
-             and p.proname = any(array['_assign','_chat_at','_chat_page','_chat_put','_chat_ring','_chat_staff_key','_check_measure','_check_photo','_check_test_item','_clean_days','_clean_foods','_clean_nutri','_client_ip','_code_blocked','_code_fail','_extra_data','_gid','_guardians','_j_chat','_j_custom_food','_j_ex','_j_lesson','_j_meal','_j_measure','_j_member','_j_member_staff','_j_member_trainer','_j_note','_j_notice','_j_prog','_j_test','_j_test_category','_j_test_item','_j_trainer','_j_view','_kst_today','_lesson_data','_meal_total','_mid','_need_admin','_need_assigned','_need_staff','_need_trainer','_new_code','_new_session','_new_trainer_code','_norm_rank','_nutri_num','_photo_key','_photo_ver','_photo_vers','_put_photo','_role','_staff_label','_staff_ok','_token_hash','admin_add_test_category','admin_add_test_item','admin_add_trainer','admin_change_password','admin_create','admin_del_food','admin_del_test_category','admin_del_test_item','admin_del_trainer','admin_food_requests','admin_login','admin_new_trainer_code','admin_save_food','admin_set_member_trainer','admin_set_trainer_rank','admin_update_test_category','admin_update_test_item','custom_foods_get','guardian_get','guardian_photos','guardian_set_photo','guardian_set_relation','staff_add_lesson','staff_add_measure','staff_add_member','staff_add_note','staff_add_notice','staff_add_program','staff_chat_get','staff_chat_list','staff_check','staff_del_lesson','staff_del_measure','staff_del_member','staff_del_note','staff_del_notice','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_photos','staff_set_attendance','staff_set_attendance_many','staff_set_birth','staff_set_offday','staff_set_photo','staff_set_program_members','staff_set_tags','staff_update_lesson','trainer_chat_send','trainer_del_tests','trainer_login','trainer_save_tests','user_add_ex','user_add_meal','user_add_measure','user_add_view','user_chat_get','user_chat_send','user_chat_status','user_del_ex','user_del_meal','user_del_measure','user_get','user_photos','user_set_photo'])
+             and p.proname = any(array['_assign','_chat_at','_chat_page','_chat_put','_chat_ring','_chat_ring_to','_chat_seen','_chat_staff_key','_check_measure','_check_photo','_check_test_item','_clean_days','_clean_foods','_clean_nutri','_client_ip','_code_blocked','_code_fail','_extra_data','_gid','_guardians','_j_chat','_j_custom_food','_j_ex','_j_lesson','_j_meal','_j_measure','_j_member','_j_member_staff','_j_member_trainer','_j_note','_j_notice','_j_prog','_j_test','_j_test_category','_j_test_item','_j_trainer','_j_view','_kst_today','_lesson_data','_meal_total','_mid','_need_admin','_need_assigned','_need_staff','_need_trainer','_new_code','_new_session','_new_trainer_code','_norm_rank','_nutri_num','_photo_key','_photo_ver','_photo_vers','_put_photo','_role','_staff_label','_staff_ok','_token_hash','admin_add_test_category','admin_add_test_item','admin_add_trainer','admin_change_password','admin_create','admin_del_food','admin_del_test_category','admin_del_test_item','admin_del_trainer','admin_food_requests','admin_login','admin_new_trainer_code','admin_save_food','admin_set_member_trainer','admin_set_trainer_rank','admin_update_test_category','admin_update_test_item','custom_foods_get','guardian_get','guardian_photos','guardian_set_photo','guardian_set_relation','staff_add_lesson','staff_add_measure','staff_add_member','staff_add_note','staff_add_notice','staff_add_program','staff_chat_get','staff_chat_list','staff_chat_seen','staff_check','staff_del_lesson','staff_del_measure','staff_del_member','staff_del_note','staff_del_notice','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_photos','staff_set_attendance','staff_set_attendance_many','staff_set_birth','staff_set_offday','staff_set_photo','staff_set_program_members','staff_set_tags','staff_update_lesson','trainer_chat_send','trainer_del_tests','trainer_login','trainer_save_tests','user_add_ex','user_add_meal','user_add_measure','user_add_view','user_chat_get','user_chat_seen','user_chat_send','user_chat_status','user_del_ex','user_del_meal','user_del_measure','user_get','user_photos','user_set_photo'])
   loop
     execute 'drop function if exists ' || f.sig || ' cascade';
   end loop;
@@ -2391,3 +2391,95 @@ end $$;
 
 revoke execute on function _assign(uuid), _extra_data(uuid), _chat_ring(), _need_assigned(uuid,uuid)
   from public, anon, authenticated;
+
+-- ================= 20261014000000_chat_read.sql =================
+
+-- 맞춤 건강관리 · 대화 읽음 표시
+-- 20261013000000_assign_trainer.sql 다음에 실행하세요. (SQL Editor 에 붙여넣고 Run, 또는 supabase db push)
+--
+-- ■ 대화방에서 내가 보낸 메시지를 상대가 읽었는지 보여주도록, 양쪽이 마지막으로 읽은 때를 알려줍니다.
+-- ■ 상대가 새 메시지를 읽으면 초인종(내용 없는 신호)을 울려 보낸 쪽 화면의 읽음 표시가 바로 바뀝니다.
+--   읽을 새 메시지가 있을 때만 울리므로 양쪽이 대화방을 열어 두어도 신호가 끝없이 오가지 않습니다.
+
+-- 초인종 한 번 (실시간이 없거나 실패해도 그대로 진행)
+create or replace function _chat_ring_to(p_topic text) returns void language plpgsql security definer set search_path=public as $$
+begin
+  if p_topic is null then return; end if;
+  begin
+    perform realtime.send('{}'::jsonb,'ring',p_topic,false);
+  exception when others then null;
+  end;
+end $$;
+
+-- 양쪽이 마지막으로 읽은 때: member = 이용자, trainer = 트레이너(누구든 가장 늦게 읽은 때)
+create or replace function _chat_seen(p_mid uuid) returns json language sql stable security definer set search_path=public as $$
+  select json_build_object(
+    'member',(select _chat_at(chat_read_at) from members where id=p_mid),
+    'trainer',(select _chat_at(max(read_at)) from chat_reads where member_id=p_mid)) $$;
+
+-- 이용자 ----------------------------------------------------------------------
+create or replace function user_chat_seen(p_code text) returns json language plpgsql volatile security definer set search_path=public as $$
+declare m uuid:=_mid(p_code);
+begin
+  if m is null then return null; end if;
+  return _chat_seen(m);
+end $$;
+
+-- 대화 보기 (보면 읽은 것으로). 안 읽은 트레이너 메시지가 있었으면 담당 트레이너에게 알린다
+create or replace function user_chat_get(p_code text,p_after timestamptz default null,p_before timestamptz default null) returns json
+language plpgsql volatile security definer set search_path=public as $$
+declare m uuid:=_mid(p_code); x members; tk text;
+begin
+  if m is null then return null; end if;
+  if p_before is null then
+    select * into x from members where id=m;
+    if exists(select 1 from chat_messages c where c.member_id=m and c.sender='trainer' and c.created_at>coalesce(x.chat_read_at,'-infinity')) then
+      update members set chat_read_at=now() where id=m;
+      select chat_key into tk from trainers where id=x.trainer_id;
+      perform _chat_ring_to('hl-tr-'||tk);
+    end if;
+  end if;
+  return _chat_page(m,p_after,p_before);
+end $$;
+
+-- 트레이너·관리자 -------------------------------------------------------------------
+create or replace function staff_chat_seen(p_token text,p_member uuid) returns json language plpgsql stable security definer set search_path=public as $$
+declare s staff_sessions;
+begin
+  select * into s from staff_sessions where token_hash=_token_hash(p_token) and expires_at>now();
+  if s.token_hash is null then raise exception 'invalid session'; end if;
+  if s.role='trainer' then
+    perform _need_assigned(s.subject,p_member);
+  elsif not exists(select 1 from members where id=p_member) then
+    raise exception 'member not found';
+  end if;
+  return _chat_seen(p_member);
+end $$;
+
+-- 대화 보기. 트레이너가 보면 읽은 것으로 하고, 안 읽은 이용자 메시지가 있었으면 그 이용자에게 알린다
+create or replace function staff_chat_get(p_token text,p_member uuid,p_after timestamptz default null,p_before timestamptz default null) returns json
+language plpgsql volatile security definer set search_path=public as $$
+declare s staff_sessions; prev timestamptz; mk text;
+begin
+  select * into s from staff_sessions where token_hash=_token_hash(p_token) and expires_at>now();
+  if s.token_hash is null then raise exception 'invalid session'; end if;
+  if s.role='trainer' then
+    perform _need_assigned(s.subject,p_member);
+    if p_before is null then
+      select read_at into prev from chat_reads where trainer_id=s.subject and member_id=p_member;
+      if prev is null or exists(select 1 from chat_messages c where c.member_id=p_member and c.sender='member' and c.created_at>prev) then
+        insert into chat_reads(trainer_id,member_id,read_at) values(s.subject,p_member,now())
+          on conflict(trainer_id,member_id) do update set read_at=excluded.read_at;
+        if exists(select 1 from chat_messages c where c.member_id=p_member and c.sender='member' and c.created_at>coalesce(prev,'-infinity')) then
+          select chat_key into mk from members where id=p_member;
+          perform _chat_ring_to('hl-chat-'||mk);
+        end if;
+      end if;
+    end if;
+  elsif not exists(select 1 from members where id=p_member) then
+    raise exception 'member not found';
+  end if;
+  return _chat_page(p_member,p_after,p_before);
+end $$;
+
+revoke execute on function _chat_ring_to(text), _chat_seen(uuid) from public, anon, authenticated;
