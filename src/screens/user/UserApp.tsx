@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
+import { ChatScreen } from '../../components/Chat';
+import cs from '../../components/Chat.module.css';
 import { DateNav } from '../../components/DateNav';
+import { useUserChat } from '../../hooks/useChat';
+import { cx } from '../../lib/cx';
 import { Layout } from '../../components/Layout';
 import { MeasureSection } from '../../components/Measures';
 import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
@@ -31,6 +35,8 @@ export function UserApp() {
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [myPhoto, setMyPhoto] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const chat = useUserChat(chatOpen);
   const confirm = useConfirm();
 
   const member = data.members.find((m) => m.id === me)!;
@@ -56,6 +62,18 @@ export function UserApp() {
           <span className={s.tabLabel}>{label}</span>
         </button>
       ))}
+      {/* 대화는 탭이 아니라 화면 전체 대화방을 연다 */}
+      <button type="button" className={s.tab} aria-label={chat.unread > 0 ? `대화, 안 읽은 메시지 ${chat.unread}개` : '대화'} aria-haspopup="dialog" onClick={() => setChatOpen(true)}>
+        <span className={s.tabIconWrap}>
+          <TabIcon name="chat" />
+          {chat.unread > 0 && (
+            <span className={cx(cs.badge, s.tabBadge)} aria-hidden="true">
+              {chat.unread > 99 ? '99+' : chat.unread}
+            </span>
+          )}
+        </span>
+        <span className={s.tabLabel}>대화</span>
+      </button>
     </nav>
   );
 
@@ -109,6 +127,7 @@ export function UserApp() {
           <TestSection mid={member.id} name={member.name} mode="view" />
         </>
       )}
+      {chatOpen && <ChatScreen mid={member.id} name={member.name} mode="user" ring={chat.ring} onClose={() => setChatOpen(false)} />}
       {myPhoto && <PhotoSheet target={{ kind: 'user' }} name={member.name} title="내 사진" tone="green" onClose={() => setMyPhoto(false)} />}
       {sheet && <RecordSheet state={sheet} date={date} onClose={() => setSheet(null)} />}
     </Layout>

@@ -4,6 +4,9 @@ import { Avatar } from '../../components/Avatar';
 import { InstallCard } from '../../components/InstallCard';
 import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
 import { Layout } from '../../components/Layout';
+import cs from '../../components/Chat.module.css';
+import { useStaffChat } from '../../hooks/useChat';
+import { ChatList } from '../staff/ChatList';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
 import type { Member } from '../../lib/backend';
@@ -23,7 +26,7 @@ import { StaffMemberView } from '../staff/StaffMemberView';
 import { VideoManage } from '../staff/VideoManage';
 import s from '../staff/staff.module.css';
 
-type TTab = 'members' | 'lessons' | 'videos';
+type TTab = 'members' | 'chat' | 'lessons' | 'videos';
 
 export function TrainerApp() {
   const { data, goEntry, refresh, logout, staffName, staffRank, staffId } = useApp();
@@ -36,6 +39,8 @@ export function TrainerApp() {
   const [exportingAll, setExportingAll] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const confirm = useConfirm();
+  // 대화: 트레이너 화면이 열려 있는 동안 초인종을 듣고 안 읽은 수를 탭에 보여준다
+  const chat = useStaffChat();
 
   const detail = tView ? data.members.find((m) => m.id === tView) : null;
 
@@ -64,6 +69,7 @@ export function TrainerApp() {
         {(
           [
             ['members', '이용자 기록'],
+            ['chat', '대화'],
             ['lessons', '출석'],
             ['videos', '운동 영상'],
           ] as [TTab, string][]
@@ -80,11 +86,18 @@ export function TrainerApp() {
             }}
           >
             {label}
+            {k === 'chat' && chat.unread > 0 && (
+              <span className={cx(cs.badge, s.switchBadge)} aria-label={`안 읽은 메시지 ${chat.unread}개`}>
+                {chat.unread}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {tTab === 'lessons' ? (
+      {tTab === 'chat' ? (
+        <ChatList mode="trainer" chat={chat} />
+      ) : tTab === 'lessons' ? (
         <LessonManage confirm={confirm} />
       ) : tTab === 'members' ? (
         <MemberList

@@ -1,4 +1,4 @@
-export type TabIconName = 'home' | 'ex' | 'meal' | 'video' | 'stats';
+export type TabIconName = 'home' | 'ex' | 'meal' | 'video' | 'stats' | 'chat';
 
 /** 아래 탭 그림 (글자와 함께 보여준다) */
 export function TabIcon({ name }: { name: TabIconName }) {
@@ -17,6 +17,12 @@ export function TabIcon({ name }: { name: TabIconName }) {
           <path d="M9 21l3-6 3 2v4" />
           <path d="M7 12l3-4.5h4l2.5 4 3 1" />
           <path d="M12 15l-1.5-4" />
+        </>
+      )}
+      {name === 'chat' && (
+        <>
+          <path d="M4 5.5h16v10H10l-4.5 3.5v-3.5H4z" />
+          <path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01" />
         </>
       )}
       {name === 'meal' && (

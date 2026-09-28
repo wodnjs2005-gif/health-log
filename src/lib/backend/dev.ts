@@ -13,6 +13,8 @@ import {
   LimitError,
   type Backend,
   type DataSet,
+  type ChatMessage,
+  type ChatRange,
   type CustomFood,
   type Exercise,
   type Lesson,
@@ -57,6 +59,11 @@ interface DevSession {
 
 interface DevDB extends DataSet {
   customFoods: CustomFood[];
+  chat: ChatMessage[];
+  /** 이용자가 대화를 마지막으로 본 때 (mid → ISO) */
+  chatSeen: Record<string, string>;
+  /** 트레이너가 이용자 대화를 마지막으로 본 때 ('tid|mid' → ISO) */
+  chatReads: Record<string, string>;
   /** 사진 자체 (DataSet.photos 는 버전만) */
   photoData: Record<string, string>;
   admins: DevAdmin[];
@@ -187,6 +194,13 @@ function seed(): DevDB {
     photos: {},
     photoData: {},
     guardians: [{ mid: 'm1', relation: '딸' }],
+    chat: [
+      { id: uid(), mid: 'm1', from: 'member', tid: null, by: '', text: '어제 운동하고 무릎이 조금 뻐근해요. 오늘도 해도 될까요?', at: new Date(Date.now() - 26 * 3600e3).toISOString() },
+      { id: uid(), mid: 'm1', from: 'trainer', tid: 't1', by: '김코치 팀장', text: '오늘은 걷기만 20분 가볍게 하시고, 계속 아프면 말씀해 주세요.', at: new Date(Date.now() - 25 * 3600e3).toISOString() },
+      { id: uid(), mid: 'm1', from: 'member', tid: null, by: '', text: '네 알겠습니다 감사합니다', at: new Date(Date.now() - 2 * 3600e3).toISOString() },
+    ],
+    chatSeen: {},
+    chatReads: {},
     customFoods: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
@@ -222,6 +236,9 @@ const load = (): DevDB => {
   d.photos ??= {};
   d.photoData ??= {};
   d.guardians ??= [];
+  d.chat ??= [];
+  d.chatSeen ??= {};
+  d.chatReads ??= {};
   return d;
 };
 
@@ -240,6 +257,38 @@ const byCode = <T,>(list: T[], pick: (x: T) => string | undefined, code: string)
   const found = list.find((x) => pick(x) === normCode(code));
   if (!found) fails.push(Date.now());
   return found;
+};
+
+// 대화 초인종: 같은 탭은 바로, 다른 탭은 BroadcastChannel 로 (서버의 realtime.send 흉내)
+const ringers = new Map<string, Set<() => void>>();
+const bus = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('healthlog.dev.chat');
+const fire = (topic: string) => ringers.get(topic)?.forEach((f) => f());
+bus?.addEventListener('message', (e) => fire(String(e.data)));
+const ring = (topic: string) => {
+  // 서버처럼 조금 늦게 (저장이 끝난 뒤) 울린다
+  setTimeout(() => fire(topic), 50);
+  bus?.postMessage(topic);
+};
+const STAFF_TOPIC = 'dev-staff';
+const memberTopic = (mid: string) => 'dev-chat-' + mid;
+
+/** 경계 시각도 포함 (서버와 같게) */
+const chatPage = (d: DevDB, mid: string, r: ChatRange = {}) => {
+  const all = d.chat.filter((c) => c.mid === mid && (!r.after || c.at >= r.after) && (!r.before || c.at <= r.before)).sort((a, b) => a.at.localeCompare(b.at));
+  return r.after ? all.slice(0, 500) : all.slice(-50);
+};
+
+const chatPut = (d: DevDB, msg: Omit<ChatMessage, 'id' | 'at'>) => {
+  const text = msg.text.trim().slice(0, 500);
+  if (!text) throw new Error('no text');
+  const c: ChatMessage = { ...msg, text, id: uid(), at: new Date().toISOString() };
+  const yearAgo = new Date(Date.now() - 365 * 86400e3).toISOString();
+  d.chat = d.chat.filter((x) => x.at >= yearAgo);
+  d.chat.push(c);
+  save(d);
+  ring(memberTopic(c.mid));
+  ring(STAFF_TOPIC);
+  return c;
 };
 
 const who = (d: DevDB, code: string) => {
@@ -570,6 +619,7 @@ export function createDevBackend(): Backend {
       d.measures = d.measures.filter((x) => x.mid !== id);
       d.tests = d.tests.filter((x) => x.mid !== id);
       d.guardians = d.guardians.filter((g) => g.mid !== id);
+      d.chat = d.chat.filter((c) => c.mid !== id);
       for (const k of [id, guardianPhotoId(id)]) {
         delete d.photos[k];
         delete d.photoData[k];
@@ -987,6 +1037,72 @@ export function createDevBackend(): Backend {
       if (r) d.guardians.push({ mid: m.id, relation: r });
       save(d);
       return r;
+    },
+
+    // --- 대화 ------------------------------------------------------------------
+    async userChatStatus(code) {
+      const d = load();
+      const m = who(d, code);
+      const seen = d.chatSeen[m.id] ?? '';
+      return { key: memberTopic(m.id), unread: d.chat.filter((c) => c.mid === m.id && c.from === 'trainer' && c.at > seen).length };
+    },
+
+    async userChatGet(code, r) {
+      const d = load();
+      const m = who(d, code);
+      if (!r?.before) {
+        d.chatSeen[m.id] = new Date().toISOString();
+        save(d);
+      }
+      return chatPage(d, m.id, r);
+    },
+
+    async userChatSend(code, text) {
+      const d = load();
+      const m = who(d, code);
+      const c = chatPut(d, { mid: m.id, from: 'member', tid: null, by: '', text });
+      d.chatSeen[m.id] = c.at;
+      save(d);
+      return c;
+    },
+
+    async staffChatList(token) {
+      const { d, s } = staff(token);
+      const last = new Map<string, ChatMessage>();
+      for (const c of [...d.chat].sort((a, b) => a.at.localeCompare(b.at))) last.set(c.mid, c);
+      const rooms = [...last.values()]
+        .sort((a, b) => b.at.localeCompare(a.at))
+        .map((l) => {
+          const seen = d.chatReads[s.subject + '|' + l.mid] ?? '';
+          return { mid: l.mid, last: l, unread: s.role === 'trainer' ? d.chat.filter((c) => c.mid === l.mid && c.from === 'member' && c.at > seen).length : 0 };
+        });
+      return { key: STAFF_TOPIC, rooms };
+    },
+
+    async staffChatGet(token, mid, r) {
+      const { d, s } = staff(token);
+      if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      if (s.role === 'trainer' && !r?.before) {
+        d.chatReads[s.subject + '|' + mid] = new Date().toISOString();
+        save(d);
+      }
+      return chatPage(d, mid, r);
+    },
+
+    async trainerChatSend(token, mid, text) {
+      const { d, s } = trainer(token);
+      if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
+      const c = chatPut(d, { mid, from: 'trainer', tid: s.subject, by: staffLabel(d, s), text });
+      d.chatReads[s.subject + '|' + mid] = c.at;
+      save(d);
+      return c;
+    },
+
+    chatListen(key, onRing) {
+      const set = ringers.get(key) ?? new Set();
+      set.add(onRing);
+      ringers.set(key, set);
+      return () => set.delete(onRing);
     },
 
     async staffSetOffday(token, lid, date, off) {

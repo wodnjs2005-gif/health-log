@@ -175,6 +175,32 @@ export type PhotoKind = 'member' | 'trainer' | 'admin';
 /** 보호자 사진 id (보호자는 계정이 없어 돌보는 이용자 id 로 구분한다) */
 export const guardianPhotoId = (mid: string) => 'g' + mid;
 
+/** 대화 메시지. from = 보낸 쪽, by = 보낸 트레이너 이름(이용자가 보냈으면 ''), at = ISO 시각 */
+export interface ChatMessage {
+  id: string;
+  mid: string;
+  from: 'member' | 'trainer';
+  tid: string | null;
+  by: string;
+  text: string;
+  at: string;
+}
+
+/** 직원 대화방 목록 한 줄 (메시지가 있는 이용자만). unread 는 트레이너에게만 (관리자는 0) */
+export interface ChatRoom {
+  mid: string;
+  last: ChatMessage;
+  unread: number;
+}
+
+/** 가져올 범위: after 뒤의 새 메시지 / before 앞의 예전 메시지 (경계 메시지도 함께 온다) */
+export interface ChatRange {
+  after?: string;
+  before?: string;
+}
+
+export const CHAT_MAX = 500;
+
 /** 보호자가 적은 관계 (예: 딸). 적은 이용자만 온다 */
 export interface GuardianInfo {
   mid: string;
@@ -427,6 +453,18 @@ export interface Backend {
   guardianSetPhoto(code: string, data: string | null): Promise<string | null>;
   /** 보호자 관계 (비우면 지움). 저장된 글을 돌려준다 */
   guardianSetRelation(code: string, relation: string): Promise<string>;
+  // 대화 (이용자 ↔ 트레이너). 관리자는 보기만
+  /** 안 읽은 수와 초인종 채널 */
+  userChatStatus(code: string): Promise<{ key: string; unread: number }>;
+  /** 보면 읽은 것으로 */
+  userChatGet(code: string, range?: ChatRange): Promise<ChatMessage[]>;
+  userChatSend(code: string, text: string): Promise<ChatMessage>;
+  staffChatList(token: string): Promise<{ key: string; rooms: ChatRoom[] }>;
+  /** 트레이너가 보면 읽은 것으로 (관리자는 보기만) */
+  staffChatGet(token: string, mid: string, range?: ChatRange): Promise<ChatMessage[]>;
+  trainerChatSend(token: string, mid: string, text: string): Promise<ChatMessage>;
+  /** 초인종 채널을 듣는다. 새 메시지 신호가 오면 onRing. 돌려준 함수로 그만 듣는다 */
+  chatListen(key: string, onRing: () => void): () => void;
 }
 
 /** 번호가 무효이거나 로그인이 끝났을 때 던지는 오류. 화면에서는 로그인 화면으로 돌려보낸다. */

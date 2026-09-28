@@ -9,7 +9,7 @@
   background: var(--card);
   border-top: 1px solid var(--header-line);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.25rem;
   padding: 0.5rem 0.375rem calc(0.5rem + var(--safe-bottom));
   z-index: 6;
@@ -35,6 +35,21 @@
 
 .tabLabel {
   line-height: 1.2;
+}
+
+/* 대화 탭: 안 읽은 수를 그림 오른쪽 위에 */
+.tabIconWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.tabBadge {
+  position: absolute;
+  top: -0.375rem;
+  left: 1.125rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.75rem;
 }
 
 .tab[aria-current='page'] {

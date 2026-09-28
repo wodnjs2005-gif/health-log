@@ -615,3 +615,9 @@
   align-self: center;
   margin-top: 0.25rem;
 }
+
+/* 메뉴 버튼 옆 안 읽은 수 */
+.switchBadge {
+  margin-left: 0.25rem;
+  vertical-align: 0.0625rem;
+}

@@ -10,6 +10,8 @@ import {
   type Lesson,
   type GuardianData,
   type Meal,
+  type ChatMessage,
+  type ChatRoom,
   type Measure,
   type Member,
   type NewMeasure,
@@ -24,6 +26,7 @@ import {
   type UserData,
   type View,
 } from './types';
+import { listenRing } from './realtime';
 
 /**
  * 환경변수에 넣은 주소를 https://<ref>.supabase.co 로 정리한다.
@@ -226,6 +229,20 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     userSetPhoto: async (code, data) => (await userRpc<{ v: string | null }>('user_set_photo', { p_code: normCode(code), p_data: data })).v,
 
     guardianSetPhoto: async (code, data) => (await userRpc<{ v: string | null }>('guardian_set_photo', { p_code: normCode(code), p_data: data })).v,
+
+    userChatStatus: (code) => userRpc<{ key: string; unread: number }>('user_chat_status', { p_code: normCode(code) }),
+
+    userChatGet: (code, r = {}) => userRpc<ChatMessage[]>('user_chat_get', { p_code: normCode(code), p_after: r.after ?? null, p_before: r.before ?? null }),
+
+    userChatSend: (code, text) => userRpc<ChatMessage>('user_chat_send', { p_code: normCode(code), p_text: text }),
+
+    staffChatList: (token) => rpc<{ key: string; rooms: ChatRoom[] }>('staff_chat_list', { p_token: token }),
+
+    staffChatGet: (token, mid, r = {}) => rpc<ChatMessage[]>('staff_chat_get', { p_token: token, p_member: mid, p_after: r.after ?? null, p_before: r.before ?? null }),
+
+    trainerChatSend: (token, mid, text) => rpc<ChatMessage>('trainer_chat_send', { p_token: token, p_member: mid, p_text: text }),
+
+    chatListen: (topic, onRing) => listenRing(base, key, topic, onRing),
 
     guardianSetRelation: async (code, relation) =>
       (await userRpc<{ relation: string }>('guardian_set_relation', { p_code: normCode(code), p_relation: relation })).relation,

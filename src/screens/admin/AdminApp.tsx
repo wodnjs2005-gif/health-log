@@ -4,7 +4,10 @@ import { Avatar } from '../../components/Avatar';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { CopyCode } from '../../components/CopyCode';
 import { Layout, Sheet } from '../../components/Layout';
+import { ChatScreen } from '../../components/Chat';
 import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
+import { useStaffChat } from '../../hooks/useChat';
+import { ChatList } from '../staff/ChatList';
 import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
@@ -72,6 +75,10 @@ export function AdminApp() {
   const [regOpen, setRegOpen] = useState(false);
   /** 더보기 창을 연 이용자 */
   const [more, setMore] = useState<Member | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatWith, setChatWith] = useState<Member | null>(null);
+  // 관리자는 대화 기록을 열었을 때만 연결한다
+  const adminChat = useStaffChat(chatOpen || !!chatWith);
   /** 기록을 보고 있는 이용자 */
   const [viewing, setViewing] = useState<string | null>(null);
   /** 이용자가 직접 적은 음식 중 아직 영양 정보를 넣지 않은 것의 수 */
@@ -396,6 +403,9 @@ export function AdminApp() {
         <button type="button" className={ui.btnGhost} onClick={() => setNoticeOpen(true)}>
           {data.notices.length > 0 ? `공지사항 (${data.notices.length})` : '공지사항 올리기'}
         </button>
+        <button type="button" className={ui.btnGhost} onClick={() => setChatOpen(true)}>
+          대화 기록 보기
+        </button>
         <button type="button" className={ui.btnGhost} onClick={() => setTestItemsOpen(true)}>
           체력 측정 항목 관리{data.testItems.length > 0 && ` (${data.testItems.length})`}
         </button>
@@ -417,9 +427,16 @@ export function AdminApp() {
       {testItemsOpen && <TestItemManage onClose={() => setTestItemsOpen(false)} />}
       {myPhoto && staffId && <PhotoSheet target={{ kind: 'admin', id: staffId }} name={staffName} title="내 사진" tone="navy" onClose={() => setMyPhoto(false)} />}
       {photoMember && <PhotoSheet target={{ kind: 'member', id: photoMember.id }} name={`${photoMember.name} 님`} tone="navy" onClose={() => setPhotoMember(null)} />}
+      {chatOpen && (
+        <Sheet title="대화 기록" onClose={() => setChatOpen(false)}>
+          <ChatList mode="admin" chat={adminChat} heading={false} />
+        </Sheet>
+      )}
+      {chatWith && <ChatScreen mid={chatWith.id} name={chatWith.name} mode="admin" ring={adminChat.ring} onClose={() => setChatWith(null)} />}
       {more && (
         <MoreSheet
           member={more}
+          onChat={() => setChatWith(more)}
           onClose={() => setMore(null)}
           onBirth={() => setEditingBirth(more.id)}
           onPhoto={() => setPhotoMember(more)}
@@ -442,6 +459,7 @@ interface MoreProps {
   onClose: () => void;
   onBirth: () => void;
   onPhoto: () => void;
+  onChat: () => void;
   onTags: () => void;
   onExport: () => void;
   onNewCode: () => void;
@@ -450,7 +468,7 @@ interface MoreProps {
 }
 
 /** 이용자 카드의 「더보기」: 자주 쓰지 않는 기능과 되돌릴 수 없는 기능 (번호 새로 발급·삭제는 두 번 눌러야 실행) */
-function MoreSheet({ member, onClose, onBirth, onPhoto, onTags, onExport, onNewCode, onNewGuardianCode, onDelete }: MoreProps) {
+function MoreSheet({ member, onClose, onBirth, onPhoto, onChat, onTags, onExport, onNewCode, onNewGuardianCode, onDelete }: MoreProps) {
   const confirm = useConfirm();
   const then = (fn: () => void) => () => {
     onClose();
@@ -462,6 +480,9 @@ function MoreSheet({ member, onClose, onBirth, onPhoto, onTags, onExport, onNewC
       <div className={s.moreList}>
         <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.moreBtn)} onClick={then(onPhoto)}>
           사진 등록·바꾸기
+        </button>
+        <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.moreBtn)} onClick={then(onChat)}>
+          대화 기록 보기
         </button>
         <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.moreBtn)} onClick={then(onBirth)}>
           {member.birth ? '생년월일 수정' : '생년월일 입력'}
