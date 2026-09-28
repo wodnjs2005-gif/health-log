@@ -223,6 +223,13 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     guardianPhotos: (code, ids) => userRpc<Record<string, string>>('guardian_photos', { p_code: normCode(code), p_ids: ids }),
 
+    userSetPhoto: async (code, data) => (await userRpc<{ v: string | null }>('user_set_photo', { p_code: normCode(code), p_data: data })).v,
+
+    guardianSetPhoto: async (code, data) => (await userRpc<{ v: string | null }>('guardian_set_photo', { p_code: normCode(code), p_data: data })).v,
+
+    guardianSetRelation: async (code, relation) =>
+      (await userRpc<{ relation: string }>('guardian_set_relation', { p_code: normCode(code), p_relation: relation })).relation,
+
     adminSetTrainerRank: (token, id, rank) => rpc<string>('admin_set_trainer_rank', { p_token: token, p_id: id, p_rank: rank }),
 
     adminNewTrainerCode: (token, id) => rpc<string>('admin_new_trainer_code', { p_token: token, p_id: id }),

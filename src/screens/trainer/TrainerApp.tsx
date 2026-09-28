@@ -12,6 +12,7 @@ import { cx } from '../../lib/cx';
 import { md, mondayOf } from '../../lib/date';
 import { fmt, sumMeals } from '../../lib/nutrition';
 import { trainerTitle } from '../../lib/rank';
+import { LS, lsGet, lsSet } from '../../lib/storage';
 import type { MemberFilterValue } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
 import { MemberFilter, TagList, useMemberFilter } from '../staff/MemberFilter';
@@ -112,7 +113,7 @@ export function TrainerApp() {
       </div>
       {exportingAll && <ExportSheet onClose={() => setExportingAll(false)} />}
       {noticeOpen && <NoticeManage onClose={() => setNoticeOpen(false)} />}
-      {myPhoto && staffId && <PhotoSheet kind="trainer" id={staffId} name={`${title} 내`} onClose={() => setMyPhoto(false)} />}
+      {myPhoto && staffId && <PhotoSheet target={{ kind: 'trainer', id: staffId }} name={staffName} title="내 사진" onClose={() => setMyPhoto(false)} />}
     </Layout>
   );
 }
@@ -131,6 +132,12 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
   // 기록이 끊긴 분을 맨 위로
   const sorted = sortByActivity(shown, data, today);
   const staleCount = shown.filter((m) => activityOf(data, m.id, today).stale).length;
+  // 목록(자세히) / 타일(사진·이름만, 두 칸씩). 고른 것은 기기에 기억한다
+  const [tile, setTile] = useState(() => lsGet(LS.memberView) === 'tile');
+  const pickView = (t: boolean) => {
+    setTile(t);
+    lsSet(LS.memberView, t ? 'tile' : 'list');
+  };
 
   return (
     <>
@@ -147,13 +154,45 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
       ) : (
         <MemberFilter members={data.members} value={filter} onChange={onFilter} shown={shown.length} />
       )}
+      {shown.length > 0 && (
+        <div className={s.viewSwitch} role="group" aria-label="보기 방식">
+          <button type="button" className={s.viewBtn} aria-pressed={!tile} onClick={() => pickView(false)}>
+            <ViewIcon tile={false} />
+            목록
+          </button>
+          <button type="button" className={s.viewBtn} aria-pressed={tile} onClick={() => pickView(true)}>
+            <ViewIcon tile />
+            타일
+          </button>
+        </div>
+      )}
       {data.members.length > 0 && shown.length === 0 && <div className={ui.empty}>찾는 이용자가 없어요.</div>}
       {staleCount > 0 && (
         <div className={s.staleNote} role="status">
           {STALE_DAYS}일 이상 기록이 없는 분이 <b>{staleCount}명</b> 있어요. 맨 위에 모았어요.
         </div>
       )}
-      {sorted.map((m) => {
+      {tile && (
+        <div className={s.tiles}>
+          {sorted.map((m) => {
+            const week = data.ex.filter((e) => e.mid === m.id && e.date >= mon && e.date <= today).reduce((a, e) => a + e.min, 0);
+            const mealsToday = MAIN3.filter((x) => data.meals.some((e) => e.mid === m.id && e.date === today && e.meal === x)).length;
+            const act = activityOf(data, m.id, today);
+            return (
+              <button key={m.id} type="button" className={cx(ui.card, s.tile, act.stale && s.memberStale)} onClick={() => onOpen(m.id)}>
+                <Avatar id={m.id} name={m.name} size="lg" tone="orange" />
+                <span className={s.tileName}>{m.name}</span>
+                <span className={s.tileInfo}>
+                  이번 주 <b className={s.tileMin}>{week}분</b>
+                </span>
+                <span className={s.tileInfo}>오늘 식사 {mealsToday}/3끼</span>
+                {act.stale && <span className={cx(ui.badge, s.staleBadge, s.tileBadge)}>{act.last ? '기록 끊김' : '기록 없음'}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {!tile && sorted.map((m) => {
         const week = data.ex.filter((e) => e.mid === m.id && e.date >= mon && e.date <= today).reduce((a, e) => a + e.min, 0);
         const pct = Math.min(100, Math.round((week / WEEK_GOAL) * 100));
         const mealsToday = MAIN3.filter((x) => data.meals.some((e) => e.mid === m.id && e.date === today && e.meal === x)).length;
@@ -188,5 +227,22 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport }: ListProps) {
         );
       })}
     </>
+  );
+}
+
+function ViewIcon({ tile }: { tile: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      {tile ? (
+        <>
+          <rect x="4" y="4" width="7" height="7" rx="1.5" />
+          <rect x="13" y="4" width="7" height="7" rx="1.5" />
+          <rect x="4" y="13" width="7" height="7" rx="1.5" />
+          <rect x="13" y="13" width="7" height="7" rx="1.5" />
+        </>
+      ) : (
+        <path d="M4 6h16M4 12h16M4 18h16" />
+      )}
+    </svg>
   );
 }

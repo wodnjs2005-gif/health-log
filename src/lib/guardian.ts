@@ -59,6 +59,7 @@ export const mergeGuardianData = (list: GuardianData[]): DataSet => {
       testItems: list.find((g) => g.testItems?.length)?.testItems ?? [],
       tests: list.flatMap((g) => g.tests || []),
       photos: Object.assign({}, ...list.map((g) => g.photos || {})),
+      guardians: list.flatMap((g) => g.guardians || []),
     },
   );
 };

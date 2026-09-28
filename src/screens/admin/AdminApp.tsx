@@ -4,7 +4,7 @@ import { Avatar } from '../../components/Avatar';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { CopyCode } from '../../components/CopyCode';
 import { Layout, Sheet } from '../../components/Layout';
-import { PhotoSheet } from '../../components/PhotoSheet';
+import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
 import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
@@ -49,7 +49,8 @@ const ISSUED_TEXT: Record<Issued['kind'], { title: string; label: string; tell: 
 };
 
 export function AdminApp() {
-  const { be, data, staffToken, setData, toast, fail, goEntry, logout, refresh, today } = useApp();
+  const { be, data, staffToken, staffId, staffName, setData, toast, fail, goEntry, logout, refresh, today } = useApp();
+  const [myPhoto, setMyPhoto] = useState(false);
   const [newName, setNewName] = useState('');
   const [birth, setBirth] = useState(EMPTY_BIRTH);
   const [tagDraft, setTagDraft] = useState(EMPTY_TAG_DRAFT);
@@ -195,7 +196,11 @@ export function AdminApp() {
   const editingMember = editingBirth ? data.members.find((m) => m.id === editingBirth) : undefined;
 
   return (
-    <Layout title="관리자" onBack={goEntry}>
+    <Layout
+      title="관리자"
+      onBack={goEntry}
+      avatar={staffId ? <EditableAvatar id={staffId} name={staffName} size="md" tone="navy" onEdit={() => setMyPhoto(true)} /> : undefined}
+    >
       <div role="tablist" aria-label="관리자 메뉴" className={cx(st.switch, st.switchNavy)}>
         {(
           [
@@ -410,7 +415,8 @@ export function AdminApp() {
       {foodOpen && <FoodManage onClose={() => setFoodOpen(false)} onChanged={setFoodRequests} />}
       {noticeOpen && <NoticeManage color="navy" onClose={() => setNoticeOpen(false)} />}
       {testItemsOpen && <TestItemManage onClose={() => setTestItemsOpen(false)} />}
-      {photoMember && <PhotoSheet kind="member" id={photoMember.id} name={`${photoMember.name} 님`} tone="navy" onClose={() => setPhotoMember(null)} />}
+      {myPhoto && staffId && <PhotoSheet target={{ kind: 'admin', id: staffId }} name={staffName} title="내 사진" tone="navy" onClose={() => setMyPhoto(false)} />}
+      {photoMember && <PhotoSheet target={{ kind: 'member', id: photoMember.id }} name={`${photoMember.name} 님`} tone="navy" onClose={() => setPhotoMember(null)} />}
       {more && (
         <MoreSheet
           member={more}

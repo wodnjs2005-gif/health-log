@@ -9,6 +9,7 @@ import { normRank, trainerTitle } from '../rank';
 import { normTags, TAGS_PER_MEMBER } from '../tags';
 import {
   AuthError,
+  guardianPhotoId,
   LimitError,
   type Backend,
   type DataSet,
@@ -185,6 +186,7 @@ function seed(): DevDB {
     ],
     photos: {},
     photoData: {},
+    guardians: [{ mid: 'm1', relation: '딸' }],
     customFoods: [],
     admins: [{ id: 'a1', loginId: DEV_ADMIN.loginId, name: '관리자', pw: DEV_ADMIN.pw, failed: 0, lockedUntil: null }],
     trainers: [{ id: 't1', name: '김코치', rank: '팀장', code: genTrainerCode(), createdAt: today }],
@@ -219,6 +221,7 @@ const load = (): DevDB => {
   d.tests ??= [];
   d.photos ??= {};
   d.photoData ??= {};
+  d.guardians ??= [];
   return d;
 };
 
@@ -263,14 +266,33 @@ const userData = (d: DevDB, m: Member): UserData => ({
   testItems: d.testItems,
   tests: d.tests.filter((t) => t.mid === m.id),
   photos: photoVersFor(d, m.id),
+  guardians: d.guardians.filter((g) => g.mid === m.id),
 });
 
-/** 이용자·보호자에게는 그분 사진과 트레이너 사진만 */
-const photoVersFor = (d: DevDB, mid: string | null) =>
-  Object.fromEntries(Object.entries(d.photos).filter(([id]) => mid === null || id === mid || d.trainers.some((t) => t.id === id)));
+/** 이용자·보호자에게는 그분·그분 보호자·트레이너 사진만 (직원은 전부) */
+const canSeePhoto = (d: DevDB, id: string, mid: string | null) =>
+  mid === null || id === mid || id === guardianPhotoId(mid) || d.trainers.some((t) => t.id === id);
+
+const photoVersFor = (d: DevDB, mid: string | null) => Object.fromEntries(Object.entries(d.photos).filter(([id]) => canSeePhoto(d, id, mid)));
 
 const photosOf = (d: DevDB, ids: string[], mid: string | null) =>
-  Object.fromEntries(ids.filter((id) => d.photoData[id] && (mid === null || id === mid || d.trainers.some((t) => t.id === id))).map((id) => [id, d.photoData[id]]));
+  Object.fromEntries(ids.filter((id) => d.photoData[id] && canSeePhoto(d, id, mid)).map((id) => [id, d.photoData[id]]));
+
+/** 사진 넣기·지우기. 새 버전을 돌려준다 (지웠으면 null) */
+const putPhoto = (d: DevDB, id: string, data: string | null) => {
+  if (data === null) {
+    delete d.photos[id];
+    delete d.photoData[id];
+    save(d);
+    return null;
+  }
+  if (data.length > 120000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(data)) throw new Error('invalid photo');
+  const v = String(Date.now());
+  d.photos[id] = v;
+  d.photoData[id] = data;
+  save(d);
+  return v;
+};
 
 const byDate = (a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date);
 
@@ -522,6 +544,7 @@ export function createDevBackend(): Backend {
         testItems: d.testItems,
         tests: d.tests,
         photos: d.photos,
+        guardians: d.guardians,
       };
     },
 
@@ -546,8 +569,11 @@ export function createDevBackend(): Backend {
       d.notes = d.notes.filter((n) => n.mid !== id);
       d.measures = d.measures.filter((x) => x.mid !== id);
       d.tests = d.tests.filter((x) => x.mid !== id);
-      delete d.photos[id];
-      delete d.photoData[id];
+      d.guardians = d.guardians.filter((g) => g.mid !== id);
+      for (const k of [id, guardianPhotoId(id)]) {
+        delete d.photos[k];
+        delete d.photoData[k];
+      }
       save(d);
     },
 
@@ -572,6 +598,10 @@ export function createDevBackend(): Backend {
       const m = d.members.find((x) => x.id === id);
       if (!m) throw new Error('member not found');
       m.guardianCode = uniqueCode(d.members);
+      // 새 보호자에게 예전 보호자의 사진·관계가 보이지 않게
+      d.guardians = d.guardians.filter((g) => g.mid !== id);
+      delete d.photos[guardianPhotoId(id)];
+      delete d.photoData[guardianPhotoId(id)];
       save(d);
       return m.guardianCode;
     },
@@ -910,25 +940,13 @@ export function createDevBackend(): Backend {
     },
 
     // --- 프로필 사진 --------------------------------------------------------------
+    // 이용자 사진은 직원 누구나, 트레이너·관리자 사진은 로그인한 본인만
     async staffSetPhoto(token, kind, id, data) {
       const { d, s } = staff(token);
-      if (kind === 'member' && !d.members.some((m) => m.id === id)) throw new Error('member not found');
-      if (kind === 'trainer') {
-        if (!d.trainers.some((t) => t.id === id)) throw new Error('trainer not found');
-        if (s.role !== 'admin' && s.subject !== id) throw new Error('own photo only');
-      }
-      if (data === null) {
-        delete d.photos[id];
-        delete d.photoData[id];
-        save(d);
-        return null;
-      }
-      if (data.length > 120000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(data)) throw new Error('invalid photo');
-      const v = String(Date.now());
-      d.photos[id] = v;
-      d.photoData[id] = data;
-      save(d);
-      return v;
+      if (kind === 'member') {
+        if (!d.members.some((m) => m.id === id)) throw new Error('member not found');
+      } else if (s.role !== kind || s.subject !== id) throw new Error('own photo only');
+      return putPhoto(d, id, data);
     },
 
     async staffPhotos(token, ids) {
@@ -946,6 +964,29 @@ export function createDevBackend(): Backend {
       const m = byCode(d.members, (x) => x.guardianCode, code);
       if (!m) throw new AuthError('invalid code');
       return photosOf(d, ids, m.id);
+    },
+
+    async userSetPhoto(code, data) {
+      const d = load();
+      return putPhoto(d, who(d, code).id, data);
+    },
+
+    async guardianSetPhoto(code, data) {
+      const d = load();
+      const m = byCode(d.members, (x) => x.guardianCode, code);
+      if (!m) throw new AuthError('invalid code');
+      return putPhoto(d, guardianPhotoId(m.id), data);
+    },
+
+    async guardianSetRelation(code, relation) {
+      const d = load();
+      const m = byCode(d.members, (x) => x.guardianCode, code);
+      if (!m) throw new AuthError('invalid code');
+      const r = relation.replace(/\s+/g, ' ').trim().slice(0, 20);
+      d.guardians = d.guardians.filter((g) => g.mid !== m.id);
+      if (r) d.guardians.push({ mid: m.id, relation: r });
+      save(d);
+      return r;
     },
 
     async staffSetOffday(token, lid, date, off) {

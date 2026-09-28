@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { DateNav } from '../../components/DateNav';
-import { Avatar } from '../../components/Avatar';
 import { Layout } from '../../components/Layout';
 import { MeasureSection } from '../../components/Measures';
+import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
 import { TabIcon } from '../../components/TabIcon';
 import { TestSection } from '../../components/Tests';
 import { WeekChart } from '../../components/WeekChart';
@@ -30,6 +30,7 @@ export function UserApp() {
   const [tab, setTab] = useState<Tab>('home');
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [myPhoto, setMyPhoto] = useState(false);
   const confirm = useConfirm();
 
   const member = data.members.find((m) => m.id === me)!;
@@ -63,7 +64,7 @@ export function UserApp() {
     <Layout
       title={`${member.name} 님`}
       onBack={goEntry}
-      avatar={<Avatar id={member.id} name={member.name} />}
+      avatar={<EditableAvatar id={member.id} name={member.name} size="md" tone="green" onEdit={() => setMyPhoto(true)} />}
       headerExtra={tab === 'video' ? undefined : dateRow}
       bottom={tabbar}
     >
@@ -108,6 +109,7 @@ export function UserApp() {
           <TestSection mid={member.id} name={member.name} mode="view" />
         </>
       )}
+      {myPhoto && <PhotoSheet target={{ kind: 'user' }} name={member.name} title="내 사진" tone="green" onClose={() => setMyPhoto(false)} />}
       {sheet && <RecordSheet state={sheet} date={date} onClose={() => setSheet(null)} />}
     </Layout>
   );

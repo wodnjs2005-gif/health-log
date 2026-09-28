@@ -9,7 +9,7 @@ import { NutriLine } from '../../components/Nutri';
 import { WeekChart } from '../../components/WeekChart';
 import type { ReactNode } from 'react';
 import { ageOf } from '../../lib/age';
-import type { Nutri, PublicMember } from '../../lib/backend';
+import { guardianPhotoId, type Nutri, type PublicMember } from '../../lib/backend';
 import { MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { addDays, md } from '../../lib/date';
@@ -45,7 +45,7 @@ interface Props {
  * 직원은 한마디를 남기고 건강 수치를 적을 수 있고, 보호자는 보기만 한다.
  */
 export function MemberDetail({ member, summary, end: endProp, onGo, color = 'orange' }: Props) {
-  const { data, today, staffToken, staffRole } = useApp();
+  const { data, today, staffToken, staffRole, photoOf } = useApp();
   const isStaff = !!staffToken;
   const [photoOpen, setPhotoOpen] = useState(false);
   const end = endProp ?? today;
@@ -53,6 +53,7 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
   const count = (pid: string, day?: string) =>
     data.views.filter((v) => v.pid === pid && v.mid === member.id && (!day || v.date === day)).length;
   const progs = data.programs.filter((p) => p.mids.includes(member.id));
+  const guardianRel = data.guardians.find((g) => g.mid === member.id)?.relation ?? '';
 
   const log = Array.from({ length: 7 }, (_, i) => {
     const ds = addDays(end, -i);
@@ -96,7 +97,15 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
         </h2>
         {age !== null ? <div className={ui.muted}>{age}세</div> : null}
       </div>
-      {photoOpen && <PhotoSheet kind="member" id={member.id} name={`${member.name} 님`} tone={color} onClose={() => setPhotoOpen(false)} />}
+      {isStaff && (guardianRel || photoOf(guardianPhotoId(member.id))) && (
+        <div className={s.guardianRow}>
+          <Avatar id={guardianPhotoId(member.id)} name={guardianRel || '보'} size="sm" tone="plum" />
+          <span>
+            보호자{guardianRel ? ` · ${guardianRel}` : ''}
+          </span>
+        </div>
+      )}
+      {photoOpen && <PhotoSheet target={{ kind: 'member', id: member.id }} name={`${member.name} 님`} tone={color} onClose={() => setPhotoOpen(false)} />}
       {summary}
       {isStaff ? <NoteWriter mid={member.id} name={member.name} color={color} /> : <NoteCard mid={member.id} />}
       <WeekChart mid={member.id} end={end} ex={data.ex} meals={data.meals} onGo={onGo} />

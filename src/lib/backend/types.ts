@@ -169,7 +169,17 @@ export interface TestResult {
 /** 측정 저장: 숫자 항목은 value, 글 항목은 text */
 export type TestValue = { item: string; value?: number; text?: string };
 
-export type PhotoKind = 'member' | 'trainer';
+/** member = 이용자 (트레이너·관리자 누구나), trainer·admin = 로그인한 본인만 */
+export type PhotoKind = 'member' | 'trainer' | 'admin';
+
+/** 보호자 사진 id (보호자는 계정이 없어 돌보는 이용자 id 로 구분한다) */
+export const guardianPhotoId = (mid: string) => 'g' + mid;
+
+/** 보호자가 적은 관계 (예: 딸). 적은 이용자만 온다 */
+export interface GuardianInfo {
+  mid: string;
+  relation: string;
+}
 
 /** 건강 수치. 적지 않은 항목은 null */
 export interface Measure {
@@ -219,8 +229,9 @@ export interface DataSet {
   testCategories: TestCategory[];
   testItems: TestItem[];
   tests: TestResult[];
-  /** 사진이 있는 이용자·트레이너 id → 사진 버전 (사진 자체는 따로 받는다) */
+  /** 사진이 있는 이용자·트레이너·관리자·보호자(g+이용자 id) → 사진 버전 (사진 자체는 따로 받는다) */
   photos: Record<string, string>;
+  guardians: GuardianInfo[];
 }
 
 /**
@@ -243,6 +254,7 @@ export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>
   testItems: (d.testItems || []).map((i) => ({ ...i, category: i.category ?? null, kind: i.kind ?? 'number' })),
   tests: d.tests || [],
   photos: d.photos || {},
+  guardians: d.guardians || [],
 });
 
 export interface UserData extends Omit<DataSet, 'members'> {
@@ -410,6 +422,11 @@ export interface Backend {
   /** 이용자·보호자: 그분 사진과 트레이너 사진만 온다 */
   userPhotos(code: string, ids: string[]): Promise<Record<string, string>>;
   guardianPhotos(code: string, ids: string[]): Promise<Record<string, string>>;
+  // 본인 프로필 (이용자·보호자). 새 사진 버전을 돌려준다 (지웠으면 null)
+  userSetPhoto(code: string, data: string | null): Promise<string | null>;
+  guardianSetPhoto(code: string, data: string | null): Promise<string | null>;
+  /** 보호자 관계 (비우면 지움). 저장된 글을 돌려준다 */
+  guardianSetRelation(code: string, relation: string): Promise<string>;
 }
 
 /** 번호가 무효이거나 로그인이 끝났을 때 던지는 오류. 화면에서는 로그인 화면으로 돌려보낸다. */

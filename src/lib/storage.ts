@@ -8,6 +8,8 @@ export const LS = {
   trainer: 'healthlog.trainer',
   /** 「바탕화면에 추가하기」 안내를 닫았음 */
   installHide: 'healthlog.installHide',
+  /** 트레이너 이용자 목록 보기: 'tile' 이면 타일 (없으면 목록) */
+  memberView: 'healthlog.memberView',
   /** 예전 공용 비밀번호·체험 모드 데이터 (앱을 열 때 지운다) */
   legacy: ['healthlog.staff', 'healthlog.v1'],
 } as const;

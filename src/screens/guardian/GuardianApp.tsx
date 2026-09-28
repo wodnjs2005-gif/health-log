@@ -5,9 +5,10 @@ import { DateNav } from '../../components/DateNav';
 import { InstallCard } from '../../components/InstallCard';
 import { Layout, Loading, Sheet } from '../../components/Layout';
 import { NoticeList } from '../../components/Notices';
+import { EditableAvatar } from '../../components/PhotoSheet';
 import { WeekGoal } from '../../components/WeekGoal';
 import { useConfirm } from '../../hooks/useConfirm';
-import type { PublicMember } from '../../lib/backend';
+import { guardianPhotoId, type PublicMember } from '../../lib/backend';
 import { CODE_LEN } from '../../lib/code';
 import { MAIN3, MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
@@ -15,6 +16,7 @@ import { md, mondayOf } from '../../lib/date';
 import ui from '../../styles/ui.module.css';
 import { CodeInput } from '../CodeLogin';
 import { MemberDetail } from '../staff/MemberDetail';
+import { GuardianProfileSheet, guardianLabel } from './GuardianProfile';
 import s from './guardian.module.css';
 
 /** 보호자 화면: 가족의 식사·운동 기록을 보기만 한다 (추가·삭제 없음). 날짜를 넘겨 지난 기록도 본다. */
@@ -23,6 +25,7 @@ export function GuardianApp() {
   const [selected, setSelected] = useState<string | null>(null);
   const [date, setDate] = useState(today);
   const [adding, setAdding] = useState(false);
+  const [profile, setProfile] = useState(false);
   const confirm = useConfirm();
 
   const people = guardians
@@ -38,6 +41,8 @@ export function GuardianApp() {
     );
   }
 
+  const myLabel = guardianLabel(data.guardians.find((g) => g.mid === member.id)?.relation);
+
   // 사람을 바꿔도 보던 날짜는 그대로 둔다
   const pick = (id: string) => {
     confirm.reset();
@@ -50,7 +55,12 @@ export function GuardianApp() {
   };
 
   return (
-    <Layout title="보호자" onBack={goEntry} headerExtra={<DateNav date={date} today={today} onChange={moveDate} />}>
+    <Layout
+      title="보호자"
+      onBack={goEntry}
+      avatar={<EditableAvatar id={guardianPhotoId(member.id)} name={myLabel} size="md" tone="plum" onEdit={() => setProfile(true)} />}
+      headerExtra={<DateNav date={date} today={today} onChange={moveDate} />}
+    >
       <NoticeList notices={data.notices} today={today} />
       <div className={s.people} role="tablist" aria-label="보는 사람">
         {people.length > 1 &&
@@ -82,6 +92,9 @@ export function GuardianApp() {
       />
 
       <div className={s.footer}>
+        <button type="button" className={cx(ui.btn, s.profileBtn)} onClick={() => setProfile(true)}>
+          내 프로필 (사진 · 관계)
+        </button>
         <InstallCard />
         {people.length > 1 && (
           <ConfirmButton
@@ -102,6 +115,7 @@ export function GuardianApp() {
         </button>
       </div>
 
+      {profile && <GuardianProfileSheet people={people} current={member.id} onClose={() => setProfile(false)} />}
       {adding && (
         <AddSheet
           onClose={() => setAdding(false)}

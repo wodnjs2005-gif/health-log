@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
-import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
+import { Avatar } from '../../components/Avatar';
 import { CopyCode } from '../../components/CopyCode';
 import { Sheet } from '../../components/Layout';
 import type { useConfirm } from '../../hooks/useConfirm';
@@ -27,7 +27,6 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
   const [name, setName] = useState('');
   const [rank, setRank] = useState('');
   const [editingRank, setEditingRank] = useState<Trainer | null>(null);
-  const [photoTrainer, setPhotoTrainer] = useState<Trainer | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [issued, setIssued] = useState<Issued | null>(null);
@@ -150,7 +149,7 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
         <div key={t.id} className={cx(ui.card, s.memberCard)}>
           <div className={ui.row} style={{ gap: '0.25rem 0.75rem', alignItems: 'center' }}>
             <span className={s.nameRank}>
-              <EditableAvatar id={t.id} name={t.name} size="md" tone="navy" onEdit={() => setPhotoTrainer(t)} />
+              <Avatar id={t.id} name={t.name} tone="navy" />
               <span className={s.name}>{t.name}</span>
               {t.rank && <span className={cx(ui.badge, ui.badgeNavy)}>{t.rank}</span>}
             </span>
@@ -177,7 +176,6 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
         </div>
       ))}
       {editingRank && <RankSheet trainer={editingRank} onClose={() => setEditingRank(null)} />}
-      {photoTrainer && <PhotoSheet kind="trainer" id={photoTrainer.id} name={trainerTitle(photoTrainer.name, photoTrainer.rank)} tone="navy" onClose={() => setPhotoTrainer(null)} />}
     </>
   );
 }

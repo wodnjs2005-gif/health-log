@@ -336,6 +336,10 @@
   --c: var(--navy);
 }
 
+.choicePlum {
+  --c: var(--plum);
+}
+
 .pill {
   border-radius: var(--r-chip);
   padding: 0.25rem 1.125rem;
