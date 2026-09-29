@@ -93,6 +93,7 @@ npm run dev
 | `npm run build:html` | 파일 하나짜리 `../나의 건강일지.html` 만들기 (`.env` 필요) |
 | `npm run update:foods` | 식약처 음식 자료를 새로 받아 음식 목록과 달라진 점 확인 (`-- --write` 를 붙이면 목록을 바꿈) |
 | `node scripts/build-foods.mjs <원본.json…>` | 이미 받아 둔 식약처 자료로 음식 목록 `src/data/foods.json` 다시 만들기 |
+| `python scripts/build-icons.py` | 앱 아이콘(`public/` 의 icon.svg · icon-192/512 · maskable · apple-touch) 다시 만들기 (Pillow 필요). 초록 바탕에 흰 하트(건강) · 주황 맥박선(운동) · 연두 잎(식사) |
 | `npm run test:export` | 가상의 데이터로 엑셀 내려받기 파일을 만들어 `export-test/` 에 저장 (양식 점검용) |
 
 ### 파일 하나로 열어보기
