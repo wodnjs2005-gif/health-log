@@ -753,6 +753,18 @@ export function createDevBackend(): Backend {
       save(d);
     },
 
+    async adminUpdateProgram(token, id, e) {
+      const d = admin(token);
+      const p = d.programs.find((x) => x.id === id);
+      if (!p) throw new Error('program not found');
+      if (!e.title.trim()) throw new Error('no title');
+      if (e.ytId !== null && !/^[A-Za-z0-9_-]{11}$/.test(e.ytId)) throw new Error('invalid video');
+      Object.assign(p, { title: e.title.trim().slice(0, 100), kind: e.kind, min: e.min, memo: e.memo || '' });
+      if (e.ytId) Object.assign(p, { src: 'yt', ytId: e.ytId, videoKey: null, videoUrl: null, videoName: '유튜브 영상' });
+      save(d);
+      return { ...p };
+    },
+
     // 트레이너만, 자기 담당 이용자 몫만 바꾼다
     async staffSetProgramMembers(token, id, mids) {
       const { d, s } = trainer(token);

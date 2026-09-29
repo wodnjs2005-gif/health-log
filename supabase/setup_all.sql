@@ -11,7 +11,7 @@ declare f record;
 begin
   for f in select p.oid::regprocedure sig from pg_proc p
            where p.pronamespace = 'public'::regnamespace
-             and p.proname = any(array['_assign','_chat_at','_chat_page','_chat_put','_chat_ring','_chat_ring_to','_chat_seen','_chat_staff_key','_check_measure','_check_photo','_check_test_item','_clean_days','_clean_foods','_clean_nutri','_client_ip','_code_blocked','_code_fail','_extra_data','_gid','_guardians','_j_chat','_j_custom_food','_j_ex','_j_lesson','_j_meal','_j_measure','_j_member','_j_member_staff','_j_member_trainer','_j_note','_j_notice','_j_prog','_j_test','_j_test_category','_j_test_item','_j_trainer','_j_view','_kst_today','_lesson_data','_meal_total','_mid','_need_admin','_need_assigned','_need_staff','_need_trainer','_new_code','_new_session','_new_trainer_code','_norm_rank','_nutri_num','_photo_key','_photo_ver','_photo_vers','_put_photo','_role','_staff_label','_staff_ok','_staff_session','_token_hash','admin_add_test_category','admin_add_test_item','admin_add_trainer','admin_change_password','admin_create','admin_del_food','admin_del_test_category','admin_del_test_item','admin_del_trainer','admin_food_requests','admin_login','admin_new_trainer_code','admin_save_food','admin_set_member_trainer','admin_set_trainer_rank','admin_update_test_category','admin_update_test_item','custom_foods_get','guardian_get','guardian_photos','guardian_set_photo','guardian_set_relation','staff_add_lesson','staff_add_measure','staff_add_member','staff_add_note','staff_add_notice','staff_add_program','staff_chat_get','staff_chat_list','staff_chat_seen','staff_check','staff_del_lesson','staff_del_measure','staff_del_member','staff_del_note','staff_del_notice','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_photos','staff_set_attendance','staff_set_attendance_many','staff_set_birth','staff_set_offday','staff_set_photo','staff_set_program_members','staff_set_tags','staff_update_lesson','trainer_chat_send','trainer_del_tests','trainer_login','trainer_save_tests','trainer_share_programs','user_add_ex','user_add_meal','user_add_measure','user_add_view','user_chat_get','user_chat_seen','user_chat_send','user_chat_status','user_del_ex','user_del_meal','user_del_measure','user_get','user_photos','user_set_photo'])
+             and p.proname = any(array['_assign','_chat_at','_chat_page','_chat_put','_chat_ring','_chat_ring_to','_chat_seen','_chat_staff_key','_check_measure','_check_photo','_check_test_item','_clean_days','_clean_foods','_clean_nutri','_client_ip','_code_blocked','_code_fail','_extra_data','_gid','_guardians','_j_chat','_j_custom_food','_j_ex','_j_lesson','_j_meal','_j_measure','_j_member','_j_member_staff','_j_member_trainer','_j_note','_j_notice','_j_prog','_j_test','_j_test_category','_j_test_item','_j_trainer','_j_view','_kst_today','_lesson_data','_meal_total','_mid','_need_admin','_need_assigned','_need_staff','_need_trainer','_new_code','_new_session','_new_trainer_code','_norm_rank','_nutri_num','_photo_key','_photo_ver','_photo_vers','_put_photo','_role','_staff_label','_staff_ok','_staff_session','_token_hash','admin_add_test_category','admin_add_test_item','admin_add_trainer','admin_change_password','admin_create','admin_del_food','admin_del_test_category','admin_del_test_item','admin_del_trainer','admin_food_requests','admin_login','admin_new_trainer_code','admin_save_food','admin_set_member_trainer','admin_set_trainer_rank','admin_update_program','admin_update_test_category','admin_update_test_item','custom_foods_get','guardian_get','guardian_photos','guardian_set_photo','guardian_set_relation','staff_add_lesson','staff_add_measure','staff_add_member','staff_add_note','staff_add_notice','staff_add_program','staff_chat_get','staff_chat_list','staff_chat_seen','staff_check','staff_del_lesson','staff_del_measure','staff_del_member','staff_del_note','staff_del_notice','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_photos','staff_set_attendance','staff_set_attendance_many','staff_set_birth','staff_set_offday','staff_set_photo','staff_set_program_members','staff_set_tags','staff_update_lesson','trainer_chat_send','trainer_del_tests','trainer_login','trainer_save_tests','trainer_share_programs','user_add_ex','user_add_meal','user_add_measure','user_add_view','user_chat_get','user_chat_seen','user_chat_send','user_chat_status','user_del_ex','user_del_meal','user_del_measure','user_get','user_photos','user_set_photo'])
   loop
     execute 'drop function if exists ' || f.sig || ' cascade';
   end loop;
@@ -2625,4 +2625,31 @@ begin
   end if;
   return coalesce((select json_object_agg(p.id, coalesce((select json_agg(pm.member_id) from program_members pm where pm.program_id=p.id),'[]'::json))
     from programs p where p.id = any(ps)),'{}'::json);
+end $$;
+
+-- ================= 20261017000000_program_edit.sql =================
+
+-- 맞춤 건강관리 · 등록한 운동 영상 고치기
+-- 20261016000000_video_share.sql 다음에 실행하세요. (SQL Editor 에 붙여넣고 Run, 또는 supabase db push)
+--
+-- ■ 관리자가 이미 올린 영상의 제목·운동 종류·시간·안내 메모·유튜브 링크를 고칩니다.
+--   공유된 이용자와 따라한 기록은 그대로 둡니다. 유튜브 링크를 비워 보내면 영상은 그대로 둡니다.
+
+create or replace function admin_update_program(p_token text,p_id uuid,p_title text,p_kind text,p_min int,p_memo text,p_yt_id text) returns json
+language plpgsql security definer set search_path=public as $$
+declare r programs;
+begin
+  perform _need_admin(p_token);
+  if coalesce(trim(p_title),'')='' then raise exception 'no title'; end if;
+  if coalesce(trim(p_kind),'')='' then raise exception 'no kind'; end if;
+  if p_min is null or p_min<1 or p_min>600 then raise exception 'invalid min'; end if;
+  if p_yt_id is not null and p_yt_id !~ '^[A-Za-z0-9_-]{11}$' then raise exception 'invalid video'; end if;
+  update programs set title=left(trim(p_title),100), kind=left(trim(p_kind),30), min=p_min, memo=left(coalesce(p_memo,''),500),
+    src=case when p_yt_id is null then src else 'yt' end,
+    yt_id=coalesce(p_yt_id,yt_id),
+    video_url=case when p_yt_id is null then video_url end,
+    video_name=case when p_yt_id is null then video_name else '유튜브 영상' end
+  where id=p_id returning * into r;
+  if r.id is null then raise exception 'program not found'; end if;
+  return _j_prog(r,null);
 end $$;

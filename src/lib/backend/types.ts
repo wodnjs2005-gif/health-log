@@ -335,6 +335,8 @@ export interface NewProgram {
   ytId: string | null;
 }
 
+export type ProgramEdit = Omit<NewProgram, 'mids'>;
+
 export type StaffRole = 'admin' | 'trainer';
 
 /** 트레이너 (관리자 화면에만 번호가 내려온다) */
@@ -417,6 +419,8 @@ export interface Backend {
   staffSetTags(token: string, id: string, tags: string[]): Promise<string[]>;
   staffAddProgram(token: string, p: NewProgram, file: File | null): Promise<Program>;
   staffDelProgram(token: string, id: string): Promise<void>;
+  /** 등록한 영상 고치기 (관리자). ytId 가 null 이면 영상은 그대로. 공유·따라한 기록은 그대로 */
+  adminUpdateProgram(token: string, id: string, p: ProgramEdit): Promise<Program>;
   /** 한 영상의 대상 바꾸기 (트레이너만, 자기 담당 이용자 몫만). 저장된 대상 목록을 돌려준다 */
   staffSetProgramMembers(token: string, id: string, mids: string[]): Promise<string[]>;
   /** 영상 여러 개를 담당 이용자 여러 명에게 한 번에 공유(on)하거나 끈다. 영상마다 지금 대상 목록을 돌려준다 */

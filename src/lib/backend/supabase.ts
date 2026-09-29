@@ -294,6 +294,9 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     staffDelProgram: (token, id) => rpc<void>('staff_del_program', { p_token: token, p_id: id }),
 
+    adminUpdateProgram: (token, id, p) =>
+      rpc<Program>('admin_update_program', { p_token: token, p_id: id, p_title: p.title, p_kind: p.kind, p_min: p.min, p_memo: p.memo || '', p_yt_id: p.ytId }),
+
     staffSetProgramMembers: (token, id, mids) =>
       rpc<string[]>('staff_set_program_members', { p_token: token, p_id: id, p_mids: mids }),
 

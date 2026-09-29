@@ -25,6 +25,8 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
   const { be, data, staffToken, staffRole, staffId, setData, toast, fail } = useApp();
   const isAdmin = staffRole === 'admin';
   const [adding, setAdding] = useState(false);
+  const [fixing, setFixing] = useState<string | null>(null);
+  const fixingProgram = fixing ? data.programs.find((p) => p.id === fixing) : undefined;
   const [editing, setEditing] = useState<string | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [sharing, setSharing] = useState<boolean | null>(null);
@@ -121,6 +123,18 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
                   이 영상 공유 대상 바꾸기
                 </button>
               )}
+              {isAdmin && (
+                <button
+                  type="button"
+                  className={cx(ui.btnSmall, ui.btnNavyOutline)}
+                  onClick={() => {
+                    confirm.reset();
+                    setFixing(p.id);
+                  }}
+                >
+                  영상 고치기
+                </button>
+              )}
               {isAdmin && <ConfirmButton armed={confirm.pending === p.id} onClick={() => del(p.id)} label="영상 삭제" />}
             </div>
           </div>
@@ -138,6 +152,7 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
         </div>
       )}
       {adding && <ProgramSheet color={color} onClose={() => setAdding(false)} />}
+      {fixingProgram && <ProgramSheet key={fixingProgram.id} program={fixingProgram} color={color} onClose={() => setFixing(null)} />}
       {editingProgram && <TargetSheet program={editingProgram} color={color} members={myMembers} onClose={() => setEditing(null)} />}
       {sharing !== null && pickedPrograms.length > 0 && (
         <ShareSheet programs={pickedPrograms} on={sharing} onClose={() => setSharing(null)} onDone={() => setPicked([])} />
