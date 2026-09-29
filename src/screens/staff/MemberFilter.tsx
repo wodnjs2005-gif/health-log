@@ -25,11 +25,11 @@ export function useTagColors() {
 }
 
 /** #오전반 #무릎조심 … (보기 전용) */
-export function TagList({ tags }: { tags?: string[] }) {
+export function TagList({ tags, className }: { tags?: string[]; className?: string }) {
   const colors = useTagColors();
   if (!tags?.length) return null;
   return (
-    <div className={s.tagList} aria-label="해시태그">
+    <div className={cx(s.tagList, className)} aria-label="해시태그">
       {tags.map((t) => (
         <span key={t} className={s.tag} style={tagStyle(colors.get(t))}>
           #{t}

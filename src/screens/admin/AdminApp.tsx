@@ -36,6 +36,8 @@ import { PasswordSheet } from './PasswordSheet';
 import { TestItemManage } from './TestItemManage';
 import { TrainerManage } from './TrainerManage';
 import { useBack } from '../../hooks/useBack';
+import { useViewMode } from '../../hooks/useViewMode';
+import { ViewToggle } from '../staff/ViewToggle';
 
 type ATab = 'members' | 'trainers' | 'lessons' | 'videos';
 
@@ -99,6 +101,13 @@ export function AdminApp() {
   }, [be, staffToken]);
   const { filter, setFilter, shown } = useMemberFilter(data.members);
   const confirm = useConfirm();
+  // 이용자 목록: 목록(자세히) / 격자(사진·이름·해시태그·개인 번호, 누르면 더보기 창)
+  const [tile, setTile] = useViewMode('members');
+  const openRecord = (id: string) => {
+    confirm.reset();
+    setViewing(id);
+    scrollTop();
+  };
 
   const addMember = async () => {
     const name = newName.trim();
@@ -343,7 +352,13 @@ export function AdminApp() {
           {data.members.length === 0 ? (
             <div className={ui.empty}>등록된 이용자가 없어요.</div>
           ) : (
-            <MemberFilter members={data.members} value={filter} onChange={setFilter} shown={shown.length} />
+            <MemberFilter
+              members={data.members}
+              value={filter}
+              onChange={setFilter}
+              shown={shown.length}
+              side={<ViewToggle tile={tile} onChange={setTile} color="navy" />}
+            />
           )}
           {data.members.length > 0 && shown.length === 0 && <div className={ui.empty}>찾는 이용자가 없어요.</div>}
           {staleCount > 0 && (
@@ -351,7 +366,21 @@ export function AdminApp() {
               {STALE_DAYS}일 이상 기록이 없는 분이 <b>{staleCount}명</b> 있어요. 맨 위에 모았어요.
             </div>
           )}
-          {sorted.map((m) => {
+          {tile && sorted.length > 0 && (
+            <div className={cx(st.tiles, st.tiles2)}>
+              {sorted.map((m) => (
+                <div key={m.id} className={cx(ui.card, st.tile, st.tileWithCode, activityOf(data, m.id, today).stale && st.memberStale)}>
+                  <button type="button" className={st.tileOpen} onClick={() => setMore(m)} aria-haspopup="dialog">
+                    <Avatar id={m.id} name={m.name} size="lg" tone="navy" />
+                    <span className={st.tileName}>{m.name}</span>
+                  </button>
+                  <TagList tags={m.tags} className={st.tileTags} />
+                  <CopyCode code={m.code} label="개인 번호" className={cx(s.code, st.tileCode)} />
+                </div>
+              ))}
+            </div>
+          )}
+          {!tile && sorted.map((m) => {
             const age = ageOf(m, today);
             const act = activityOf(data, m.id, today);
             const warn = staleText(act);
@@ -386,15 +415,7 @@ export function AdminApp() {
                 </div>
                 <TodayNutri meals={data.meals.filter((e) => e.mid === m.id && e.date === today)} />
                 <div className={s.cardActions}>
-                  <button
-                    type="button"
-                    className={cx(ui.btnSmall, s.viewBtn)}
-                    onClick={() => {
-                      confirm.reset();
-                      setViewing(m.id);
-                      scrollTop();
-                    }}
-                  >
+                  <button type="button" className={cx(ui.btnSmall, s.viewBtn)} onClick={() => openRecord(m.id)}>
                     기록 보기 · 한마디
                   </button>
                   <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setMore(m)} aria-haspopup="dialog">
@@ -445,6 +466,9 @@ export function AdminApp() {
       {more && (
         <MoreSheet
           member={more}
+          full={tile}
+          onView={() => openRecord(more.id)}
+          onAssign={() => setAssigning(more)}
           onChat={() => setChatWith(more)}
           onClose={() => setMore(null)}
           onBirth={() => setEditingBirth(more.id)}
@@ -465,6 +489,10 @@ export function AdminApp() {
 
 interface MoreProps {
   member: Member;
+  /** 격자에서 열었을 때: 목록 카드에 있던 기록 보기·담당·번호·기록 수도 보여준다 */
+  full?: boolean;
+  onView: () => void;
+  onAssign: () => void;
   onClose: () => void;
   onBirth: () => void;
   onPhoto: () => void;
@@ -477,7 +505,7 @@ interface MoreProps {
 }
 
 /** 이용자 카드의 「더보기」: 자주 쓰지 않는 기능과 되돌릴 수 없는 기능 (번호 새로 발급·삭제는 두 번 눌러야 실행) */
-function MoreSheet({ member, onClose, onBirth, onPhoto, onChat, onTags, onExport, onNewCode, onNewGuardianCode, onDelete }: MoreProps) {
+function MoreSheet({ member, full, onView, onAssign, onClose, onBirth, onPhoto, onChat, onTags, onExport, onNewCode, onNewGuardianCode, onDelete }: MoreProps) {
   const confirm = useConfirm();
   const then = (fn: () => void) => () => {
     onClose();
@@ -486,7 +514,8 @@ function MoreSheet({ member, onClose, onBirth, onPhoto, onChat, onTags, onExport
   const twice = (key: string, fn: () => void) => () => confirm.tap(key, then(fn));
   return (
     <Sheet title={`${member.name} 님`} onClose={onClose}>
-      <div className={s.moreList}>
+      {full && <MemberSummary member={member} onView={then(onView)} onAssign={then(onAssign)} />}
+      <div className={cx(s.moreList, full && ui.divided)}>
         <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.moreBtn)} onClick={then(onPhoto)}>
           사진 등록·바꾸기
         </button>
@@ -513,6 +542,42 @@ function MoreSheet({ member, onClose, onBirth, onPhoto, onChat, onTags, onExport
         <ConfirmButton armed={confirm.pending === 'd'} onClick={twice('d', onDelete)} label="이용자 삭제" danger wide />
       </div>
     </Sheet>
+  );
+}
+
+/** 격자에서 연 더보기 창 위쪽: 목록 카드의 내용 (나이·담당·번호·기록 수·기록 보기) */
+function MemberSummary({ member: m, onView, onAssign }: { member: Member; onView: () => void; onAssign: () => void }) {
+  const { data, today } = useApp();
+  const age = ageOf(m, today);
+  const act = activityOf(data, m.id, today);
+  const warn = staleText(act);
+  return (
+    <>
+      {(m.birth || age !== null) && (
+        <span className={ui.muted}>
+          {m.birth && `${birthLabel(m.birth)} · `}
+          {age !== null && `${age}세`}
+        </span>
+      )}
+      {warn && <span className={cx(ui.badge, act.stale ? st.staleBadge : ui.badgeMuted)}>{warn}</span>}
+      <AssignRow mid={m.id} onPick={onAssign} />
+      <div className={s.codeRow}>
+        <span className={cx(ui.small, s.codeLabel)}>개인 번호</span>
+        <CopyCode code={m.code} label="개인 번호" className={s.code} />
+      </div>
+      <div className={s.codeRow}>
+        <span className={cx(ui.small, s.codeLabel)}>보호자 번호</span>
+        <CopyCode code={m.guardianCode ?? ''} label="보호자 번호" className={cx(s.code, s.codeGuardian)} />
+      </div>
+      <div style={{ fontSize: '0.9375rem', color: 'var(--ink-2)' }}>
+        운동 기록 {data.ex.filter((e) => e.mid === m.id).length}건 · 식사 기록 {data.meals.filter((e) => e.mid === m.id).length}건
+        {act.last && ` · 최근 ${act.last === today ? '오늘' : md(act.last)}`}
+      </div>
+      <TodayNutri meals={data.meals.filter((e) => e.mid === m.id && e.date === today)} />
+      <button type="button" className={cx(ui.btn, ui.navy)} onClick={onView}>
+        기록 보기 · 한마디
+      </button>
+    </>
   );
 }
 

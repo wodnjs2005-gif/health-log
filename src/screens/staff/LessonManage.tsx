@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
+import { Avatar } from '../../components/Avatar';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { DateNav } from '../../components/DateNav';
 import type { useConfirm } from '../../hooks/useConfirm';
@@ -12,6 +13,8 @@ import { LessonSheet } from './LessonSheet';
 import type { StaffColor } from './ProgramSheet';
 import s from './staff.module.css';
 import { useBack } from '../../hooks/useBack';
+import { useViewMode } from '../../hooks/useViewMode';
+import { ViewToggle } from './ViewToggle';
 
 interface Props {
   confirm: ReturnType<typeof useConfirm>;
@@ -19,11 +22,12 @@ interface Props {
   color?: StaffColor;
 }
 
-/** 수업 목록 → 수업을 누르면 날짜별 출석부 (트레이너·관리자 공용) */
+/** 수업 목록 → 수업을 누르면 날짜별 출석부 (트레이너·관리자 공용). 목록 / 격자로 볼 수 있다 (출석부도 같이) */
 export function LessonManage({ confirm, color = 'orange' }: Props) {
   const { data, today } = useApp();
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [tile, setTile] = useViewMode('lessons');
   const open = openId ? data.lessons.find((x) => x.id === openId) : undefined;
 
   if (open) {
@@ -33,6 +37,8 @@ export function LessonManage({ confirm, color = 'orange' }: Props) {
         lesson={open}
         confirm={confirm}
         color={color}
+        tile={tile}
+        onTile={setTile}
         onBack={() => {
           confirm.reset();
           setOpenId(null);
@@ -47,15 +53,45 @@ export function LessonManage({ confirm, color = 'orange' }: Props) {
 
   return (
     <>
-      <div className={ui.row} style={{ padding: '0.25rem' }}>
-        <h2 className={ui.h2}>수업</h2>
-        <div className={ui.muted}>{lessons.length}개</div>
+      <div className={ui.row} style={{ padding: '0.25rem', alignItems: 'center' }}>
+        <h2 className={ui.h2}>
+          수업 <span className={ui.muted}>{lessons.length}개</span>
+        </h2>
+        {lessons.length > 0 && <ViewToggle tile={tile} onChange={setTile} color={color} />}
       </div>
       <button type="button" className={cx(ui.btn, btnColor)} onClick={() => setAdding(true)}>
         + 수업 만들기
       </button>
       {lessons.length === 0 && <div className={ui.empty}>만든 수업이 없어요.</div>}
-      {lessons.map((x) => {
+      {tile && lessons.length > 0 && (
+        <div className={cx(s.tiles, s.tiles2)}>
+          {lessons.map((x) => {
+            const mids = activeMids(x, data.members);
+            const todayOn = isLessonDay(x, today) && !isOff(data.offdays, x.id, today);
+            const here = mids.filter((mid) => isPresent(data.attendance, x.id, mid, today)).length;
+            return (
+              <button
+                key={x.id}
+                type="button"
+                className={cx(ui.card, s.tile, l.lessonTile)}
+                onClick={() => {
+                  confirm.reset();
+                  setOpenId(x.id);
+                  scrollTop();
+                }}
+              >
+                <span className={s.tileName}>{x.name}</span>
+                {todayOn && <span className={cx(ui.badge, ui.badgeGreen)}>오늘 수업</span>}
+                <span className={s.tileInfo}>{daysLabel(x.days)}</span>
+                <span className={s.tileInfo}>
+                  {mids.length}명{(todayOn || here > 0) && ` · 출석 ${here}명`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {!tile && lessons.map((x) => {
         const mids = activeMids(x, data.members);
         const todayOn = isLessonDay(x, today) && !isOff(data.offdays, x.id, today);
         const here = mids.filter((mid) => isPresent(data.attendance, x.id, mid, today)).length;
@@ -112,9 +148,12 @@ const activeMids = (x: Lesson, members: { id: string; name: string }[]) =>
 interface DetailProps extends Props {
   lesson: Lesson;
   onBack: () => void;
+  /** 출석부 격자 (사진·이름) */
+  tile: boolean;
+  onTile: (tile: boolean) => void;
 }
 
-function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps) {
+function LessonDetail({ lesson, confirm, color = 'orange', onBack, tile, onTile }: DetailProps) {
   const { be, data, staffToken, staffRole, staffId, setData, today, toast, fail, refresh } = useApp();
   const [date, setDate] = useState(today);
   const [editing, setEditing] = useState(false);
@@ -222,10 +261,11 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
 
   return (
     <>
-      <div>
+      <div className={ui.row} style={{ alignItems: 'center' }}>
         <button type="button" className={ui.btnSmall} onClick={onBack}>
           ‹ 수업 목록
         </button>
+        {mids.length > 0 && <ViewToggle tile={tile} onChange={onTile} color={color} />}
       </div>
       <div className={l.detailHead}>
         <h2 className={ui.h2}>{lesson.name}</h2>
@@ -273,11 +313,27 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
       {mids.length === 0 ? (
         <div className={ui.empty}>대상 이용자가 없어요.</div>
       ) : (
-        <div className={l.roster}>
+        <div className={tile ? cx(s.tiles, l.rosterTiles) : l.roster}>
           {mids.map((mid) => {
             const here = isPresent(data.attendance, lesson.id, mid, date);
             const rate = monthRate(lesson, mid, data.attendance, data.offdays, today);
             const mine = canMark(mid);
+            if (tile)
+              return (
+                <button
+                  key={mid}
+                  type="button"
+                  className={cx(l.rosterRow, l.rosterTile, !mine && l.rosterOther)}
+                  aria-pressed={here}
+                  disabled={off || !mine}
+                  onClick={() => void toggle(mid)}
+                >
+                  <Avatar id={mid} name={nameOf(mid)} tone={color === 'navy' ? 'navy' : 'orange'} />
+                  <span className={s.tileName}>{nameOf(mid)}</span>
+                  <span className={cx(l.mark, l.markTile)}>{here ? '출석 ✓' : lessonDay ? '결석' : '체크'}</span>
+                  {!mine && <span className={l.rosterSub}>담당 아님</span>}
+                </button>
+              );
             return (
               <button
                 key={mid}

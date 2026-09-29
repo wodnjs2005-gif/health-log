@@ -5,11 +5,14 @@ import { Avatar } from '../../components/Avatar';
 import { CopyCode } from '../../components/CopyCode';
 import { Sheet } from '../../components/Layout';
 import type { useConfirm } from '../../hooks/useConfirm';
+import { useViewMode } from '../../hooks/useViewMode';
 import { cx } from '../../lib/cx';
 import type { Trainer } from '../../lib/backend';
 import { md } from '../../lib/date';
 import { normRank, RANK_MAX_LEN, trainerTitle } from '../../lib/rank';
 import ui from '../../styles/ui.module.css';
+import st from '../staff/staff.module.css';
+import { ViewToggle } from '../staff/ViewToggle';
 import s from './admin.module.css';
 import { IssuedCard } from './IssuedCard';
 
@@ -21,7 +24,7 @@ interface Issued {
   renewed?: boolean;
 }
 
-/** 관리자 · 트레이너 관리: 등록하면 8자리 트레이너 번호가 발급된다 */
+/** 관리자 · 트레이너 관리: 등록하면 8자리 트레이너 번호가 발급된다. 목록 / 격자(사진·이름·직급·번호) 로 볼 수 있다 */
 export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfirm> }) {
   const { be, data, setData, staffToken, trainers, setTrainers, toast, fail } = useApp();
   const [name, setName] = useState('');
@@ -32,6 +35,10 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
   const [issued, setIssued] = useState<Issued | null>(null);
   /** 등록 칸 펼침 (평소에는 접어 두어 목록이 먼저 보이게) */
   const [open, setOpen] = useState(false);
+  const [tile, setTile] = useViewMode('trainers');
+  /** 격자에서 누른 트레이너 (관리 창) */
+  const [managing, setManaging] = useState<string | null>(null);
+  const managed = managing ? trainers.find((x) => x.id === managing) : undefined;
 
   const add = async () => {
     const n = name.trim();
@@ -64,6 +71,7 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
       const t = trainers.find((x) => x.id === id);
       setTrainers((list) => list.map((x) => (x.id === id ? { ...x, code } : x)));
       setIssued(t ? { id, name: t.name, rank: t.rank, code, renewed: true } : null);
+      setManaging(null);
       scrollTop();
     });
 
@@ -78,8 +86,20 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
       // 그 트레이너가 맡던 이용자는 담당 없음으로
       setData((d) => ({ ...d, assign: Object.fromEntries(Object.entries(d.assign).filter(([, tid]) => tid !== id)) }));
       setIssued((j) => (j && j.id === id ? null : j));
+      setManaging(null);
       toast('트레이너를 삭제했어요');
     });
+
+  const assigned = (id: string) => Object.values(data.assign).filter((x) => x === id).length;
+  const actions = (t: Trainer) => (
+    <div className={s.actions}>
+      <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setEditingRank(t)}>
+        {t.rank ? '직급 수정' : '직급 입력'}
+      </button>
+      <ConfirmButton armed={confirm.pending === 'tc' + t.id} onClick={() => newCode(t.id)} label="새 번호 발급" confirmLabel="한 번 더 누르면 새 번호" />
+      <ConfirmButton armed={confirm.pending === 'td' + t.id} onClick={() => del(t.id)} label="트레이너 삭제" />
+    </div>
+  );
 
   return (
     <>
@@ -142,12 +162,36 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
         />
       )}
 
-      <div className={ui.row} style={{ padding: '0.25rem' }}>
-        <h2 className={ui.h2}>트레이너 목록</h2>
-        <div className={ui.muted}>{trainers.length}명</div>
+      <div className={ui.row} style={{ padding: '0.25rem', alignItems: 'center' }}>
+        <h2 className={ui.h2}>
+          트레이너 목록 <span className={ui.muted}>{trainers.length}명</span>
+        </h2>
+        {trainers.length > 0 && <ViewToggle tile={tile} onChange={setTile} color="navy" />}
       </div>
       {trainers.length === 0 && <div className={ui.empty}>등록된 트레이너가 없어요.</div>}
-      {trainers.map((t) => (
+      {tile && trainers.length > 0 && (
+        <div className={cx(st.tiles, st.tiles2)}>
+          {trainers.map((t) => (
+            <div key={t.id} className={cx(ui.card, st.tile, st.tileWithCode)}>
+              <button
+                type="button"
+                className={st.tileOpen}
+                onClick={() => {
+                  confirm.reset();
+                  setManaging(t.id);
+                }}
+                aria-haspopup="dialog"
+              >
+                <Avatar id={t.id} name={t.name} size="lg" tone="navy" />
+                <span className={st.tileName}>{t.name}</span>
+                {t.rank && <span className={cx(ui.badge, ui.badgeNavy)}>{t.rank}</span>}
+              </button>
+              <CopyCode code={t.code} label="트레이너 번호" className={cx(s.code, s.codeTrainer, st.tileCode)} />
+            </div>
+          ))}
+        </div>
+      )}
+      {!tile && trainers.map((t) => (
         <div key={t.id} className={cx(ui.card, s.memberCard)}>
           <div className={ui.row} style={{ gap: '0.25rem 0.75rem', alignItems: 'center' }}>
             <span className={s.nameRank}>
@@ -156,27 +200,28 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
               {t.rank && <span className={cx(ui.badge, ui.badgeNavy)}>{t.rank}</span>}
             </span>
             <span className={ui.muted} style={{ whiteSpace: 'nowrap' }}>
-              담당 {Object.values(data.assign).filter((x) => x === t.id).length}명 · {md(t.createdAt)} 등록
+              담당 {assigned(t.id)}명 · {md(t.createdAt)} 등록
             </span>
           </div>
           <div className={s.codeRow}>
             <span className={cx(ui.small, s.codeLabel)}>트레이너 번호</span>
             <CopyCode code={t.code} label="트레이너 번호" className={cx(s.code, s.codeTrainer)} />
           </div>
-          <div className={s.actions}>
-            <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setEditingRank(t)}>
-              {t.rank ? '직급 수정' : '직급 입력'}
-            </button>
-            <ConfirmButton
-              armed={confirm.pending === 'tc' + t.id}
-              onClick={() => newCode(t.id)}
-              label="새 번호 발급"
-              confirmLabel="한 번 더 누르면 새 번호"
-            />
-            <ConfirmButton armed={confirm.pending === 'td' + t.id} onClick={() => del(t.id)} label="트레이너 삭제" />
-          </div>
+          {actions(t)}
         </div>
       ))}
+      {managed && (
+        <Sheet title={trainerTitle(managed.name, managed.rank)} onClose={() => setManaging(null)}>
+          <div className={ui.muted}>
+            담당 {assigned(managed.id)}명 · {md(managed.createdAt)} 등록
+          </div>
+          <div className={s.codeRow}>
+            <span className={cx(ui.small, s.codeLabel)}>트레이너 번호</span>
+            <CopyCode code={managed.code} label="트레이너 번호" className={cx(s.code, s.codeTrainer)} />
+          </div>
+          {actions(managed)}
+        </Sheet>
+      )}
       {editingRank && <RankSheet trainer={editingRank} onClose={() => setEditingRank(null)} />}
     </>
   );

@@ -4,10 +4,12 @@ import { Avatar } from '../../components/Avatar';
 import { chatWhen, ChatScreen } from '../../components/Chat';
 import c from '../../components/Chat.module.css';
 import type { useStaffChat } from '../../hooks/useChat';
+import { useViewMode } from '../../hooks/useViewMode';
 import { cx } from '../../lib/cx';
 import { EMPTY_FILTER, matchMember } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
 import s from './staff.module.css';
+import { ViewToggle } from './ViewToggle';
 
 interface Props {
   mode: 'trainer' | 'admin';
@@ -19,11 +21,14 @@ interface Props {
 /**
  * 대화방 목록: 최근 대화 순서, 안 읽은 수 (트레이너만).
  * 트레이너는 이름을 찾아 아직 대화가 없는 분과도 새 대화를 시작할 수 있다. 관리자는 보기만.
+ * 트레이너는 목록 / 격자(사진·이름·안 읽은 수) 로 볼 수 있다.
  */
 export function ChatList({ mode, chat, heading = true }: Props) {
   const { data, today, staffId } = useApp();
   const [q, setQ] = useState('');
   const [open, setOpen] = useState<string | null>(null);
+  const [tileSaved, setTile] = useViewMode('chat');
+  const tile = mode === 'trainer' && tileSaved;
   const tone = mode === 'trainer' ? 'orange' : 'navy';
   const nameOf = (mid: string) => data.members.find((m) => m.id === mid)?.name ?? '';
   const match = (mid: string) => {
@@ -55,6 +60,11 @@ export function ChatList({ mode, chat, heading = true }: Props) {
         <div className={ui.row} style={{ padding: '0.25rem', alignItems: 'center' }}>
           <h2 className={ui.h2}>{mode === 'trainer' ? '이용자와 대화' : '대화 기록'}</h2>
           {chat.unread > 0 && <span className={c.badge}>{chat.unread}</span>}
+          {mode === 'trainer' && (chat.rooms.length > 0 || mine.length > 0) && (
+            <div className={s.headSide}>
+              <ViewToggle tile={tileSaved} onChange={setTile} />
+            </div>
+          )}
         </div>
       )}
       {mode === 'admin' && <div className={ui.muted}>이용자와 트레이너가 나눈 대화를 볼 수 있어요. 관리자는 보기만 해요.</div>}
@@ -77,38 +87,66 @@ export function ChatList({ mode, chat, heading = true }: Props) {
       {chat.loaded && chat.rooms.length === 0 && mode === 'admin' && <div className={ui.empty}>아직 나눈 대화가 없어요.</div>}
       {chat.loaded && q.trim() && rooms.length === 0 && others.length === 0 && <div className={ui.empty}>찾는 이용자가 없어요.</div>}
 
-      <div className={c.rooms}>
-        {rooms.map((r) => (
-          <button key={r.mid} type="button" className={cx(ui.card, c.room)} onClick={() => setOpen(r.mid)}>
-            <Avatar id={r.mid} name={nameOf(r.mid)} tone={tone} />
-            <span className={c.roomMain}>
-              <span className={c.roomTop}>
-                <span className={c.roomName}>{nameOf(r.mid)}</span>
-                <span className={c.roomWhen}>{chatWhen(r.last.at, today)}</span>
+      {tile && (rooms.length > 0 || others.length > 0) && (
+        <div className={s.tiles}>
+          {rooms.map((r) => (
+            <button key={r.mid} type="button" className={cx(ui.card, s.tile)} onClick={() => setOpen(r.mid)}>
+              <span className={s.chatTilePic}>
+                <Avatar id={r.mid} name={nameOf(r.mid)} size="lg" tone={tone} />
+                {r.unread > 0 && (
+                  <span className={cx(c.badge, s.chatTileBadge)} aria-label={`안 읽은 메시지 ${r.unread}개`}>
+                    {r.unread}
+                  </span>
+                )}
               </span>
-              <span className={c.roomLast}>
-                {r.last.from === 'trainer' ? `${r.last.by.split(' ')[0] || '트레이너'}: ` : ''}
-                {r.last.text}
+              <span className={s.tileName}>{nameOf(r.mid)}</span>
+              <span className={s.tileInfo}>{chatWhen(r.last.at, today)}</span>
+            </button>
+          ))}
+          {others.map((m) => (
+            <button key={m.id} type="button" className={cx(ui.card, s.tile)} onClick={() => setOpen(m.id)}>
+              <Avatar id={m.id} name={m.name} size="lg" tone={tone} />
+              <span className={s.tileName}>{m.name}</span>
+              <span className={s.tileInfo}>새 대화</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!tile && (
+        <div className={c.rooms}>
+          {rooms.map((r) => (
+            <button key={r.mid} type="button" className={cx(ui.card, c.room)} onClick={() => setOpen(r.mid)}>
+              <Avatar id={r.mid} name={nameOf(r.mid)} tone={tone} />
+              <span className={c.roomMain}>
+                <span className={c.roomTop}>
+                  <span className={c.roomName}>{nameOf(r.mid)}</span>
+                  <span className={c.roomWhen}>{chatWhen(r.last.at, today)}</span>
+                </span>
+                <span className={c.roomLast}>
+                  {r.last.from === 'trainer' ? `${r.last.by.split(' ')[0] || '트레이너'}: ` : ''}
+                  {r.last.text}
+                </span>
               </span>
-            </span>
-            {r.unread > 0 && (
-              <span className={c.badge} aria-label={`안 읽은 메시지 ${r.unread}개`}>
-                {r.unread}
+              {r.unread > 0 && (
+                <span className={c.badge} aria-label={`안 읽은 메시지 ${r.unread}개`}>
+                  {r.unread}
+                </span>
+              )}
+            </button>
+          ))}
+          {others.length > 0 && rooms.length > 0 && <div className={ui.small}>아직 대화가 없는 담당 이용자</div>}
+          {others.map((m) => (
+            <button key={m.id} type="button" className={cx(ui.card, c.room)} onClick={() => setOpen(m.id)}>
+              <Avatar id={m.id} name={m.name} tone={tone} />
+              <span className={c.roomMain}>
+                <span className={c.roomName}>{m.name}</span>
+                <span className={c.roomLast}>새 대화 시작하기</span>
               </span>
-            )}
-          </button>
-        ))}
-        {others.length > 0 && rooms.length > 0 && <div className={ui.small}>아직 대화가 없는 담당 이용자</div>}
-        {others.map((m) => (
-          <button key={m.id} type="button" className={cx(ui.card, c.room)} onClick={() => setOpen(m.id)}>
-            <Avatar id={m.id} name={m.name} tone={tone} />
-            <span className={c.roomMain}>
-              <span className={c.roomName}>{m.name}</span>
-              <span className={c.roomLast}>새 대화 시작하기</span>
-            </span>
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {opened && <ChatScreen mid={opened.id} name={opened.name} mode={mode} ring={chat.ring} onClose={close} />}
     </>

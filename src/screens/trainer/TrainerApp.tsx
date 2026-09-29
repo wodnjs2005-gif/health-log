@@ -26,6 +26,8 @@ import { StaffMemberView } from '../staff/StaffMemberView';
 import { VideoManage } from '../staff/VideoManage';
 import s from '../staff/staff.module.css';
 import { useBack } from '../../hooks/useBack';
+import { useViewMode } from '../../hooks/useViewMode';
+import { ViewToggle } from '../staff/ViewToggle';
 
 type TTab = 'members' | 'chat' | 'lessons' | 'videos';
 
@@ -161,11 +163,7 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport, mine }: ListPro
   const sorted = sortByActivity(shown, data, today);
   const staleCount = shown.filter((m) => activityOf(data, m.id, today).stale).length;
   // 목록(자세히) / 타일(사진·이름만, 세 칸씩). 고른 것은 기기에 기억한다
-  const [tile, setTile] = useState(() => lsGet(LS.memberView) === 'tile');
-  const pickView = (t: boolean) => {
-    setTile(t);
-    lsSet(LS.memberView, t ? 'tile' : 'list');
-  };
+  const [tile, pickView] = useViewMode(LS.memberView);
 
   return (
     <>
@@ -186,16 +184,7 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport, mine }: ListPro
           onChange={onFilter}
           shown={shown.length}
           mine={mine}
-          side={
-            <div className={s.viewSwitch} role="group" aria-label="보기 방식">
-              <button type="button" className={s.viewBtn} aria-pressed={!tile} aria-label="목록으로 보기" title="목록" onClick={() => pickView(false)}>
-                <ViewIcon tile={false} />
-              </button>
-              <button type="button" className={s.viewBtn} aria-pressed={tile} aria-label="타일로 보기" title="타일" onClick={() => pickView(true)}>
-                <ViewIcon tile />
-              </button>
-            </div>
-          }
+          side={<ViewToggle tile={tile} onChange={pickView} />}
         />
       )}
       {data.members.length > 0 && shown.length === 0 && <div className={ui.empty}>찾는 이용자가 없어요.</div>}
@@ -261,22 +250,5 @@ function MemberList({ filter, onFilter, shown, onOpen, onExport, mine }: ListPro
         );
       })}
     </>
-  );
-}
-
-function ViewIcon({ tile }: { tile: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      {tile ? (
-        <>
-          <rect x="4" y="4" width="7" height="7" rx="1.5" />
-          <rect x="13" y="4" width="7" height="7" rx="1.5" />
-          <rect x="4" y="13" width="7" height="7" rx="1.5" />
-          <rect x="13" y="13" width="7" height="7" rx="1.5" />
-        </>
-      ) : (
-        <path d="M4 6h16M4 12h16M4 18h16" />
-      )}
-    </svg>
   );
 }
