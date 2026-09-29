@@ -99,15 +99,22 @@ export function NoteCard({ mid, mode = 'view' }: { mid: string; mode?: 'user' | 
       {shown.map((n) => (
         <NoteItem key={n.id} n={n} />
       ))}
-      {list.length > 1 && (
-        <button type="button" className={s.more} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-          {open ? '접기' : mode === 'user' ? `새 한마디 ${list.length - 1}개 더 보기` : `지난 한마디 더 보기 (${Math.min(list.length, 5) - 1}개)`}
-        </button>
-      )}
-      {mode === 'user' && (
-        <button type="button" className={cx(ui.btn, ui.orange, s.seenBtn)} disabled={busy} onClick={() => void seen()}>
-          {busy ? '저장하는 중…' : '✓ 확인했어요'}
-        </button>
+      {(list.length > 1 || mode === 'user') && (
+        <div className={s.noteBottom}>
+          {list.length > 1 && (
+            <button type="button" className={s.more} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+              {open ? '접기' : mode === 'user' ? `새 한마디 ${list.length - 1}개 더 보기` : `지난 한마디 더 보기 (${Math.min(list.length, 5) - 1}개)`}
+            </button>
+          )}
+          {mode === 'user' && (
+            // 확인: 오른쪽 아래 작은 체크 (누르는 곳은 손가락 크기)
+            <button type="button" className={s.seenBtn} disabled={busy} onClick={() => void seen()} aria-label="확인했어요" title="확인했어요">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            </button>
+          )}
+        </div>
       )}
     </section>
   );
