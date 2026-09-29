@@ -496,6 +496,20 @@ export interface Backend {
   trainerChatSend(token: string, mid: string, text: string): Promise<ChatMessage>;
   /** 초인종 채널을 듣는다. 새 메시지 신호가 오면 onRing. 돌려준 함수로 그만 듣는다 */
   chatListen(key: string, onRing: () => void): () => void;
+  // --- 휴대폰 알림 -------------------------------------------------------------
+  /** 알림을 켤 때 쓰는 공개 키. 서버에 아직 키를 넣지 않았으면 null */
+  pushKey(): Promise<string | null>;
+  /** 이 휴대폰의 알림 켜기(on)·끄기. remind = 저녁 7시 기록 알림 */
+  userPushSet(code: string, sub: PushSub, on: boolean, remind: boolean): Promise<boolean>;
+  guardianPushSet(code: string, sub: PushSub, on: boolean): Promise<boolean>;
+  trainerPushSet(token: string, sub: PushSub, on: boolean): Promise<boolean>;
+}
+
+/** 알림을 받을 휴대폰 (브라우저가 만들어 준 주소와 암호 키) */
+export interface PushSub {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
 }
 
 /** 번호가 무효이거나 로그인이 끝났을 때 던지는 오류. 화면에서는 로그인 화면으로 돌려보낸다. */

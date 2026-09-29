@@ -1,6 +1,7 @@
 import { useApp } from '../../AppContext';
 import { InstallCard } from '../../components/InstallCard';
 import { NoteCard } from '../../components/Notes';
+import { PushButton, PushCard } from '../../components/Push';
 import { NoticeList } from '../../components/Notices';
 import { NutriLine } from '../../components/Nutri';
 import { WeekGoal } from '../../components/WeekGoal';
@@ -36,6 +37,7 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
     <>
       {isToday && <NoticeList notices={data.notices} today={today} />}
       {isToday && me && <NoteCard mid={me} mode="user" />}
+      {isToday && <PushCard role="user" />}
 
       <section className={cx(ui.card, s.homeCard)}>
         <div className={ui.row}>
@@ -104,6 +106,7 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
       {me && <MemberLessons mid={me} />}
 
       <InstallCard />
+      <PushButton role="user" />
 
       <button type="button" className={ui.btnGhost} onClick={logout}>
         로그아웃 (다른 번호로 들어가기)

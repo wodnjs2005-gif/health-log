@@ -272,6 +272,10 @@ const ring = (topic: string) => {
   setTimeout(() => fire(topic), 50);
   bus?.postMessage(topic);
 };
+/** 개발용 알림 공개 키 (시험용 값. 이 키로는 실제 알림이 가지 않는다) */
+const DEV_PUSH_KEY = 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM';
+const devPush = new Map<string, boolean>();
+
 const STAFF_TOPIC = 'dev-staff';
 const memberTopic = (mid: string) => 'dev-chat-' + mid;
 const trainerTopic = (tid: string) => 'dev-tr-' + tid;
@@ -1204,6 +1208,33 @@ export function createDevBackend(): Backend {
       set.add(onRing);
       ringers.set(key, set);
       return () => set.delete(onRing);
+    },
+
+    // 개발용: 켜고 끄는 화면만 시험한다 (실제로 알림을 보내지는 않는다)
+    async pushKey() {
+      return DEV_PUSH_KEY;
+    },
+
+    async userPushSet(code, s, on, remind) {
+      const m = who(load(), code);
+      devPush.set('member:' + m.id + ':' + s.endpoint, remind);
+      if (!on) devPush.delete('member:' + m.id + ':' + s.endpoint);
+      return on;
+    },
+
+    async guardianPushSet(code, s, on) {
+      const m = byCode(load().members, (x) => x.guardianCode, code);
+      if (!m) throw new AuthError('invalid code');
+      if (on) devPush.set('guardian:' + m.id + ':' + s.endpoint, false);
+      else devPush.delete('guardian:' + m.id + ':' + s.endpoint);
+      return on;
+    },
+
+    async trainerPushSet(token, s, on) {
+      const { s: ses } = trainer(token);
+      if (on) devPush.set('trainer:' + ses.subject + ':' + s.endpoint, false);
+      else devPush.delete('trainer:' + ses.subject + ':' + s.endpoint);
+      return on;
     },
 
     async staffSetOffday(token, lid, date, off) {

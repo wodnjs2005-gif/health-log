@@ -26,6 +26,8 @@ import { StaffMemberView } from '../staff/StaffMemberView';
 import { VideoManage } from '../staff/VideoManage';
 import s from '../staff/staff.module.css';
 import { useBack } from '../../hooks/useBack';
+import { useGo } from '../../hooks/useGo';
+import { PushButton, PushCard, usePushSync } from '../../components/Push';
 import { useViewMode } from '../../hooks/useViewMode';
 import { ViewToggle } from '../staff/ViewToggle';
 
@@ -56,6 +58,13 @@ export function TrainerApp() {
   const chat = useStaffChat();
   // 「뒤로」: 다른 메뉴에 있으면 이용자 기록으로
   useBack(tTab !== 'members', () => setTTab('members'));
+  // 휴대폰 알림: 대화 알림을 눌러 열었으면 대화 메뉴로
+  usePushSync('trainer');
+  useGo((g) => {
+    if (g !== 'chat') return;
+    setTView(null);
+    setTTab('chat');
+  });
 
   const detail = tView ? data.members.find((m) => m.id === tView) : null;
 
@@ -80,6 +89,7 @@ export function TrainerApp() {
       onBack={goEntry}
       avatar={staffId ? <EditableAvatar id={staffId} name={staffName} size="md" onEdit={() => setMyPhoto(true)} /> : undefined}
     >
+      <PushCard role="trainer" color="orange" />
       <div role="tablist" aria-label="트레이너 메뉴" className={s.switch}>
         {(
           [
@@ -133,6 +143,7 @@ export function TrainerApp() {
 
       <InstallCard color="orange" />
       <div className={s.bottomMenu}>
+        <PushButton role="trainer" color="orange" />
         <button type="button" className={ui.btnGhost} onClick={() => setNoticeOpen(true)}>
           {data.notices.length > 0 ? `공지사항 (${data.notices.length})` : '공지사항 올리기'}
         </button>

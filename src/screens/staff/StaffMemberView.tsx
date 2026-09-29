@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '../../components/Layout';
+import { MonthlyReport } from '../../components/Report';
 import type { Member } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import ui from '../../styles/ui.module.css';
@@ -23,6 +24,7 @@ interface Props {
 export function StaffMemberView({ member, title, color, onBack }: Props) {
   const [tagging, setTagging] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [report, setReport] = useState(false);
   const outline = color === 'navy' ? ui.btnNavyOutline : undefined;
   useBack(true, onBack);
 
@@ -38,6 +40,9 @@ export function StaffMemberView({ member, title, color, onBack }: Props) {
               <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setTagging(true)}>
                 # 해시태그 편집
               </button>
+              <button type="button" className={cx(ui.btnSmall, outline)} onClick={() => setReport(true)} aria-haspopup="dialog">
+                월간 리포트
+              </button>
               <button type="button" className={cx(ui.btnSmall, outline)} onClick={() => setExporting(true)}>
                 기록 내려받기
               </button>
@@ -45,6 +50,7 @@ export function StaffMemberView({ member, title, color, onBack }: Props) {
           </div>
         }
       />
+      {report && <MonthlyReport mid={member.id} tone={color === 'navy' ? 'navy' : 'orange'} onClose={() => setReport(false)} />}
       {tagging && <TagSheet member={member} onClose={() => setTagging(false)} />}
       {exporting && <ExportSheet color={color} initialMid={member.id} onClose={() => setExporting(false)} />}
     </Layout>

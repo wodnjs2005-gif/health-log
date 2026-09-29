@@ -132,12 +132,24 @@ def svg():
     )
 
 
+def badge(size):
+    """안드로이드 알림 줄의 작은 아이콘: 투명 바탕에 흰 하트 (맥박선은 비워 둔다). 휴대폰이 모양만 쓴다"""
+    S = 4
+    art = Image.new('RGBA', (512 * S, 512 * S), (0, 0, 0, 0))
+    a = ImageDraw.Draw(art)
+    a.polygon(sample(shift_d(HEART_D), S), fill='#FFFFFF')
+    a.polygon(sample(shift_d(LEAF_D), S), fill='#FFFFFF')
+    polyline(a, PULSE_PTS, PULSE_W, (0, 0, 0, 0), S)
+    return art.resize((size, size), Image.LANCZOS)
+
+
 def build(out):
     os.makedirs(out, exist_ok=True)
     render(192, True).save(os.path.join(out, 'icon-192.png'), optimize=True)
     render(512, True).save(os.path.join(out, 'icon-512.png'), optimize=True)
     render(512, False, inset=0.14).save(os.path.join(out, 'icon-maskable-512.png'), optimize=True)
     render(180, False, inset=0.06).convert('RGB').save(os.path.join(out, 'apple-touch-icon.png'), optimize=True)
+    badge(96).save(os.path.join(out, 'badge-96.png'), optimize=True)
     with open(os.path.join(out, 'icon.svg'), 'w', encoding='utf-8', newline='\n') as f:
         f.write(svg())
 

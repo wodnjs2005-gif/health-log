@@ -1,0 +1,410 @@
+/* 월간 리포트: 화면 전체 (위 줄 · 종이 한 장). 인쇄하면 종이만 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  --tone: var(--green);
+  --tone-soft: var(--green-soft);
+}
+
+.orange {
+  --tone: var(--orange);
+  --tone-soft: var(--orange-soft);
+}
+
+.navy {
+  --tone: var(--navy);
+  --tone-soft: var(--navy-soft);
+}
+
+.plum {
+  --tone: var(--plum);
+  --tone-soft: var(--plum-soft);
+}
+
+/* 윗줄: 닫기 · 인쇄, 아랫줄: 달 넘기기 */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  max-width: 35rem;
+  margin: 0 auto;
+  padding: calc(0.625rem + env(safe-area-inset-top, 0px)) 1rem 0.625rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--header-line);
+}
+
+.close,
+.print,
+.nav {
+  flex: none;
+  min-height: 2.75rem;
+  border: 1px solid var(--input-line);
+  border-radius: var(--r-btn);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0 0.75rem;
+}
+
+.print {
+  background: var(--tone);
+  border-color: var(--tone);
+  color: #fff;
+}
+
+.month {
+  order: 3;
+  flex: 1 0 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.nav {
+  width: 2.75rem;
+  padding: 0;
+  font-size: 1.25rem;
+}
+
+.nav:disabled {
+  opacity: 0.35;
+}
+
+.monthLabel {
+  font-weight: 800;
+  font-size: 1.0625rem;
+  white-space: nowrap;
+}
+
+.paper {
+  max-width: 35rem;
+  margin: 0 auto;
+  padding: 1rem 1rem calc(2rem + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.125rem;
+  border-radius: var(--r-card);
+  background: var(--tone-soft);
+}
+
+.brand {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--tone);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.range {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.summary {
+  margin: 0.375rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-card);
+  min-width: 0;
+}
+
+.tileLabel {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.tileValue {
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.tileSub {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  word-break: keep-all;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: var(--r-card);
+  break-inside: avoid;
+}
+
+.h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.note {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.kind {
+  font-size: 0.9375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--r-chip);
+  background: var(--bg);
+  white-space: nowrap;
+}
+
+.rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--divider);
+  font-size: 1rem;
+}
+
+.row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.row dt {
+  color: var(--ink-2);
+  min-width: 0;
+  word-break: keep-all;
+}
+
+.row dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.noteItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.noteMeta {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.foot {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+/* 달력 */
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calRow,
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.calHead {
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.sun {
+  color: var(--danger);
+}
+
+.calDay {
+  min-height: 3.25rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.25rem 0.125rem;
+  border-radius: 0.5rem;
+  background: var(--bg);
+  font-variant-numeric: tabular-nums;
+}
+
+.calEx {
+  background: var(--tone-soft);
+  box-shadow: inset 0 0 0 2px var(--tone);
+}
+
+.calLater {
+  opacity: 0.4;
+}
+
+.calNum {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.calMin {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.calDots {
+  font-size: 0.4375rem;
+  letter-spacing: 0.0625rem;
+  color: var(--orange);
+  line-height: 1.4;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.legendEx,
+.legendMeal {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 0.25rem;
+  background: var(--tone-soft);
+  box-shadow: inset 0 0 0 2px var(--tone);
+}
+
+.legendMeal {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: none;
+}
+
+/* 인쇄·PDF: 앱 화면은 숨기고 종이만, A4 한두 장 */
+@media print {
+  :global(body.hl-report-open) > *:not(.overlay) {
+    display: none !important;
+  }
+
+  .overlay {
+    position: static;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .bar {
+    display: none;
+  }
+
+  .paper {
+    max-width: none;
+    padding: 0;
+    gap: 0.625rem;
+  }
+
+  .head,
+  .calEx,
+  .legendEx,
+  .legendMeal,
+  .calDay {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .section,
+  .tile {
+    border-color: #ccc;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}

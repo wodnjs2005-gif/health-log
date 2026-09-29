@@ -1,0 +1,91 @@
+/* 막대그래프: 한 가지 색, 둥근 윗면, 값은 막대 위에 (글자는 글자색, 막대만 색) */
+.chart {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  --bar: var(--green-bar);
+  --bar-on: var(--green);
+}
+
+.navy {
+  --bar: #9aa6c4;
+  --bar-on: var(--navy);
+}
+
+.orange {
+  --bar: #e0a47f;
+  --bar-on: var(--orange);
+}
+
+.bars {
+  display: grid;
+  gap: 0.375rem;
+  align-items: end;
+  height: 8.5rem;
+  /* 바닥 기준선만 (눈금은 두지 않는다) */
+  border-bottom: 1px solid var(--divider);
+}
+
+.col {
+  height: 100%;
+  min-width: 0;
+  /* 칸이 좁으면(막대가 많거나 글자를 크게 했을 때) 값 글자를 줄인다 */
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.val {
+  font-size: min(0.8125rem, 25cqi);
+  font-weight: 700;
+  color: var(--ink-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.on .val {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* 높이는 값 글자 줄과 틈(1.5rem)을 뺀 나머지 안에서 비율대로 (화면에서 계산) */
+.bar {
+  width: 100%;
+  max-width: 2.25rem;
+  border-radius: 0.25rem 0.25rem 0 0;
+  background: var(--bar);
+}
+
+.on .bar {
+  background: var(--bar-on);
+}
+
+.labels {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.label {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label.on {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+@media print {
+  .bar {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

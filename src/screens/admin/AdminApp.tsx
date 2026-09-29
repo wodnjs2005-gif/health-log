@@ -35,6 +35,7 @@ import { IssuedCard } from './IssuedCard';
 import { PasswordSheet } from './PasswordSheet';
 import { TestItemManage } from './TestItemManage';
 import { TrainerManage } from './TrainerManage';
+import { StatsCard } from './Stats';
 import { useBack } from '../../hooks/useBack';
 import { useViewMode } from '../../hooks/useViewMode';
 import { ViewToggle } from '../staff/ViewToggle';
@@ -257,6 +258,7 @@ export function AdminApp() {
         <TrainerManage confirm={confirm} />
       ) : (
         <>
+          <StatsCard />
           {foodRequests > 0 && (
             <div className={cx(ui.note, s.foodNotice)}>
               <span>이용자가 목록에 없는 음식을 적었어요 ({foodRequests}가지)</span>

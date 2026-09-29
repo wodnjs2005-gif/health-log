@@ -9,6 +9,7 @@ import { Layout } from '../../components/Layout';
 import { MeasureSection } from '../../components/Measures';
 import { NoteCard } from '../../components/Notes';
 import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
+import { MonthlyReport } from '../../components/Report';
 import { TabIcon } from '../../components/TabIcon';
 import { TestSection } from '../../components/Tests';
 import { WeekChart } from '../../components/WeekChart';
@@ -20,6 +21,8 @@ import { RecordSheet, type SheetState } from './RecordSheet';
 import { VideoTab } from './VideoTab';
 import s from './user.module.css';
 import { useBack } from '../../hooks/useBack';
+import { useGo } from '../../hooks/useGo';
+import { usePushSync } from '../../components/Push';
 
 type Tab = 'home' | 'ex' | 'meal' | 'video' | 'stats';
 const TABS: [Tab, string][] = [
@@ -31,15 +34,22 @@ const TABS: [Tab, string][] = [
 ];
 
 export function UserApp() {
-  const { data, me, today, goEntry } = useApp();
+  const { data, me, today, goEntry, refresh } = useApp();
   const [date, setDate] = useState(today);
   const [tab, setTab] = useState<Tab>('home');
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [myPhoto, setMyPhoto] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [report, setReport] = useState(false);
   const chat = useUserChat(chatOpen);
   const confirm = useConfirm();
+  // 휴대폰 알림: 켜 둔 휴대폰이면 서버와 다시 맞추고, 대화 알림을 눌러 열었으면 대화방으로
+  usePushSync('user');
+  useGo(
+    (g) => g === 'chat' && setChatOpen(true),
+    (tag) => (tag === 'note' || tag === 'notice') && void refresh(),
+  );
 
   const member = data.members.find((m) => m.id === me)!;
 
@@ -115,8 +125,11 @@ export function UserApp() {
       )}
       {tab === 'stats' && (
         <>
-          <div className={ui.row}>
+          <div className={ui.row} style={{ alignItems: 'center' }}>
             <h2 className={ui.h2}>최근 7일</h2>
+            <button type="button" className={ui.btnSmall} onClick={() => setReport(true)} aria-haspopup="dialog">
+              월간 리포트
+            </button>
           </div>
           <WeekChart
             mid={member.id}
@@ -136,6 +149,7 @@ export function UserApp() {
       {chatOpen && (
         <ChatScreen mid={member.id} name={member.name} mode="user" ring={chat.ring} trainer={chat.loaded ? chat.trainer : undefined} onClose={() => setChatOpen(false)} />
       )}
+      {report && <MonthlyReport mid={member.id} tone="green" onClose={() => setReport(false)} />}
       {myPhoto && <PhotoSheet target={{ kind: 'user' }} name={member.name} title="내 사진" tone="green" onClose={() => setMyPhoto(false)} />}
       {sheet && <RecordSheet state={sheet} date={date} onClose={() => setSheet(null)} />}
     </Layout>

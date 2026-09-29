@@ -260,6 +260,27 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     chatListen: (topic, onRing) => listenRing(base, key, topic, onRing),
 
+    // 공개 키는 앱과 같은 곳(Vercel /api/push)에서 받는다
+    pushKey: async () => {
+      try {
+        const r = await fetch('/api/push', { cache: 'no-store' });
+        if (!r.ok) return null;
+        const j = (await r.json()) as { key?: string };
+        return typeof j.key === 'string' && j.key ? j.key : null;
+      } catch {
+        return null;
+      }
+    },
+
+    userPushSet: (code, s, on, remind) =>
+      userRpc<boolean>('user_push_set', { p_code: normCode(code), p_endpoint: s.endpoint, p_p256dh: s.p256dh, p_auth: s.auth, p_on: on, p_remind: remind }),
+
+    guardianPushSet: (code, s, on) =>
+      userRpc<boolean>('guardian_push_set', { p_code: normCode(code), p_endpoint: s.endpoint, p_p256dh: s.p256dh, p_auth: s.auth, p_on: on }),
+
+    trainerPushSet: (token, s, on) =>
+      rpc<boolean>('trainer_push_set', { p_token: token, p_endpoint: s.endpoint, p_p256dh: s.p256dh, p_auth: s.auth, p_on: on }),
+
     guardianSetRelation: async (code, relation) =>
       (await userRpc<{ relation: string }>('guardian_set_relation', { p_code: normCode(code), p_relation: relation })).relation,
 

@@ -5,6 +5,9 @@ import { DateNav } from '../../components/DateNav';
 import { InstallCard } from '../../components/InstallCard';
 import { Layout, Loading, Sheet } from '../../components/Layout';
 import { NoticeList } from '../../components/Notices';
+import { MonthlyReport } from '../../components/Report';
+import { PushButton, PushCard, usePushSync } from '../../components/Push';
+import { useGo } from '../../hooks/useGo';
 import { EditableAvatar } from '../../components/PhotoSheet';
 import { WeekGoal } from '../../components/WeekGoal';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -21,12 +24,18 @@ import s from './guardian.module.css';
 
 /** 보호자 화면: 가족의 식사·운동 기록을 보기만 한다 (추가·삭제 없음). 날짜를 넘겨 지난 기록도 본다. */
 export function GuardianApp() {
-  const { data, guardians, removeGuardian, goEntry, logout, toast, today } = useApp();
+  const { data, guardians, removeGuardian, goEntry, logout, toast, today, refresh } = useApp();
   const [selected, setSelected] = useState<string | null>(null);
   const [date, setDate] = useState(today);
   const [adding, setAdding] = useState(false);
   const [profile, setProfile] = useState(false);
+  const [report, setReport] = useState(false);
   const confirm = useConfirm();
+  usePushSync('guardian');
+  useGo(
+    () => {},
+    (tag) => (tag.startsWith('note') || tag === 'notice') && void refresh(),
+  );
 
   const people = guardians
     .map((g) => data.members.find((m) => m.id === g.mid))
@@ -62,6 +71,7 @@ export function GuardianApp() {
       headerExtra={<DateNav date={date} today={today} onChange={moveDate} />}
     >
       <NoticeList notices={data.notices} today={today} />
+      <PushCard role="guardian" color="plum" />
       <div className={s.people} role="tablist" aria-label="보는 사람">
         {people.length > 1 &&
           people.map((m) => (
@@ -92,10 +102,14 @@ export function GuardianApp() {
       />
 
       <div className={s.footer}>
+        <button type="button" className={cx(ui.btn, ui.plum)} onClick={() => setReport(true)} aria-haspopup="dialog">
+          {member.name} 님 월간 리포트
+        </button>
         <button type="button" className={cx(ui.btn, s.profileBtn)} onClick={() => setProfile(true)}>
           내 프로필 (사진 · 관계)
         </button>
         <InstallCard />
+        <PushButton role="guardian" color="plum" />
         {people.length > 1 && (
           <ConfirmButton
             armed={confirm.pending === member.id}
@@ -115,6 +129,7 @@ export function GuardianApp() {
         </button>
       </div>
 
+      {report && <MonthlyReport mid={member.id} tone="plum" onClose={() => setReport(false)} />}
       {profile && <GuardianProfileSheet people={people} current={member.id} onClose={() => setProfile(false)} />}
       {adding && (
         <AddSheet

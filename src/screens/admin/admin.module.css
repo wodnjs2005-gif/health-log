@@ -377,3 +377,157 @@
   color: var(--danger);
   padding-left: 0.75rem;
 }
+
+/* 통계: 이용자 관리 맨 위 요약 */
+.statsCard {
+  width: 100%;
+  text-align: left;
+  gap: 0.375rem;
+  padding: 0.875rem 1rem;
+  border-color: var(--navy-soft);
+}
+
+.statsCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.statsCardTitle {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.statsCardRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.statsCardRow b {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* 통계 창 */
+.statsMonth {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statsNav {
+  flex: none;
+  width: 2.75rem;
+  padding: 0;
+  font-size: 1.25rem;
+}
+
+.statsMonthLabel {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statsTiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.statsTile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--r-card);
+  background: var(--bg);
+}
+
+.statsTileLabel {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.statsTileValue {
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsTileSub {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  word-break: keep-all;
+}
+
+.statsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--divider);
+}
+
+.statsH3 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsTable th,
+.statsTable td {
+  padding: 0.5rem 0.25rem;
+  border-top: 1px solid var(--divider);
+  text-align: right;
+  vertical-align: top;
+  word-break: keep-all;
+}
+
+.statsTable thead th {
+  border-top: none;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 700;
+}
+
+.statsTable th:first-child {
+  text-align: left;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.statsNames {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.statsName {
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--r-chip);
+  background: var(--bg);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}

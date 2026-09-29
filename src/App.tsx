@@ -29,6 +29,7 @@ import { GuardianApp } from './screens/guardian/GuardianApp';
 import { TrainerApp } from './screens/trainer/TrainerApp';
 import { UserApp } from './screens/user/UserApp';
 import { useBack } from './hooks/useBack';
+import { pushOff, pushOffGuardianCode, type PushWho } from './lib/push';
 
 export type Role = 'user' | 'guardian' | 'trainer' | 'admin';
 /** code = 이용자 번호, gcode = 보호자 번호, tcode = 트레이너 번호, admin = 관리자 아이디·비밀번호 입력 */
@@ -254,8 +255,13 @@ function Main({ be }: { be: Backend }) {
   );
 
   const removeGuardian = useCallback(
-    (mid: string) => applyGuardians(cur.current.guardianEntries.filter((x) => x.d.member.id !== mid)),
-    [applyGuardians],
+    (mid: string) => {
+      // 뺀 분의 알림도 이 휴대폰으로 오지 않게
+      const gone = cur.current.guardianEntries.find((x) => x.d.member.id === mid);
+      if (gone) void pushOffGuardianCode(be, gone.code).catch(() => {});
+      applyGuardians(cur.current.guardianEntries.filter((x) => x.d.member.id !== mid));
+    },
+    [applyGuardians, be],
   );
 
   // --- 트레이너·관리자 ------------------------------------------------------------
@@ -446,10 +452,19 @@ function Main({ be }: { be: Backend }) {
   useBack(role !== null, goEntry);
 
   const logout = useCallback(() => {
-    const { role: r, staff: s } = cur.current;
+    const { role: r, staff: s, userCode: uc, guardianEntries: ge } = cur.current;
     if (r) lsDel(SAVED_KEY[r]);
-    // 서버의 로그인 표도 끝낸다 (실패해도 기기에서는 이미 지웠다)
-    if (s) void be.staffLogout(s.token).catch(() => {});
+    // 이 휴대폰으로 오던 알림을 끄고(다른 사람이 쓸 수 있으니), 서버의 로그인 표도 끝낸다 (실패해도 기기에서는 이미 지웠다)
+    const who: PushWho | null =
+      r === 'user' && uc
+        ? { role: 'user', code: uc, id: uc }
+        : r === 'guardian' && ge.length
+          ? { role: 'guardian', codes: ge.map((x) => x.code), id: 'g' }
+          : r === 'trainer' && s && s.id
+            ? { role: 'trainer', code: s.token, id: s.id }
+            : null;
+    const off = who ? pushOff(be, who).catch(() => {}) : Promise.resolve();
+    if (s) void off.then(() => be.staffLogout(s.token)).catch(() => {});
     goEntry();
     showToast('로그아웃했어요');
   }, [be, goEntry, showToast]);

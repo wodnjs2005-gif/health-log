@@ -298,3 +298,62 @@
   color: var(--green);
   white-space: nowrap;
 }
+
+/* 휴대폰 알림 받기 안내 (바탕화면 추가 안내와 같은 모양, 역할 색) */
+.pushCard[data-color='orange'] {
+  border-color: var(--orange);
+}
+
+.pushCard[data-color='plum'] {
+  border-color: var(--plum);
+}
+
+.pushBell {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.pushCard[data-color='orange'] .pushBell {
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+}
+
+.pushCard[data-color='plum'] .pushBell {
+  background: var(--plum-soft);
+  color: var(--plum);
+}
+
+.pushBell svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* 저녁 7시 기록 알림 */
+.pushRemind {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 1rem;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.pushRemind input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0.0625rem 0 0;
+  accent-color: var(--green);
+}
+
+.pushOn {
+  color: var(--green);
+  font-weight: 700;
+}
