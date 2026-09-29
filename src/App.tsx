@@ -28,6 +28,7 @@ import { AdminApp } from './screens/admin/AdminApp';
 import { GuardianApp } from './screens/guardian/GuardianApp';
 import { TrainerApp } from './screens/trainer/TrainerApp';
 import { UserApp } from './screens/user/UserApp';
+import { useBack } from './hooks/useBack';
 
 export type Role = 'user' | 'guardian' | 'trainer' | 'admin';
 /** code = 이용자 번호, gcode = 보호자 번호, tcode = 트레이너 번호, admin = 관리자 아이디·비밀번호 입력 */
@@ -440,6 +441,9 @@ function Main({ be }: { be: Backend }) {
     setLoginError('');
     scrollTop();
   }, [clearSession]);
+
+  // 역할 화면에서 「뒤로」 → 첫 화면 (첫 화면에서 뒤로는 앱을 닫는다)
+  useBack(role !== null, goEntry);
 
   const logout = useCallback(() => {
     const { role: r, staff: s } = cur.current;

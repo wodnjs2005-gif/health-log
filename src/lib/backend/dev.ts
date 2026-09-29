@@ -727,12 +727,12 @@ export function createDevBackend(): Backend {
       return t;
     },
 
+    // 영상 올리기·지우기는 관리자만 (대상 이용자는 비워 둬도 된다)
     async staffAddProgram(token, p, file) {
-      const { d } = staff(token);
-      if (!p.mids.length) throw new Error('no members');
+      const d = admin(token);
       const id = 'p' + uid();
       const rec: Program = {
-        id, title: p.title, mids: p.mids, kind: p.kind, min: p.min, memo: p.memo || '', date: todayYmd(),
+        id, title: p.title, mids: p.mids.filter((mid) => d.members.some((m) => m.id === mid)), kind: p.kind, min: p.min, memo: p.memo || '', date: todayYmd(),
         src: file ? 'file' : 'yt',
         ytId: file ? null : p.ytId,
         videoKey: file ? id : null,
@@ -745,7 +745,7 @@ export function createDevBackend(): Backend {
     },
 
     async staffDelProgram(token, id) {
-      const { d } = staff(token);
+      const d = admin(token);
       const p = d.programs.find((x) => x.id === id);
       if (p?.videoKey) idbDo('readwrite', (st) => st.delete(p.videoKey!)).catch(() => {});
       d.programs = d.programs.filter((x) => x.id !== id);
@@ -753,13 +753,15 @@ export function createDevBackend(): Backend {
       save(d);
     },
 
+    // 관리자는 대상 전체를, 트레이너는 자기 담당 이용자 몫만 바꾼다
     async staffSetProgramMembers(token, id, mids) {
-      const { d } = staff(token);
+      const { d, s } = staff(token);
       const p = d.programs.find((x) => x.id === id);
       if (!p) throw new Error('program not found'); // 다른 직원이 먼저 지운 영상
       // 삭제된 이용자는 빼고 저장. 이미 따라한 기록(views·운동일지)은 그대로 둔다
-      const next = [...new Set(mids)].filter((mid) => d.members.some((m) => m.id === mid));
-      if (!next.length) throw new Error('no members');
+      const want = [...new Set(mids)].filter((mid) => d.members.some((m) => m.id === mid));
+      const mine = (mid: string) => d.assign[mid] === s.subject;
+      const next = s.role === 'admin' ? want : [...p.mids.filter((mid) => !mine(mid)), ...want.filter(mine)];
       p.mids = next;
       save(d);
       return next;
@@ -846,8 +848,10 @@ export function createDevBackend(): Backend {
       save(d);
     },
 
+    // 트레이너는 담당 이용자만 출석 체크
     async staffSetAttendance(token, lid, mid, date, present) {
-      const { d } = staff(token);
+      const { d, s } = staff(token);
+      if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
       const l = d.lessons.find((x) => x.id === lid);
       if (!l) throw new Error('lesson not found');
       if (date > todayYmd()) throw new Error('invalid date');
@@ -860,13 +864,14 @@ export function createDevBackend(): Backend {
     },
 
     async staffSetAttendanceMany(token, lid, date, mids) {
-      const { d } = staff(token);
+      const { d, s } = staff(token);
       const l = d.lessons.find((x) => x.id === lid);
       if (!l) throw new Error('lesson not found');
       if (date > todayYmd()) throw new Error('invalid date');
       let n = 0;
       for (const mid of new Set(mids)) {
         if (!l.roster.some((r) => r.mid === mid) || d.attendance.some((a) => a.lid === lid && a.mid === mid && a.date === date)) continue;
+        if (s.role === 'trainer' && d.assign[mid] !== s.subject) continue;
         d.attendance.push({ lid, mid, date });
         n++;
       }

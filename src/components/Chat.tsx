@@ -6,6 +6,7 @@ import { cx } from '../lib/cx';
 import ui from '../styles/ui.module.css';
 import { Avatar } from './Avatar';
 import s from './Chat.module.css';
+import { useBack } from '../hooks/useBack';
 
 /** user = 이용자 본인, trainer = 트레이너 (보내기 가능), admin = 관리자 (보기만) */
 export type ChatMode = 'user' | 'trainer' | 'admin';
@@ -58,6 +59,7 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
   const scrollNext = useRef<'bottom' | number | null>('bottom');
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  useBack(true, onClose);
 
   const get = useCallback(
     (r?: ChatRange) => (mode === 'user' ? be.userChatGet(userCode, r) : be.staffChatGet(staffToken, mid, r)),

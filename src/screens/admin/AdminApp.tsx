@@ -35,6 +35,7 @@ import { IssuedCard } from './IssuedCard';
 import { PasswordSheet } from './PasswordSheet';
 import { TestItemManage } from './TestItemManage';
 import { TrainerManage } from './TrainerManage';
+import { useBack } from '../../hooks/useBack';
 
 type ATab = 'members' | 'trainers' | 'lessons' | 'videos';
 
@@ -183,6 +184,9 @@ export function AdminApp() {
     setIssued((j) => (j && j.id === id ? null : j));
     toast('이용자를 삭제했어요');
   };
+
+  // 「뒤로」: 다른 메뉴에 있으면 이용자 관리로
+  useBack(aTab !== 'members', () => setATab('members'));
 
   const viewed = viewing ? data.members.find((m) => m.id === viewing) : undefined;
   if (viewed) {

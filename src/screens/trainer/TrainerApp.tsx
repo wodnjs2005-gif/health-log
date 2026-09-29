@@ -25,6 +25,7 @@ import { NoticeManage } from '../staff/NoticeManage';
 import { StaffMemberView } from '../staff/StaffMemberView';
 import { VideoManage } from '../staff/VideoManage';
 import s from '../staff/staff.module.css';
+import { useBack } from '../../hooks/useBack';
 
 type TTab = 'members' | 'chat' | 'lessons' | 'videos';
 
@@ -51,6 +52,8 @@ export function TrainerApp() {
   const confirm = useConfirm();
   // 대화: 트레이너 화면이 열려 있는 동안 초인종을 듣고 안 읽은 수를 탭에 보여준다
   const chat = useStaffChat();
+  // 「뒤로」: 다른 메뉴에 있으면 이용자 기록으로
+  useBack(tTab !== 'members', () => setTTab('members'));
 
   const detail = tView ? data.members.find((m) => m.id === tView) : null;
 

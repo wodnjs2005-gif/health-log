@@ -646,3 +646,9 @@
   margin-left: 0.25rem;
   vertical-align: 0.0625rem;
 }
+
+/* 트레이너: 담당 이용자에게 영상 공유 */
+.shareBtn {
+  border-color: var(--orange);
+  color: var(--orange-ink);
+}

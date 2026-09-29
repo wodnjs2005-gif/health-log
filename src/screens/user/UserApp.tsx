@@ -18,6 +18,7 @@ import { ExTab, MealTab } from './LogTabs';
 import { RecordSheet, type SheetState } from './RecordSheet';
 import { VideoTab } from './VideoTab';
 import s from './user.module.css';
+import { useBack } from '../../hooks/useBack';
 
 type Tab = 'home' | 'ex' | 'meal' | 'video' | 'stats';
 const TABS: [Tab, string][] = [
@@ -51,6 +52,9 @@ export function UserApp() {
     confirm.reset();
     setDate(d > today ? today : d);
   };
+  // 「뒤로」: 영상 보던 중이면 영상 닫기, 다른 탭이면 오늘 탭으로
+  useBack(tab !== 'home', () => goTab('home'));
+  useBack(playing !== null, () => setPlaying(null));
 
   const dateRow = <DateNav date={date} today={today} onChange={moveDate} />;
 

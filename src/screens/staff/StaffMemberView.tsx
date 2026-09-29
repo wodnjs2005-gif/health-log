@@ -9,6 +9,7 @@ import { TagList } from './MemberFilter';
 import type { StaffColor } from './ProgramSheet';
 import { TagSheet } from './TagSheet';
 import s from './staff.module.css';
+import { useBack } from '../../hooks/useBack';
 
 interface Props {
   member: Member;
@@ -23,6 +24,7 @@ export function StaffMemberView({ member, title, color, onBack }: Props) {
   const [tagging, setTagging] = useState(false);
   const [exporting, setExporting] = useState(false);
   const outline = color === 'navy' ? ui.btnNavyOutline : undefined;
+  useBack(true, onBack);
 
   return (
     <Layout title={title} backLabel="목록" onBack={onBack}>

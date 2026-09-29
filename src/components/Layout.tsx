@@ -5,9 +5,12 @@ import { cx } from '../lib/cx';
 import { InstallButton } from './InstallCard';
 import s from './Layout.module.css';
 import ui from '../styles/ui.module.css';
+import { useBack } from '../hooks/useBack';
 
 interface LayoutProps {
   title: string;
+  /** 맨 위 「앱 설치」 버튼 (첫 화면에만) */
+  install?: boolean;
   onBack?: () => void;
   backLabel?: string;
   /** 헤더 아래 줄 (이용자 화면의 날짜 이동) */
@@ -19,11 +22,11 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-export function Layout({ title, onBack, backLabel = '처음', headerExtra, avatar, bottom, children }: LayoutProps) {
+export function Layout({ title, onBack, backLabel = '처음', headerExtra, avatar, bottom, install, children }: LayoutProps) {
   return (
     <div className={cx(s.shell, bottom ? s.withTabs : undefined)}>
       <header className={s.header}>
-        <HeaderTop title={title} onBack={onBack} backLabel={backLabel} avatar={avatar} />
+        <HeaderTop title={title} onBack={onBack} backLabel={backLabel} avatar={avatar} install={install} />
         {headerExtra}
       </header>
       <main className={s.main}>{children}</main>
@@ -32,7 +35,7 @@ export function Layout({ title, onBack, backLabel = '처음', headerExtra, avata
   );
 }
 
-function HeaderTop({ title, onBack, backLabel, avatar }: { title: string; onBack?: () => void; backLabel: string; avatar?: ReactNode }) {
+function HeaderTop({ title, onBack, backLabel, avatar, install }: { title: string; onBack?: () => void; backLabel: string; avatar?: ReactNode; install?: boolean }) {
   const { fs, setFs } = useApp();
   const rowRef = useRef<HTMLDivElement>(null);
   const [stacked, setStacked] = useState(false);
@@ -69,7 +72,7 @@ function HeaderTop({ title, onBack, backLabel, avatar }: { title: string; onBack
           글자 크기
         </div>
         <div className={s.fsRow}>
-        <InstallButton className={s.install} />
+        {install && <InstallButton className={s.install} />}
         <div role="group" aria-label="글자 크기" className={s.fsButtons}>
           {FONT_SIZES.map((o, i) => (
             <button
@@ -114,6 +117,8 @@ interface SheetProps {
 export function Sheet({ title, onClose, children }: SheetProps) {
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  // 휴대폰 「뒤로」로 창을 닫는다
+  useBack(true, onClose);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -83,6 +83,12 @@
   opacity: 0.55;
 }
 
+/* 담당이 아닌 이용자 (트레이너): 출석 상태만 보인다 */
+.rosterOther {
+  border-style: dashed;
+  background: transparent;
+}
+
 .rosterMain {
   display: flex;
   flex-direction: column;

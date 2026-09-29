@@ -11,6 +11,7 @@ import l from './lesson.module.css';
 import { LessonSheet } from './LessonSheet';
 import type { StaffColor } from './ProgramSheet';
 import s from './staff.module.css';
+import { useBack } from '../../hooks/useBack';
 
 interface Props {
   confirm: ReturnType<typeof useConfirm>;
@@ -114,20 +115,25 @@ interface DetailProps extends Props {
 }
 
 function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps) {
-  const { be, data, staffToken, setData, today, toast, fail, refresh } = useApp();
+  const { be, data, staffToken, staffRole, staffId, setData, today, toast, fail, refresh } = useApp();
   const [date, setDate] = useState(today);
   const [editing, setEditing] = useState(false);
   const [offBusy, setOffBusy] = useState(false);
   const [allBusy, setAllBusy] = useState(false);
   // 저장 중인 줄은 다시 눌러도 무시 (빠르게 두 번 눌러 순서가 뒤바뀌지 않게)
   const pending = useRef(new Set<string>());
+  useBack(true, onBack);
 
-  const mids = activeMids(lesson, data.members);
+  // 트레이너는 담당 이용자만 출석을 체크한다 (담당 이용자를 위에)
+  const canMark = (mid: string) => staffRole !== 'trainer' || data.assign[mid] === staffId;
+  const all = activeMids(lesson, data.members);
+  const mids = [...all.filter(canMark), ...all.filter((mid) => !canMark(mid))];
+  const others = all.length - all.filter(canMark).length;
   const nameOf = (mid: string) => data.members.find((m) => m.id === mid)?.name ?? '';
   const off = isOff(data.offdays, lesson.id, date);
   const lessonDay = isLessonDay(lesson, date);
   const presentCount = mids.filter((mid) => isPresent(data.attendance, lesson.id, mid, date)).length;
-  const missing = mids.filter((mid) => !isPresent(data.attendance, lesson.id, mid, date));
+  const missing = mids.filter((mid) => canMark(mid) && !isPresent(data.attendance, lesson.id, mid, date));
 
   const onError = (e: unknown) => {
     if (isAuthError(e)) return fail(e);
@@ -137,7 +143,7 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
 
   const toggle = async (mid: string) => {
     const key = mid + date;
-    if (pending.current.has(key)) return;
+    if (pending.current.has(key) || !canMark(mid)) return;
     const present = !isPresent(data.attendance, lesson.id, mid, date);
     const rec = { lid: lesson.id, mid, date };
     const apply = (on: boolean) =>
@@ -246,9 +252,21 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
         </div>
       )}
 
-      {!off && missing.length > 0 && mids.length > 1 && (lessonDay || presentCount > 0) && (
+      {others > 0 && (
+        <div className={ui.note}>
+          {others === all.length ? '이 수업에는 담당 이용자가 없어요. ' : ''}트레이너는 담당 이용자만 출석을 체크할 수 있어요.
+        </div>
+      )}
+
+      {!off && missing.length > 0 && mids.length - others > 1 && (lessonDay || presentCount > 0) && (
         <button type="button" className={cx(ui.btn, color === 'navy' ? ui.navy : ui.orange)} disabled={allBusy} onClick={() => void markAll()}>
-          {allBusy ? '체크하는 중…' : presentCount === 0 ? `모두 출석 (${missing.length}명)` : `남은 분 모두 출석 (${missing.length}명)`}
+          {allBusy
+            ? '체크하는 중…'
+            : others > 0
+              ? `담당 ${missing.length}명 모두 출석`
+              : presentCount === 0
+                ? `모두 출석 (${missing.length}명)`
+                : `남은 분 모두 출석 (${missing.length}명)`}
         </button>
       )}
 
@@ -259,19 +277,20 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack }: DetailProps
           {mids.map((mid) => {
             const here = isPresent(data.attendance, lesson.id, mid, date);
             const rate = monthRate(lesson, mid, data.attendance, data.offdays, today);
+            const mine = canMark(mid);
             return (
               <button
                 key={mid}
                 type="button"
-                className={l.rosterRow}
+                className={cx(l.rosterRow, !mine && l.rosterOther)}
                 aria-pressed={here}
-                disabled={off}
+                disabled={off || !mine}
                 onClick={() => void toggle(mid)}
               >
                 <span className={l.rosterMain}>
                   <span className={l.rosterName}>{nameOf(mid)}</span>
                   <span className={l.rosterSub}>
-                    이번 달 {rate.present}/{rate.total}회
+                    이번 달 {rate.present}/{rate.total}회{!mine && ' · 담당 아님'}
                   </span>
                 </span>
                 <span className={l.mark}>{here ? '출석 ✓' : lessonDay ? '결석' : '체크'}</span>

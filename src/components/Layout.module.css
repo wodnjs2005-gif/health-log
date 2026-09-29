@@ -32,8 +32,11 @@
   gap: 0.5rem 0.75rem;
 }
 
+/* 제목은 한 줄에 다 들어가는 폭을 먼저 쓰고, 모자라면 글자 크기 버튼이 다음 줄로 간다
+   (제목만으로도 넘치면 화면 폭 안에서 줄을 바꾼다) */
 .titleGroup {
-  flex: 1 1 11rem;
+  flex: 1 0 auto;
+  max-width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;

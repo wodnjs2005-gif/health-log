@@ -13,7 +13,7 @@ const ROLES: { role: Role; label: string; desc: string; color: string }[] = [
 /** dev: 개발용 가짜 서버로 띄웠을 때만 true (배포에서는 항상 false) */
 export function Entry({ dev, onPick }: { dev: boolean; onPick: (r: Role) => void }) {
   return (
-    <Layout title="맞춤 건강관리">
+    <Layout title="맞춤 건강관리" install>
       <div className={s.hero}>
         <h2 className={s.heroTitle}>어떻게 들어오시나요?</h2>
         <div className={s.heroSub}>해당하는 버튼을 눌러주세요.</div>

@@ -14,7 +14,8 @@ const PMIN_MAX = 180;
 export type StaffColor = 'orange' | 'navy';
 
 /**
- * 운동 영상 등록 시트 (트레이너=주황, 관리자=남색). 고른 이용자들만 이 영상을 볼 수 있다.
+ * 운동 영상 등록 시트 (관리자만). 고른 이용자들만 이 영상을 볼 수 있다.
+ * 대상은 비워 둬도 되고, 트레이너가 나중에 담당 이용자에게 공유한다.
  * 영상은 유튜브 링크로만 올린다 (파일 저장소는 보안상 닫아 두었다. 예전에 올린 파일은 계속 재생된다).
  */
 export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => void; color?: StaffColor }) {
@@ -38,7 +39,6 @@ export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => voi
   const save = async () => {
     const t = title.trim();
     if (!t) return setError('제목을 입력해주세요.');
-    if (!mids.length) return setError('대상 이용자를 골라주세요.');
     if (!kind) return setError('운동 종류를 골라주세요.');
     if (!ytId) return setError('유튜브 링크를 확인해주세요.');
     if (saving) return;
@@ -67,7 +67,7 @@ export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => voi
 
       <div className={ui.field}>
         <div className={ui.label}>
-          대상 이용자
+          대상 이용자 <span className={ui.labelSub}>(선택 · 비워 두면 트레이너가 담당 이용자에게 공유해요)</span>
         </div>
         {data.members.length === 0 ? (
           <div className={ui.muted}>먼저 관리자 화면에서 이용자를 등록해주세요.</div>

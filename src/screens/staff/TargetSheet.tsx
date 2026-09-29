@@ -1,28 +1,36 @@
 import { useState } from 'react';
 import { useApp } from '../../AppContext';
 import { Sheet } from '../../components/Layout';
-import { isAuthError, type Program } from '../../lib/backend';
+import { isAuthError, type Member, type Program } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import ui from '../../styles/ui.module.css';
 import { MemberPicker } from './MemberPicker';
 import type { StaffColor } from './ProgramSheet';
 
-/** 이미 등록한 영상의 대상 이용자 바꾸기 */
-export function TargetSheet({ program, onClose, color = 'orange' }: { program: Program; onClose: () => void; color?: StaffColor }) {
+interface Props {
+  program: Program;
+  onClose: () => void;
+  color?: StaffColor;
+  /** 고를 수 있는 이용자 (트레이너는 담당 이용자만). 없으면 모든 이용자 */
+  members?: Member[];
+}
+
+/** 이미 등록한 영상의 대상 이용자 바꾸기 (관리자: 전체, 트레이너: 담당 이용자에게 공유) */
+export function TargetSheet({ program, onClose, color = 'orange', members: scope }: Props) {
   const { be, data, staffToken, setData, toast, fail, refresh } = useApp();
+  const members = scope ?? data.members;
   // 그사이 삭제된 이용자는 처음부터 빼 둔다
-  const [mids, setMids] = useState(() => program.mids.filter((mid) => data.members.some((m) => m.id === mid)));
+  const [mids, setMids] = useState(() => program.mids.filter((mid) => members.some((m) => m.id === mid)));
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    if (!mids.length) return setError('대상 이용자를 골라주세요.');
     if (saving) return;
     setSaving(true);
     try {
       const saved = await be.staffSetProgramMembers(staffToken, program.id, mids);
       setData((d) => ({ ...d, programs: d.programs.map((p) => (p.id === program.id ? { ...p, mids: saved } : p)) }));
-      toast('대상 이용자를 바꿨어요');
+      toast(scope ? '공유할 이용자를 바꿨어요' : '대상 이용자를 바꿨어요');
       onClose();
     } catch (e) {
       setSaving(false);
@@ -33,9 +41,10 @@ export function TargetSheet({ program, onClose, color = 'orange' }: { program: P
   };
 
   return (
-    <Sheet title={`${program.title} · 대상 이용자`} onClose={onClose}>
+    <Sheet title={`${program.title} · ${scope ? '담당 이용자에게 공유' : '대상 이용자'}`} onClose={onClose}>
+      {scope && <div className={ui.note}>고른 담당 이용자의 「영상」 탭에 이 영상이 보여요. 다른 트레이너가 공유한 분은 그대로 둬요.</div>}
       <MemberPicker
-        members={data.members}
+        members={members}
         selected={mids}
         onChange={(v) => {
           setMids(v);
