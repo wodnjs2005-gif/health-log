@@ -1,6 +1,7 @@
 """맞춤 건강관리 앱 아이콘: 바탕 + 하트(건강) + 맥박선(운동) + 새싹 잎(식사).
 같은 도형으로 SVG 와 PNG 를 만든다 (PNG 는 4배로 그린 뒤 줄여 가장자리를 매끄럽게).
-실행: python scripts/build-icons.py  (Pillow 필요) → public/ 의 아이콘 5개를 다시 만든다."""
+실행: python scripts/build-icons.py  (Pillow 필요) → public/ 의 아이콘 5개를 다시 만들고,
+index.html · manifest · 설치 안내 카드의 아이콘 주소에 ?v=(내용 해시) 를 붙여 휴대폰이 새 아이콘을 받게 한다."""
 import os, re, sys
 from PIL import Image, ImageDraw
 
@@ -137,9 +138,37 @@ def build(out):
     render(512, True).save(os.path.join(out, 'icon-512.png'), optimize=True)
     render(512, False, inset=0.14).save(os.path.join(out, 'icon-maskable-512.png'), optimize=True)
     render(180, False, inset=0.06).convert('RGB').save(os.path.join(out, 'apple-touch-icon.png'), optimize=True)
-    open(os.path.join(out, 'icon.svg'), 'w', encoding='utf-8', newline='\n').write(svg())
+    with open(os.path.join(out, 'icon.svg'), 'w', encoding='utf-8', newline='\n') as f:
+        f.write(svg())
+
+
+# 주소가 같으면 휴대폰·브라우저가 예전 아이콘을 그대로 보여 주므로, 아이콘이 바뀌면 주소 끝의 ?v= 를 바꾼다
+REFS = ['index.html', 'public/manifest.webmanifest', 'src/components/InstallCard.tsx']
+FILES = ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
+
+
+def stamp(out):
+    import hashlib
+    h = hashlib.sha1()
+    for name in FILES:
+        with open(os.path.join(out, name), 'rb') as f:
+            h.update(f.read())
+    v = h.hexdigest()[:8]
+    pat = re.compile(r'(/(?:%s))(\?v=[0-9a-f]+)?' % '|'.join(re.escape(f) for f in FILES))
+    for p in REFS:
+        with open(p, encoding='utf-8', newline='') as f:
+            t = f.read()
+        n = pat.sub(lambda m: m.group(1) + '?v=' + v, t)
+        if n != t:
+            with open(p, 'w', encoding='utf-8', newline='') as f:
+                f.write(n)
+    return v
 
 
 if __name__ == '__main__':
-    build(sys.argv[1] if len(sys.argv) > 1 else 'public')
-    print('ok')
+    out = sys.argv[1] if len(sys.argv) > 1 else 'public'
+    build(out)
+    if out == 'public':
+        print('ok · 아이콘 주소 v=' + stamp(out))
+    else:
+        print('ok')

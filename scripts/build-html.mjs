@@ -31,7 +31,7 @@ html = html.replace(/<link rel="stylesheet" crossorigin href="([^"]+)">/, (_, hr
 // 아이콘은 data URI 로, manifest 는 file:// 에서 못 읽으므로 뺀다
 const icon = 'data:image/svg+xml;base64,' + Buffer.from(read('icon.svg')).toString('base64');
 html = html
-  .replace(/href="\/icon\.svg"/g, `href="${icon}"`)
+  .replace(/href="\/icon\.svg(\?v=\w+)?"/g, `href="${icon}"`)
   .replace(/\s*<link rel="manifest"[^>]*>/, '');
 
 if (/src="\/assets|href="\/assets/.test(html)) throw new Error('합치지 못한 파일이 남아 있어요');

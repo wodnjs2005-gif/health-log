@@ -83,7 +83,7 @@ export function InstallCard({ color = 'green' }: { color?: 'green' | 'orange' })
   return (
     <section className={s.install} style={color === 'orange' ? { borderColor: 'var(--orange)' } : undefined} aria-label="바탕화면에 추가하기">
       <div className={s.installHead}>
-        <img className={s.installIcon} src="/icon-192.png" alt="" />
+        <img className={s.installIcon} src="/icon-192.png?v=33e8826b" alt="" />
         <div className={ui.sectionHead} style={{ gap: '0.125rem', minWidth: 0 }}>
           <h2 className={s.installTitle}>휴대폰 바탕화면에 추가하기</h2>
           <span className={ui.small}>다음부터 아이콘만 누르면 바로 열려요.</span>
