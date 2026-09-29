@@ -417,8 +417,10 @@ export interface Backend {
   staffSetTags(token: string, id: string, tags: string[]): Promise<string[]>;
   staffAddProgram(token: string, p: NewProgram, file: File | null): Promise<Program>;
   staffDelProgram(token: string, id: string): Promise<void>;
-  /** 이미 등록한 영상의 대상 이용자 바꾸기. 저장된 대상 목록을 돌려준다 */
+  /** 한 영상의 대상 바꾸기 (트레이너만, 자기 담당 이용자 몫만). 저장된 대상 목록을 돌려준다 */
   staffSetProgramMembers(token: string, id: string, mids: string[]): Promise<string[]>;
+  /** 영상 여러 개를 담당 이용자 여러 명에게 한 번에 공유(on)하거나 끈다. 영상마다 지금 대상 목록을 돌려준다 */
+  trainerSharePrograms(token: string, pids: string[], mids: string[], on: boolean): Promise<Record<string, string[]>>;
   videoUrl(p: Program): Promise<{ url: string; revoke?: boolean } | null>;
   // 음식 목록에 추가한 음식 (누구나 읽기, 관리자만 고치기)
   customFoodsGet(): Promise<CustomFood[]>;

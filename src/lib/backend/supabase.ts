@@ -247,6 +247,9 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     staffChatSeen: (token, mid) => rpc<ChatSeen>('staff_chat_seen', { p_token: token, p_member: mid }),
 
+    trainerSharePrograms: (token, pids, mids, on) =>
+      rpc<Record<string, string[]>>('trainer_share_programs', { p_token: token, p_programs: pids, p_members: mids, p_on: on }),
+
     staffChatList: (token) => rpc<{ key: string; rooms: ChatRoom[] }>('staff_chat_list', { p_token: token }),
 
     staffChatGet: (token, mid, r = {}) => rpc<ChatMessage[]>('staff_chat_get', { p_token: token, p_member: mid, p_after: r.after ?? null, p_before: r.before ?? null }),

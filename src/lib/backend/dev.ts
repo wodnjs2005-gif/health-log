@@ -727,12 +727,12 @@ export function createDevBackend(): Backend {
       return t;
     },
 
-    // 영상 올리기·지우기는 관리자만 (대상 이용자는 비워 둬도 된다)
+    // 영상 올리기·지우기는 관리자만 (대상 이용자는 트레이너가 공유한다)
     async staffAddProgram(token, p, file) {
       const d = admin(token);
       const id = 'p' + uid();
       const rec: Program = {
-        id, title: p.title, mids: p.mids.filter((mid) => d.members.some((m) => m.id === mid)), kind: p.kind, min: p.min, memo: p.memo || '', date: todayYmd(),
+        id, title: p.title, mids: [], kind: p.kind, min: p.min, memo: p.memo || '', date: todayYmd(),
         src: file ? 'file' : 'yt',
         ytId: file ? null : p.ytId,
         videoKey: file ? id : null,
@@ -753,18 +753,30 @@ export function createDevBackend(): Backend {
       save(d);
     },
 
-    // 관리자는 대상 전체를, 트레이너는 자기 담당 이용자 몫만 바꾼다
+    // 트레이너만, 자기 담당 이용자 몫만 바꾼다
     async staffSetProgramMembers(token, id, mids) {
-      const { d, s } = staff(token);
+      const { d, s } = trainer(token);
       const p = d.programs.find((x) => x.id === id);
       if (!p) throw new Error('program not found'); // 다른 직원이 먼저 지운 영상
       // 삭제된 이용자는 빼고 저장. 이미 따라한 기록(views·운동일지)은 그대로 둔다
       const want = [...new Set(mids)].filter((mid) => d.members.some((m) => m.id === mid));
       const mine = (mid: string) => d.assign[mid] === s.subject;
-      const next = s.role === 'admin' ? want : [...p.mids.filter((mid) => !mine(mid)), ...want.filter(mine)];
+      const next = [...p.mids.filter((mid) => !mine(mid)), ...want.filter(mine)];
       p.mids = next;
       save(d);
       return next;
+    },
+
+    async trainerSharePrograms(token, pids, mids, on) {
+      const { d, s } = trainer(token);
+      const ms = mids.filter((mid) => d.assign[mid] === s.subject);
+      const out: Record<string, string[]> = {};
+      for (const p of d.programs.filter((x) => pids.includes(x.id))) {
+        p.mids = on ? [...new Set([...p.mids, ...ms])] : p.mids.filter((mid) => !ms.includes(mid));
+        out[p.id] = p.mids;
+      }
+      save(d);
+      return out;
     },
 
     // --- 추가한 음식 -------------------------------------------------------------

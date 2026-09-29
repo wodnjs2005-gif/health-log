@@ -6,7 +6,6 @@ import { KINDS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { ytIdOf, ytThumb } from '../../lib/youtube';
 import ui from '../../styles/ui.module.css';
-import { MemberPicker } from './MemberPicker';
 
 const PMIN_STEP = 5;
 const PMIN_MAX = 180;
@@ -14,14 +13,12 @@ const PMIN_MAX = 180;
 export type StaffColor = 'orange' | 'navy';
 
 /**
- * 운동 영상 등록 시트 (관리자만). 고른 이용자들만 이 영상을 볼 수 있다.
- * 대상은 비워 둬도 되고, 트레이너가 나중에 담당 이용자에게 공유한다.
+ * 운동 영상 등록 시트 (관리자만). 대상 이용자는 고르지 않고, 트레이너가 담당 이용자에게 공유한다.
  * 영상은 유튜브 링크로만 올린다 (파일 저장소는 보안상 닫아 두었다. 예전에 올린 파일은 계속 재생된다).
  */
 export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => void; color?: StaffColor }) {
-  const { be, data, staffToken, setData, toast, fail } = useApp();
+  const { be, staffToken, setData, toast, fail } = useApp();
   const [title, setTitle] = useState('');
-  const [mids, setMids] = useState<string[]>([]);
   const [kind, setKind] = useState('');
   const [min, setMin] = useState(20);
   const [url, setUrl] = useState('');
@@ -44,7 +41,7 @@ export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => voi
     if (saving) return;
     setSaving(true);
     try {
-      const rec = await be.staffAddProgram(staffToken, { title: t, mids, kind, min, memo: memo.trim(), ytId }, null);
+      const rec = await be.staffAddProgram(staffToken, { title: t, mids: [], kind, min, memo: memo.trim(), ytId }, null);
       setData((d) => ({ ...d, programs: [rec, ...d.programs] }));
       toast('영상을 등록했어요');
       onClose();
@@ -65,16 +62,7 @@ export function ProgramSheet({ onClose, color = 'orange' }: { onClose: () => voi
         <input className={ui.input} value={title} onChange={(e) => edit(setTitle)(e.target.value)} placeholder="예: 의자 스쿼트 따라하기" />
       </label>
 
-      <div className={ui.field}>
-        <div className={ui.label}>
-          대상 이용자 <span className={ui.labelSub}>(선택 · 비워 두면 트레이너가 담당 이용자에게 공유해요)</span>
-        </div>
-        {data.members.length === 0 ? (
-          <div className={ui.muted}>먼저 관리자 화면에서 이용자를 등록해주세요.</div>
-        ) : (
-          <MemberPicker members={data.members} selected={mids} onChange={edit(setMids)} color={color} />
-        )}
-      </div>
+      <div className={ui.note}>올린 영상은 트레이너가 확인하고 담당 이용자에게 공유해요.</div>
 
       <div className={ui.field}>
         <div className={ui.label}>운동 종류</div>

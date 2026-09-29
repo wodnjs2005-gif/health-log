@@ -45,7 +45,9 @@ interface Props {
  * 직원은 한마디를 남기고 건강 수치를 적을 수 있고, 보호자는 보기만 한다.
  */
 export function MemberDetail({ member, summary, end: endProp, onGo, color = 'orange' }: Props) {
-  const { data, today, staffToken, staffRole, photoOf } = useApp();
+  const { data, today, staffToken, staffRole, staffId, photoOf } = useApp();
+  // 담당 트레이너는 이 분이 볼 영상을 켜고 끈다
+  const mineMember = staffRole === 'trainer' && data.assign[member.id] === staffId;
   const isStaff = !!staffToken;
   const [photoOpen, setPhotoOpen] = useState(false);
   const end = endProp ?? today;
@@ -112,7 +114,9 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
       <MeasureSection mid={member.id} mode={isStaff ? 'staff' : 'view'} color={isStaff ? color : 'green'} />
       <TestSection mid={member.id} name={member.name} mode={staffRole === 'trainer' ? 'trainer' : 'view'} />
 
-      {progs.length > 0 && (
+      {mineMember ? (
+        <MemberVideos mid={member.id} count={count} />
+      ) : progs.length > 0 && (
         <section className={ui.card} style={{ padding: '1.125rem 1rem', gap: '0.5rem' }}>
           <h3 className={ui.h3}>운동 영상 따라하기</h3>
           {progs.map((p) => (
@@ -167,5 +171,61 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
         </section>
       ))}
     </>
+  );
+}
+
+/** 담당 트레이너: 이 분이 볼 운동 영상을 체크박스로 바로 켜고 끈다 (관리자가 올린 영상 전체) */
+function MemberVideos({ mid, count }: { mid: string; count: (pid: string, day?: string) => number }) {
+  const { be, data, setData, staffToken, today, toast, fail } = useApp();
+  const [busy, setBusy] = useState<string | null>(null);
+  const on = data.programs.filter((p) => p.mids.includes(mid)).length;
+
+  const toggle = async (pid: string, next: boolean) => {
+    if (busy) return;
+    setBusy(pid);
+    try {
+      const res = await be.trainerSharePrograms(staffToken, [pid], [mid], next);
+      setData((d) => ({ ...d, programs: d.programs.map((p) => (res[p.id] ? { ...p, mids: res[p.id] } : p)) }));
+      toast(next ? '영상을 공유했어요' : '영상 공유를 껐어요');
+    } catch (e) {
+      fail(e);
+    }
+    setBusy(null);
+  };
+
+  return (
+    <section className={ui.card} style={{ padding: '1.125rem 1rem', gap: '0.25rem' }}>
+      <div className={ui.row} style={{ alignItems: 'center', paddingBottom: '0.25rem' }}>
+        <h3 className={ui.h3}>볼 운동 영상</h3>
+        <span className={ui.small}>
+          {on}개 공유 · 전체 {data.programs.length}개
+        </span>
+      </div>
+      {data.programs.length === 0 && <div className={ui.muted}>관리자가 올린 영상이 아직 없어요.</div>}
+      {data.programs.map((p) => {
+        const shared = p.mids.includes(mid);
+        return (
+          <button
+            key={p.id}
+            type="button"
+            role="checkbox"
+            aria-checked={shared}
+            className={s.videoRow}
+            disabled={busy === p.id}
+            onClick={() => void toggle(p.id, !shared)}
+          >
+            <span className={s.box} aria-hidden="true">
+              {shared ? '✓' : ''}
+            </span>
+            <span className={s.videoMain}>
+              <span className={s.logMain}>{p.title}</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--ink-3)' }}>
+                {p.kind} · {p.min}분{count(p.id) > 0 && ` · 따라한 횟수 ${count(p.id)}회 (오늘 ${count(p.id, today)}회)`}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </section>
   );
 }

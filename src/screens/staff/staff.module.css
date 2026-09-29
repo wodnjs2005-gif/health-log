@@ -652,3 +652,120 @@
   border-color: var(--orange);
   color: var(--orange-ink);
 }
+
+/* 트레이너: 영상 여러 개 골라 공유 */
+.progHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.progHeadText {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.progBox {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.25rem 0 0 -0.375rem;
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progBox[aria-checked='true'] .box {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+.progPicked {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 2px var(--orange) inset;
+}
+
+/* 고른 영상이 있으면 아래에 붙어 있는 공유 줄 */
+.shareBar {
+  position: sticky;
+  bottom: calc(0.75rem + var(--safe-bottom));
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--r-card);
+  background: var(--card);
+  border: 2px solid var(--orange);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.15);
+}
+
+.shareCount {
+  flex: 1 0 auto;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--orange-ink);
+}
+
+.shareOn {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
+
+.shareOff {
+  border-color: var(--orange);
+  color: var(--orange-ink);
+}
+
+.shareTitles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.shareTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--r-chip);
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+}
+
+.shareMode {
+  flex: none;
+}
+
+/* 이용자 상세: 볼 영상 켜고 끄기 */
+.videoRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.5rem 0.25rem;
+  border: none;
+  border-top: 1px solid var(--divider);
+  background: none;
+  text-align: left;
+  color: var(--ink);
+}
+
+.videoRow[aria-checked='true'] .box {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+.videoMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
