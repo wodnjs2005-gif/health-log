@@ -11,7 +11,7 @@ declare f record;
 begin
   for f in select p.oid::regprocedure sig from pg_proc p
            where p.pronamespace = 'public'::regnamespace
-             and p.proname = any(array['_assign','_chat_at','_chat_page','_chat_put','_chat_ring','_chat_ring_to','_chat_seen','_chat_staff_key','_check_measure','_check_photo','_check_test_item','_clean_days','_clean_foods','_clean_nutri','_client_ip','_code_blocked','_code_fail','_extra_data','_gid','_guardians','_j_chat','_j_custom_food','_j_ex','_j_lesson','_j_meal','_j_measure','_j_member','_j_member_staff','_j_member_trainer','_j_note','_j_notice','_j_prog','_j_test','_j_test_category','_j_test_item','_j_trainer','_j_view','_kst_today','_lesson_data','_meal_total','_mid','_need_admin','_need_assigned','_need_staff','_need_trainer','_new_code','_new_session','_new_trainer_code','_norm_rank','_nutri_num','_photo_key','_photo_ver','_photo_vers','_put_photo','_role','_staff_label','_staff_ok','_staff_session','_token_hash','admin_add_test_category','admin_add_test_item','admin_add_trainer','admin_change_password','admin_create','admin_del_food','admin_del_test_category','admin_del_test_item','admin_del_trainer','admin_food_requests','admin_login','admin_new_trainer_code','admin_save_food','admin_set_member_trainer','admin_set_trainer_rank','admin_update_program','admin_update_test_category','admin_update_test_item','custom_foods_get','guardian_get','guardian_photos','guardian_set_photo','guardian_set_relation','staff_add_lesson','staff_add_measure','staff_add_member','staff_add_note','staff_add_notice','staff_add_program','staff_chat_get','staff_chat_list','staff_chat_seen','staff_check','staff_del_lesson','staff_del_measure','staff_del_member','staff_del_note','staff_del_notice','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_photos','staff_set_attendance','staff_set_attendance_many','staff_set_birth','staff_set_offday','staff_set_photo','staff_set_program_members','staff_set_tags','staff_update_lesson','trainer_chat_send','trainer_del_tests','trainer_login','trainer_save_tests','trainer_share_programs','user_add_ex','user_add_meal','user_add_measure','user_add_view','user_chat_get','user_chat_seen','user_chat_send','user_chat_status','user_del_ex','user_del_meal','user_del_measure','user_get','user_photos','user_set_photo'])
+             and p.proname = any(array['_assign','_chat_at','_chat_page','_chat_put','_chat_ring','_chat_ring_to','_chat_seen','_chat_staff_key','_check_measure','_check_photo','_check_test_item','_clean_days','_clean_foods','_clean_nutri','_client_ip','_code_blocked','_code_fail','_extra_data','_gid','_guardians','_j_chat','_j_custom_food','_j_ex','_j_lesson','_j_meal','_j_measure','_j_member','_j_member_staff','_j_member_trainer','_j_note','_j_notice','_j_prog','_j_test','_j_test_category','_j_test_item','_j_trainer','_j_view','_kst_today','_lesson_data','_meal_total','_mid','_need_admin','_need_assigned','_need_staff','_need_trainer','_new_code','_new_session','_new_trainer_code','_norm_rank','_nutri_num','_photo_key','_photo_ver','_photo_vers','_put_photo','_role','_staff_label','_staff_ok','_staff_session','_token_hash','admin_add_test_category','admin_add_test_item','admin_add_trainer','admin_change_password','admin_create','admin_del_food','admin_del_test_category','admin_del_test_item','admin_del_trainer','admin_food_requests','admin_login','admin_new_trainer_code','admin_save_food','admin_set_member_trainer','admin_set_trainer_rank','admin_update_program','admin_update_test_category','admin_update_test_item','custom_foods_get','guardian_get','guardian_photos','guardian_set_photo','guardian_set_relation','staff_add_lesson','staff_add_measure','staff_add_member','staff_add_note','staff_add_notice','staff_add_program','staff_chat_get','staff_chat_list','staff_chat_seen','staff_check','staff_del_lesson','staff_del_measure','staff_del_member','staff_del_note','staff_del_notice','staff_del_program','staff_get','staff_login','staff_logout','staff_new_code','staff_new_guardian_code','staff_photos','staff_set_attendance','staff_set_attendance_many','staff_set_birth','staff_set_offday','staff_set_photo','staff_set_program_members','staff_set_tags','staff_update_lesson','trainer_chat_send','trainer_del_tests','trainer_login','trainer_save_tests','trainer_share_programs','user_add_ex','user_add_meal','user_add_measure','user_add_view','user_chat_get','user_chat_seen','user_chat_send','user_chat_status','user_del_ex','user_del_meal','user_del_measure','user_get','user_note_seen','user_photos','user_set_photo'])
   loop
     execute 'drop function if exists ' || f.sig || ' cascade';
   end loop;
@@ -2653,3 +2653,31 @@ begin
   if r.id is null then raise exception 'program not found'; end if;
   return _j_prog(r,null);
 end $$;
+
+-- ================= 20261018000000_note_seen.sql =================
+
+-- 맞춤 건강관리 · 트레이너 한마디 「확인했어요」
+-- 20261017000000_program_edit.sql 다음에 실행하세요. (SQL Editor 에 붙여넣고 Run, 또는 supabase db push)
+--
+-- ■ 이용자가 오늘 화면의 트레이너 한마디에서 「확인했어요」를 누르면 그 한마디(와 그 전 한마디)가 오늘 화면에서 사라집니다.
+--   새 한마디가 오면 다시 나타나고, 지난 한마디는 「기록」 탭에서 볼 수 있습니다.
+-- ■ 트레이너·관리자 화면에는 이용자가 확인한 한마디에 「확인함」이 붙습니다.
+
+alter table member_notes add column if not exists seen_at timestamptz;
+
+create or replace function _j_note(n member_notes) returns json language sql stable as $$
+  select json_build_object('id',n.id,'mid',n.member_id,'text',n.body,'by',n.author,'byId',n.author_id,
+    'date',to_char(n.created_at at time zone 'Asia/Seoul','YYYY-MM-DD'),'seen',n.seen_at is not null) $$;
+
+-- 확인: 고른 한마디와 그보다 먼저 남긴 한마디를 모두 확인한 것으로. 확인한 한마디 id 들을 돌려준다 (번호가 틀리면 null)
+create or replace function user_note_seen(p_code text,p_note uuid) returns json language plpgsql security definer set search_path=public as $$
+declare m uuid:=_mid(p_code); t timestamptz;
+begin
+  if m is null then return null; end if;
+  select created_at into t from member_notes where id=p_note and member_id=m;
+  if t is null then return '[]'::json; end if;
+  update member_notes set seen_at=now() where member_id=m and seen_at is null and created_at<=t;
+  return coalesce((select json_agg(id) from member_notes where member_id=m and seen_at is not null),'[]'::json);
+end $$;
+
+revoke execute on function _j_note(member_notes) from public, anon, authenticated;

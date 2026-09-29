@@ -904,6 +904,21 @@ export function createDevBackend(): Backend {
     },
 
     // --- 한마디·건강 수치·공지 ---------------------------------------------------
+    async userNoteSeen(code, id) {
+      const d = load();
+      const m = who(d, code);
+      const mine = d.notes.filter((n) => n.mid === m.id);
+      const i = mine.findIndex((n) => n.id === id);
+      if (i < 0) return [];
+      const at = mine[i].date;
+      // 그 한마디와 그 전(같은 날은 먼저 남긴) 한마디
+      mine.forEach((n, j) => {
+        if (n.date < at || (n.date === at && j <= i)) n.seen = true;
+      });
+      save(d);
+      return mine.filter((n) => n.seen).map((n) => n.id);
+    },
+
     async staffAddNote(token, mid, text) {
       const { d, s } = staff(token);
       const t = text.trim().slice(0, 200);

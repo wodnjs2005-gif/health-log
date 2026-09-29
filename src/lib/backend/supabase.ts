@@ -112,6 +112,8 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     userAddView: (code, pid, date) =>
       userRpc<{ view: View; ex: Exercise }>('user_add_view', { p_code: normCode(code), p_program: pid, p_date: date }),
 
+    userNoteSeen: (code, id) => userRpc<string[]>('user_note_seen', { p_code: normCode(code), p_note: id }),
+
     userAddMeasure: (code, m) => userRpc<Measure>('user_add_measure', { p_code: normCode(code), ...measureArgs(m) }),
 
     userDelMeasure: (code, id) => rpc<void>('user_del_measure', { p_code: normCode(code), p_id: id }),

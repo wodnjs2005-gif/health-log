@@ -35,7 +35,7 @@ export function HomeTab({ date, onOpenSheet, onGoVideo }: Props) {
   return (
     <>
       {isToday && <NoticeList notices={data.notices} today={today} />}
-      {isToday && me && <NoteCard mid={me} />}
+      {isToday && me && <NoteCard mid={me} mode="user" />}
 
       <section className={cx(ui.card, s.homeCard)}>
         <div className={ui.row}>

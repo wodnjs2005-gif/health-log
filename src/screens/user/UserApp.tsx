@@ -7,6 +7,7 @@ import { useUserChat } from '../../hooks/useChat';
 import { cx } from '../../lib/cx';
 import { Layout } from '../../components/Layout';
 import { MeasureSection } from '../../components/Measures';
+import { NoteCard } from '../../components/Notes';
 import { EditableAvatar, PhotoSheet } from '../../components/PhotoSheet';
 import { TabIcon } from '../../components/TabIcon';
 import { TestSection } from '../../components/Tests';
@@ -127,6 +128,7 @@ export function UserApp() {
               goTab('home');
             }}
           />
+          <NoteCard mid={member.id} mode="history" />
           <MeasureSection mid={member.id} mode="user" />
           <TestSection mid={member.id} name={member.name} mode="view" />
         </>

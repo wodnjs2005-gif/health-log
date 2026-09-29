@@ -244,3 +244,24 @@
     transition: none;
   }
 }
+
+/* 이용자: 트레이너 한마디 확인 */
+.seenBtn {
+  margin-top: 0.25rem;
+}
+
+/* 직원: 이용자가 확인한 한마디 */
+.noteActions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.seenMark {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}

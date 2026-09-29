@@ -129,6 +129,8 @@ export interface Note {
   /** 남긴 트레이너 id (사진을 보여줄 때). 관리자나 예전 한마디는 없음 */
   byId?: string | null;
   date: string;
+  /** 이용자가 「확인했어요」를 눌렀으면 true */
+  seen?: boolean;
 }
 
 /** 측정 분류 (예: 신체징후(Vital Sign)). 관리자가 이름을 고치거나 새로 만든다 */
@@ -385,6 +387,8 @@ export interface Backend {
   userDelMeal(code: string, id: string): Promise<void>;
   userAddView(code: string, pid: string, date: string): Promise<{ view: View; ex: Exercise }>;
   userAddMeasure(code: string, m: NewMeasure): Promise<Measure>;
+  /** 트레이너 한마디 확인: 그 한마디와 그 전 한마디를 확인한 것으로. 확인된 한마디 id 들을 돌려준다 */
+  userNoteSeen(code: string, id: string): Promise<string[]>;
   /** 이용자는 자기가 적은 수치만 지울 수 있다 */
   userDelMeasure(code: string, id: string): Promise<void>;
   /** 보호자 번호로 읽기 전용 데이터. 번호가 맞지 않으면 null */
