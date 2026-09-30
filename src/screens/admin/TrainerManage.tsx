@@ -182,7 +182,7 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
                 }}
                 aria-haspopup="dialog"
               >
-                <Avatar id={t.id} name={t.name} size="lg" tone="navy" />
+                <Avatar id={t.id} name={t.name} size="md" tone="navy" />
                 <span className={st.tileName}>{t.name}</span>
                 {t.rank && <span className={cx(ui.badge, ui.badgeNavy)}>{t.rank}</span>}
               </button>

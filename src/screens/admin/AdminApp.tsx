@@ -377,7 +377,7 @@ export function AdminApp() {
                   style={{ '--n': m.code.length } as CSSProperties}
                 >
                   <button type="button" className={st.tileOpen} onClick={() => setMore(m)} aria-haspopup="dialog">
-                    <Avatar id={m.id} name={m.name} size="lg" tone="navy" />
+                    <Avatar id={m.id} name={m.name} size="md" tone="navy" />
                     <span className={st.tileName}>{m.name}</span>
                   </button>
                   <TagList tags={m.tags} className={st.tileTags} />
