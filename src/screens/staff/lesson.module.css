@@ -127,10 +127,18 @@
   color: #fff;
 }
 
-/* 격자: 수업 칸 */
+/* 격자: 수업 칸 (세 칸씩) */
 .lessonTile {
   justify-content: center;
-  min-height: 7.5rem;
+  min-height: 6.5rem;
+}
+
+/* 좁은 칸에서 「오늘 수업」이 넘치지 않게 */
+.lessonTile .todayBadge {
+  white-space: normal;
+  word-break: keep-all;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.8125rem;
 }
 
 /* 출석부 격자: 사진 · 이름 · 출석, 세 칸씩 */

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { Avatar } from '../../components/Avatar';
@@ -170,9 +170,9 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
       </div>
       {trainers.length === 0 && <div className={ui.empty}>등록된 트레이너가 없어요.</div>}
       {tile && trainers.length > 0 && (
-        <div className={cx(st.tiles, st.tiles2)}>
+        <div className={st.tiles}>
           {trainers.map((t) => (
-            <div key={t.id} className={cx(ui.card, st.tile, st.tileWithCode)}>
+            <div key={t.id} className={cx(ui.card, st.tile, st.tileWithCode)} style={{ '--n': t.code.length } as CSSProperties}>
               <button
                 type="button"
                 className={st.tileOpen}

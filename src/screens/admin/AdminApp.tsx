@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { scrollTop, useApp } from '../../AppContext';
 import { Avatar } from '../../components/Avatar';
 import { ConfirmButton } from '../../components/ConfirmButton';
@@ -369,9 +369,13 @@ export function AdminApp() {
             </div>
           )}
           {tile && sorted.length > 0 && (
-            <div className={cx(st.tiles, st.tiles2)}>
+            <div className={st.tiles}>
               {sorted.map((m) => (
-                <div key={m.id} className={cx(ui.card, st.tile, st.tileWithCode, activityOf(data, m.id, today).stale && st.memberStale)}>
+                <div
+                  key={m.id}
+                  className={cx(ui.card, st.tile, st.tileWithCode, activityOf(data, m.id, today).stale && st.memberStale)}
+                  style={{ '--n': m.code.length } as CSSProperties}
+                >
                   <button type="button" className={st.tileOpen} onClick={() => setMore(m)} aria-haspopup="dialog">
                     <Avatar id={m.id} name={m.name} size="lg" tone="navy" />
                     <span className={st.tileName}>{m.name}</span>

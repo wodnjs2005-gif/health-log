@@ -64,7 +64,7 @@ export function LessonManage({ confirm, color = 'orange' }: Props) {
       </button>
       {lessons.length === 0 && <div className={ui.empty}>만든 수업이 없어요.</div>}
       {tile && lessons.length > 0 && (
-        <div className={cx(s.tiles, s.tiles2)}>
+        <div className={s.tiles}>
           {lessons.map((x) => {
             const mids = activeMids(x, data.members);
             const todayOn = isLessonDay(x, today) && !isOff(data.offdays, x.id, today);
@@ -81,7 +81,7 @@ export function LessonManage({ confirm, color = 'orange' }: Props) {
                 }}
               >
                 <span className={s.tileName}>{x.name}</span>
-                {todayOn && <span className={cx(ui.badge, ui.badgeGreen)}>오늘 수업</span>}
+                {todayOn && <span className={cx(ui.badge, ui.badgeGreen, l.todayBadge)}>오늘 수업</span>}
                 <span className={s.tileInfo}>{daysLabel(x.days)}</span>
                 <span className={s.tileInfo}>
                   {mids.length}명{(todayOn || here > 0) && ` · 출석 ${here}명`}
