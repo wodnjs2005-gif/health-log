@@ -249,8 +249,23 @@ export function createSupabaseBackend(url: string, key: string): Backend {
 
     staffChatSeen: (token, mid) => rpc<ChatSeen>('staff_chat_seen', { p_token: token, p_member: mid }),
 
-    trainerSharePrograms: (token, pids, mids, on) =>
-      rpc<Record<string, string[]>>('trainer_share_programs', { p_token: token, p_programs: pids, p_members: mids, p_on: on }),
+    staffSharePrograms: (token, pids, mids, on) =>
+      rpc<Record<string, string[]>>('staff_share_programs', { p_token: token, p_programs: pids, p_members: mids, p_on: on }),
+
+    adminUpdateEx: (token, id, r) =>
+      rpc<Exercise>('admin_update_ex', {
+        p_token: token, p_id: id, p_date: r.date, p_kind: r.kind, p_min: r.min, p_level: r.level, p_memo: r.memo || '',
+      }),
+
+    adminUpdateMeal: (token, id, r) =>
+      rpc<Meal>('admin_update_meal', {
+        p_token: token, p_id: id, p_date: r.date, p_meal: r.meal, p_menu: r.menu, p_amount: r.amount, p_memo: r.memo || '',
+        p_foods: r.foods, p_nutri: r.nutri,
+      }),
+
+    adminDelEx: (token, id) => rpc<void>('admin_del_ex', { p_token: token, p_id: id }),
+
+    adminDelMeal: (token, id) => rpc<void>('admin_del_meal', { p_token: token, p_id: id }),
 
     staffChatList: (token) => rpc<{ key: string; rooms: ChatRoom[] }>('staff_chat_list', { p_token: token }),
 

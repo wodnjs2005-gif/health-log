@@ -94,6 +94,36 @@
   white-space: nowrap;
 }
 
+/* 찾은 음식 맨 위: 적은 이름과 가장 비슷한 음식 (적기만 하고 저장해도 이 음식이 들어간다) */
+.best {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0 0.375rem;
+  border-radius: var(--r-chip);
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  vertical-align: 0.0625rem;
+  white-space: nowrap;
+}
+
+/* 이름만 들어간 음식 → 비슷한 목록 음식으로 바꾸기 */
+.swap {
+  align-self: flex-start;
+  min-height: 2.75rem;
+  margin-top: 0.25rem;
+  padding: 0 0.625rem;
+  border: 1px dashed var(--orange);
+  border-radius: var(--r-btn-sm);
+  background: var(--card);
+  color: var(--orange-ink);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
 .custom {
   font-size: 1rem;
   font-weight: 700;

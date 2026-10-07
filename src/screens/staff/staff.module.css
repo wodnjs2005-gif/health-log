@@ -942,3 +942,43 @@
   flex-direction: column;
   gap: 0.125rem;
 }
+
+/* 관리자 화면: 주황으로 만든 공유 화면(고른 영상 테두리·공유 줄·체크 상자)을 남색으로 */
+.navyVars {
+  --orange: var(--navy);
+  --orange-ink: var(--navy);
+  --orange-soft: var(--navy-soft);
+}
+
+.navyTone {
+  display: contents;
+  --orange: var(--navy);
+  --orange-ink: var(--navy);
+  --orange-soft: var(--navy-soft);
+}
+
+/* 날짜별 기록: 7일씩 넘기기 */
+.logHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.logNav {
+  display: flex;
+  gap: 0.375rem;
+}
+
+/* 관리자: 기록 한 줄 고치기. 글자가 커서 자리가 모자라면 버튼은 아래 줄 오른쪽으로 */
+.logRowFix {
+  flex-wrap: wrap;
+}
+
+.logFix {
+  flex: none;
+  align-self: center;
+  margin-left: auto;
+}

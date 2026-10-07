@@ -769,23 +769,23 @@ export function createDevBackend(): Backend {
       return { ...p };
     },
 
-    // 트레이너만, 자기 담당 이용자 몫만 바꾼다
+    // 관리자는 모든 이용자, 트레이너는 자기 담당 이용자 몫만 바꾼다
     async staffSetProgramMembers(token, id, mids) {
-      const { d, s } = trainer(token);
+      const { d, s } = staff(token);
       const p = d.programs.find((x) => x.id === id);
       if (!p) throw new Error('program not found'); // 다른 직원이 먼저 지운 영상
       // 삭제된 이용자는 빼고 저장. 이미 따라한 기록(views·운동일지)은 그대로 둔다
       const want = [...new Set(mids)].filter((mid) => d.members.some((m) => m.id === mid));
-      const mine = (mid: string) => d.assign[mid] === s.subject;
+      const mine = (mid: string) => s.role === 'admin' || d.assign[mid] === s.subject;
       const next = [...p.mids.filter((mid) => !mine(mid)), ...want.filter(mine)];
       p.mids = next;
       save(d);
       return next;
     },
 
-    async trainerSharePrograms(token, pids, mids, on) {
-      const { d, s } = trainer(token);
-      const ms = mids.filter((mid) => d.assign[mid] === s.subject);
+    async staffSharePrograms(token, pids, mids, on) {
+      const { d, s } = staff(token);
+      const ms = mids.filter((mid) => d.members.some((m) => m.id === mid) && (s.role === 'admin' || d.assign[mid] === s.subject));
       const out: Record<string, string[]> = {};
       for (const p of d.programs.filter((x) => pids.includes(x.id))) {
         p.mids = on ? [...new Set([...p.mids, ...ms])] : p.mids.filter((mid) => !ms.includes(mid));
@@ -793,6 +793,40 @@ export function createDevBackend(): Backend {
       }
       save(d);
       return out;
+    },
+
+    // --- 이용자 기록 고치기 (관리자) ---------------------------------------------
+    async adminUpdateEx(token, id, r) {
+      const d = admin(token);
+      const e = d.ex.find((x) => x.id === id);
+      if (!e) throw new Error('record not found');
+      if (!r.kind.trim()) throw new Error('no kind');
+      Object.assign(e, { date: r.date, kind: r.kind.trim().slice(0, 30), min: Math.max(1, Math.min(600, r.min)), level: r.level || '보통', memo: r.memo || '' });
+      save(d);
+      return { ...e };
+    },
+
+    async adminUpdateMeal(token, id, r) {
+      const d = admin(token);
+      const m = d.meals.find((x) => x.id === id);
+      if (!m) throw new Error('record not found');
+      if (!r.menu.trim()) throw new Error('no menu');
+      const foods = r.foods.slice(0, 20);
+      Object.assign(m, { date: r.date, meal: r.meal, menu: r.menu.trim(), amount: r.amount || '보통', memo: r.memo || '', foods, nutri: foods.length ? r.nutri : null });
+      save(d);
+      return { ...m };
+    },
+
+    async adminDelEx(token, id) {
+      const d = admin(token);
+      d.ex = d.ex.filter((x) => x.id !== id);
+      save(d);
+    },
+
+    async adminDelMeal(token, id) {
+      const d = admin(token);
+      d.meals = d.meals.filter((x) => x.id !== id);
+      save(d);
     },
 
     // --- 추가한 음식 -------------------------------------------------------------

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useApp } from '../../AppContext';
 import { Sheet } from '../../components/Layout';
-import { isAuthError, type Program } from '../../lib/backend';
+import { isAuthError, type Member, type Program } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import ui from '../../styles/ui.module.css';
 import { MemberPicker } from './MemberPicker';
+import type { StaffColor } from './ProgramSheet';
 import s from './staff.module.css';
 
 interface Props {
@@ -12,26 +13,31 @@ interface Props {
   programs: Program[];
   /** 처음 모드: true = 공유하기, false = 공유 끄기 */
   on: boolean;
+  /** 고를 수 있는 이용자 (관리자 = 모두, 트레이너 = 담당 이용자) */
+  members: Member[];
+  /** 트레이너=주황, 관리자=남색 */
+  color?: StaffColor;
   onClose: () => void;
   /** 저장하면 (고른 영상 선택을 풀도록) */
   onDone: () => void;
 }
 
-/** 트레이너: 고른 영상 여러 개를 담당 이용자 여러 명에게 한 번에 공유하거나 끈다 */
-export function ShareSheet({ programs, on: initialOn, onClose, onDone }: Props) {
-  const { be, data, staffToken, staffId, setData, toast, fail } = useApp();
+/** 고른 영상 여러 개를 이용자 여러 명에게 한 번에 공유하거나 끈다 (관리자 = 모든 이용자, 트레이너 = 담당 이용자) */
+export function ShareSheet({ programs, on: initialOn, members: mine, color = 'orange', onClose, onDone }: Props) {
+  const { be, staffToken, staffRole, setData, toast, fail } = useApp();
+  const isAdmin = staffRole === 'admin';
+  const who = isAdmin ? '이용자' : '담당 이용자';
   const [on, setOn] = useState(initialOn);
   const [mids, setMids] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const mine = data.members.filter((m) => data.assign[m.id] === staffId);
 
   const save = async () => {
     if (!mids.length) return setError(on ? '공유할 이용자를 골라주세요.' : '공유를 끌 이용자를 골라주세요.');
     if (saving) return;
     setSaving(true);
     try {
-      const res = await be.trainerSharePrograms(
+      const res = await be.staffSharePrograms(
         staffToken,
         programs.map((p) => p.id),
         mids,
@@ -50,6 +56,7 @@ export function ShareSheet({ programs, on: initialOn, onClose, onDone }: Props) 
 
   return (
     <Sheet title={`영상 ${programs.length}개 ${on ? '공유하기' : '공유 끄기'}`} onClose={onClose}>
+      <div className={color === 'navy' ? s.navyTone : undefined} style={color === 'navy' ? undefined : { display: 'contents' }}>
       <div className={s.shareTitles}>
         {programs.map((p) => (
           <span key={p.id} className={s.shareTitle}>
@@ -66,10 +73,10 @@ export function ShareSheet({ programs, on: initialOn, onClose, onDone }: Props) 
         </button>
       </div>
       <div className={ui.note}>
-        {on ? '고른 담당 이용자의 「영상」 탭에 이 영상들이 보여요.' : '고른 담당 이용자의 「영상」 탭에서 이 영상들이 빠져요. 따라한 기록은 남아요.'}
+        {on ? `고른 ${who}의 「영상」 탭에 이 영상들이 보여요.` : `고른 ${who}의 「영상」 탭에서 이 영상들이 빠져요. 따라한 기록은 남아요.`}
       </div>
       {mine.length === 0 ? (
-        <div className={ui.empty}>담당 이용자가 없어요. 관리자에게 담당을 정해 달라고 해 주세요.</div>
+        <div className={ui.empty}>{isAdmin ? '등록한 이용자가 없어요.' : '담당 이용자가 없어요. 관리자에게 담당을 정해 달라고 해 주세요.'}</div>
       ) : (
         <MemberPicker
           members={mine}
@@ -78,6 +85,7 @@ export function ShareSheet({ programs, on: initialOn, onClose, onDone }: Props) 
             setMids(v);
             setError('');
           }}
+          color={color}
         />
       )}
       {error && (
@@ -85,9 +93,10 @@ export function ShareSheet({ programs, on: initialOn, onClose, onDone }: Props) 
           {error}
         </div>
       )}
-      <button type="button" className={cx(ui.btn, ui.btnSave, ui.orange)} disabled={saving || mine.length === 0} onClick={() => void save()}>
+      <button type="button" className={cx(ui.btn, ui.btnSave, color === 'navy' ? ui.navy : ui.orange)} disabled={saving || mine.length === 0} onClick={() => void save()}>
         {saving ? '저장하는 중…' : on ? `${mids.length || ''}${mids.length ? '명에게 ' : ''}공유하기` : `${mids.length || ''}${mids.length ? '명 ' : ''}공유 끄기`}
       </button>
+      </div>
     </Sheet>
   );
 }

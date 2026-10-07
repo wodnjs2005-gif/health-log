@@ -15,6 +15,7 @@ import { cx } from '../../lib/cx';
 import { addDays, md } from '../../lib/date';
 import { sumMeals } from '../../lib/nutrition';
 import ui from '../../styles/ui.module.css';
+import { RecordSheet, type SheetState } from '../user/RecordSheet';
 import { MemberLessons } from './MemberLessons';
 import s from './staff.module.css';
 
@@ -26,6 +27,8 @@ interface LogRow {
   sub: string;
   /** 식사: 음식을 골라 기록했으면 영양소 (계산 못 했으면 v=null) */
   nutri?: { v: Nutri | null };
+  /** 관리자가 고칠 때 여는 창 */
+  fix: SheetState;
 }
 
 interface Props {
@@ -46,11 +49,15 @@ interface Props {
  */
 export function MemberDetail({ member, summary, end: endProp, onGo, color = 'orange' }: Props) {
   const { data, today, staffToken, staffRole, staffId, photoOf } = useApp();
-  // 담당 트레이너는 이 분이 볼 영상을 켜고 끈다
-  const mineMember = staffRole === 'trainer' && data.assign[member.id] === staffId;
+  const isAdmin = staffRole === 'admin';
+  // 관리자와 담당 트레이너는 이 분이 볼 영상을 켜고 끈다
+  const canShare = isAdmin || (staffRole === 'trainer' && data.assign[member.id] === staffId);
   const isStaff = !!staffToken;
   const [photoOpen, setPhotoOpen] = useState(false);
-  const end = endProp ?? today;
+  // 직원은 날짜별 기록을 7일씩 앞뒤로 넘겨 본다 (보호자 화면은 end 를 넘겨준다)
+  const [ownEnd, setOwnEnd] = useState(today);
+  const end = endProp ?? (ownEnd > today ? today : ownEnd);
+  const [fixing, setFixing] = useState<SheetState | null>(null);
   const age = ageOf(member, today);
   const count = (pid: string, day?: string) =>
     data.views.filter((v) => v.pid === pid && v.mid === member.id && (!day || v.date === day)).length;
@@ -68,6 +75,7 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
           cls: ui.badgeGreen,
           main: `${e.kind} ${e.min}분`,
           sub: [`강도 ${e.level}`, e.memo].filter(Boolean).join(' · '),
+          fix: { kind: 'ex', rec: e } as SheetState,
         })),
       ...data.meals
         .filter((e) => e.mid === member.id && e.date === ds)
@@ -80,6 +88,7 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
           sub: [`양 ${e.amount}`, e.memo].filter(Boolean).join(' · '),
           // 음식을 골라 기록한 식사만 영양소 줄을 보여준다 (예전 기록은 없음)
           nutri: (e.foods?.length ?? 0) > 0 ? { v: e.nutri ?? null } : undefined,
+          fix: { kind: 'meal', meal: e.meal, rec: e } as SheetState,
         })),
     ];
     const meals = sumMeals(data.meals.filter((e) => e.mid === member.id && e.date === ds));
@@ -114,8 +123,8 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
       <MeasureSection mid={member.id} mode={isStaff ? 'staff' : 'view'} color={isStaff ? color : 'green'} />
       <TestSection mid={member.id} name={member.name} mode={staffRole === 'trainer' ? 'trainer' : 'view'} />
 
-      {mineMember ? (
-        <MemberVideos mid={member.id} count={count} />
+      {canShare ? (
+        <MemberVideos mid={member.id} count={count} navy={isAdmin} />
       ) : progs.length > 0 && (
         <section className={ui.card} style={{ padding: '1.125rem 1rem', gap: '0.5rem' }}>
           <h3 className={ui.h3}>운동 영상 따라하기</h3>
@@ -137,9 +146,22 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
 
       <MemberLessons mid={member.id} />
 
-      <h3 className={ui.h3} style={{ fontWeight: 800, paddingTop: '0.25rem' }}>
-        날짜별 기록
-      </h3>
+      <div className={s.logHead}>
+        <h3 className={ui.h3} style={{ fontWeight: 800 }}>
+          날짜별 기록
+        </h3>
+        {isStaff && !endProp && (
+          <div className={s.logNav}>
+            <button type="button" className={ui.btnSmall} onClick={() => setOwnEnd(addDays(end, -7))}>
+              ‹ 지난 7일
+            </button>
+            <button type="button" className={ui.btnSmall} disabled={end >= today} onClick={() => setOwnEnd(addDays(end, 7))}>
+              다음 7일 ›
+            </button>
+          </div>
+        )}
+      </div>
+      {isAdmin && log.length > 0 && <div className={ui.small}>잘못 적은 기록은 「고치기」를 눌러 고치거나 지울 수 있어요.</div>}
       {log.length === 0 && (
         <div className={ui.empty}>
           {end === today ? '최근 7일 동안 기록이 없어요.' : `${md(addDays(end, -6))}부터 ${md(end)}까지 기록이 없어요.`}
@@ -149,15 +171,20 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
         <section key={day.ds} className={ui.card} style={{ gap: '0.5rem' }}>
           <div style={{ fontSize: '1.0625rem', fontWeight: 800 }}>{day.label}</div>
           {day.rows.map((r) => (
-            <div key={r.id} className={s.logRow}>
+            <div key={r.id} className={cx(s.logRow, isAdmin && s.logRowFix)}>
               <span className={cx(ui.badge, r.cls)} style={{ flex: 'none' }}>
                 {r.tag}
               </span>
-              <div className={ui.sectionHead} style={{ flex: 1, minWidth: 0, gap: '0.125rem' }}>
+              <div className={ui.sectionHead} style={{ flex: isAdmin ? '1 1 10rem' : 1, minWidth: 0, gap: '0.125rem' }}>
                 <div className={s.logMain}>{r.main}</div>
                 <div className={ui.small}>{r.sub}</div>
                 {r.nutri && <NutriLine n={r.nutri.v} />}
               </div>
+              {isAdmin && (
+                <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline, s.logFix)} onClick={() => setFixing(r.fix)} aria-haspopup="dialog">
+                  고치기
+                </button>
+              )}
             </div>
           ))}
           {day.meals.counted > 0 && (
@@ -170,12 +197,13 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
           )}
         </section>
       ))}
+      {fixing && <RecordSheet state={fixing} date={today} onClose={() => setFixing(null)} />}
     </>
   );
 }
 
-/** 담당 트레이너: 이 분이 볼 운동 영상을 체크박스로 바로 켜고 끈다 (관리자가 올린 영상 전체) */
-function MemberVideos({ mid, count }: { mid: string; count: (pid: string, day?: string) => number }) {
+/** 관리자·담당 트레이너: 이 분이 볼 운동 영상을 체크박스로 바로 켜고 끈다 (관리자가 올린 영상 전체) */
+function MemberVideos({ mid, count, navy }: { mid: string; count: (pid: string, day?: string) => number; navy?: boolean }) {
   const { be, data, setData, staffToken, today, toast, fail } = useApp();
   const [busy, setBusy] = useState<string | null>(null);
   const on = data.programs.filter((p) => p.mids.includes(mid)).length;
@@ -184,7 +212,7 @@ function MemberVideos({ mid, count }: { mid: string; count: (pid: string, day?: 
     if (busy) return;
     setBusy(pid);
     try {
-      const res = await be.trainerSharePrograms(staffToken, [pid], [mid], next);
+      const res = await be.staffSharePrograms(staffToken, [pid], [mid], next);
       setData((d) => ({ ...d, programs: d.programs.map((p) => (res[p.id] ? { ...p, mids: res[p.id] } : p)) }));
       toast(next ? '영상을 공유했어요' : '영상 공유를 껐어요');
     } catch (e) {
@@ -194,7 +222,7 @@ function MemberVideos({ mid, count }: { mid: string; count: (pid: string, day?: 
   };
 
   return (
-    <section className={ui.card} style={{ padding: '1.125rem 1rem', gap: '0.25rem' }}>
+    <section className={cx(ui.card, navy && s.navyVars)} style={{ padding: '1.125rem 1rem', gap: '0.25rem' }}>
       <div className={ui.row} style={{ alignItems: 'center', paddingBottom: '0.25rem' }}>
         <h3 className={ui.h3}>볼 운동 영상</h3>
         <span className={ui.small}>

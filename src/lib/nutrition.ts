@@ -97,23 +97,73 @@ export async function findBaseFood(name: string): Promise<Food | undefined> {
   return foods.find((f) => f.name === name.trim());
 }
 
+/** 두 글자씩 묶은 조각 ('김치찌개' → 김치·치찌·찌개). 한 글자 이름은 그 글자 */
+const pairs = (s: string) => {
+  const out = new Set<string>();
+  for (let i = 0; i < s.length - 1; i++) out.add(s.slice(i, i + 2));
+  if (s.length === 1) out.add(s);
+  return out;
+};
+
+/** 이름이 얼마나 비슷한지 0~1 (겹치는 두 글자 조각의 비율). '김치찌게' ↔ '김치찌개' = 0.67 */
+const likeness = (a: Set<string>, b: Set<string>) => {
+  let n = 0;
+  for (const x of a) if (b.has(x)) n++;
+  return a.size + b.size ? (2 * n) / (a.size + b.size) : 0;
+};
+
+/** 이 정도 이상 비슷해야 「비슷한 음식」으로 친다 */
+const LIKE_MIN = 0.4;
+
+/** 흔히 쓰는 말 → 음식 목록의 이름 (이름 전체가 같을 때) */
+const ALIAS: Record<string, string> = {
+  밥: '쌀밥', 공기밥: '쌀밥', 흰밥: '쌀밥', 흰쌀밥: '쌀밥', 백미밥: '쌀밥',
+  김치: '배추김치', 계란후라이: '달걀후라이', 계란프라이: '달걀후라이', 달걀프라이: '달걀후라이',
+};
+
+/** 찾는 말을 이름 목록 표기로: 별칭, 그리고 계란 → 달걀 (띄어쓰기는 그대로) */
+const canon = (q: string) => ALIAS[norm(q)] ?? q.replace(/계란/g, '달걀');
+
 /**
- * 이름이 같으면 먼저, 그다음 이름으로 시작, 그다음 포함, 그다음 띄어 쓴 낱말이 모두 들어 있는 것
- * ('삶은 달걀' → '달걀(삶은것)'). 같은 순위면 짧은 이름 먼저
+ * 음식마다 점수 (작을수록 먼저, 해당 없으면 -1):
+ * 0 이름이 같음 · 1 이름으로 시작 · 2 포함 · 3 띄어 쓴 낱말이 모두 들어 있음('삶은 달걀' → '달걀(삶은것)')
+ * · 4~5 적은 말 안에 음식 이름이 들어 있음('엄마표 된장국' → '된장국', 긴 이름일수록 먼저)
+ * · 5~6 글자가 비슷함('김치찌게' → '김치찌개', 비슷할수록 먼저)
+ */
+function scorer(q: string) {
+  const k = norm(q);
+  const words = q.split(/[\s,]+/).map(norm).filter(Boolean);
+  const kp = pairs(k);
+  return (f: Food) => {
+    if (f.key === k) return 0;
+    if (f.key.startsWith(k)) return 1;
+    if (f.key.includes(k)) return 2;
+    if (words.length > 1 && words.every((w) => f.key.includes(w))) return 3;
+    if (f.key.length >= 2 && k.includes(f.key)) return 4 + 1 / f.key.length;
+    const like = likeness(kp, pairs(f.key));
+    return like >= LIKE_MIN ? 6 - like : -1;
+  };
+}
+
+/**
+ * 음식 찾기. 같은 이름 → 이름으로 시작 → 포함 → 낱말이 모두 들어 있음 → 비슷한 음식 순서이고,
+ * 같은 순위면 짧은 이름 먼저. 흔히 쓰는 말('밥', '계란')은 목록 표기('쌀밥', '달걀')로도 찾아 더 잘 맞는 쪽을 앞에 둔다
  */
 export function searchFoods(foods: Food[], q: string, limit = 8): Food[] {
   const k = norm(q);
   if (!k) return [];
-  const words = q.split(/[\s,]+/).map(norm).filter(Boolean);
-  const score = (f: Food) =>
-    f.key === k ? 0 : f.key.startsWith(k) ? 1 : f.key.includes(k) ? 2 : words.length > 1 && words.every((w) => f.key.includes(w)) ? 3 : -1;
+  const alt = canon(q);
+  const scores = [scorer(q), ...(norm(alt) !== k ? [scorer(alt)] : [])];
   return foods
-    .map((f) => ({ f, s: score(f) }))
-    .filter((x) => x.s >= 0)
+    .map((f) => ({ f, s: Math.min(...scores.map((sc) => sc(f)).map((v) => (v < 0 ? Infinity : v))) }))
+    .filter((x) => x.s !== Infinity)
     .sort((a, b) => a.s - b.s || a.f.name.length - b.f.name.length || a.f.name.localeCompare(b.f.name, 'ko'))
     .slice(0, limit)
     .map((x) => x.f);
 }
+
+/** 적은 이름과 가장 비슷한 음식 (없으면 undefined). 고르지 않고 적기만 한 음식에 영양 정보를 채울 때 */
+export const closestFood = (foods: Food[], q: string): Food | undefined => searchFoods(foods, q, 1)[0];
 
 /** 목록 음식 → 식사에 저장할 모양 */
 export const toMealFood = (f: Food): MealFood => ({ n: f.name, kcal: f.kcal, carb: f.carb, prot: f.prot, fat: f.fat, na: f.na });

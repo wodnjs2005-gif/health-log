@@ -22,9 +22,9 @@ interface Props {
 }
 
 /**
- * 운동 영상. 관리자: 올리기·지우기만 (공유 현황은 보기만).
- * 트레이너: 올라온 영상을 체크박스로 여러 개 골라 담당 이용자에게 한 번에 공유하거나 끈다.
- * 영상마다 내 담당 이용자 중 누구에게 공유했는지와 따라한 횟수가 보인다.
+ * 운동 영상. 관리자: 올리기·고치기·지우기, 그리고 모든 이용자에게 공유.
+ * 트레이너: 올라온 영상을 담당 이용자에게 공유. 둘 다 체크박스로 여러 개 골라 한 번에 공유하거나 끈다.
+ * 영상마다 누구에게 공유했는지(트레이너는 내 담당 이용자 중)와 따라한 횟수가 보인다.
  * 목록(자세히) / 격자(미리보기·제목만, 「자세히」 창) 로 볼 수 있다.
  */
 export function VideoManage({ confirm, color = 'orange' }: Props) {
@@ -41,8 +41,9 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
   const [picked, setPicked] = useState<string[]>([]);
   const [sharing, setSharing] = useState<boolean | null>(null);
   const editingProgram = editing ? data.programs.find((p) => p.id === editing) : undefined;
-  const myMembers = data.members.filter((m) => data.assign[m.id] === staffId);
-  const canPick = !isAdmin && myMembers.length > 0;
+  // 공유할 수 있는 이용자: 관리자 = 모두, 트레이너 = 담당 이용자
+  const myMembers = isAdmin ? data.members : data.members.filter((m) => data.assign[m.id] === staffId);
+  const canPick = myMembers.length > 0;
   // 지워진 영상은 고른 목록에서 뺀다
   const pickedPrograms = data.programs.filter((p) => picked.includes(p.id));
   const allPicked = data.programs.length > 0 && pickedPrograms.length === data.programs.length;
@@ -73,7 +74,7 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
             setEditing(p.id);
           }}
         >
-          이 영상 공유 대상 바꾸기
+          {isAdmin ? '공유할 이용자 바꾸기' : '이 영상 공유 대상 바꾸기'}
         </button>
       )}
       {isAdmin && (
@@ -93,7 +94,7 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
   );
 
   return (
-    <>
+    <div className={isAdmin ? s.navyTone : undefined} style={isAdmin ? undefined : { display: 'contents' }}>
       <div className={ui.row} style={{ padding: '0.25rem', alignItems: 'center' }}>
         <h2 className={ui.h2}>운동 영상</h2>
         <div className={s.headSide}>
@@ -110,7 +111,13 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
           <button type="button" className={cx(ui.btn, color === 'navy' ? ui.navy : ui.orange)} onClick={() => setAdding(true)}>
             + 운동 영상 등록
           </button>
-          <div className={ui.muted}>올린 영상은 트레이너가 담당 이용자에게 공유해요.</div>
+          {data.programs.length > 0 && (
+            <div className={ui.note}>
+              {myMembers.length === 0
+                ? '등록한 이용자가 없어 아직 공유할 수 없어요.'
+                : '공유할 영상을 체크하고 아래 「공유하기」를 누르세요. 트레이너도 담당 이용자에게 공유할 수 있어요.'}
+            </div>
+          )}
         </>
       ) : (
         <div className={ui.note}>
@@ -145,7 +152,7 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
                   <span className={s.vMeta}>
                     {p.kind} · {p.min}분
                   </span>
-                  <span className={s.vMeta}>{isAdmin ? `공유 ${p.mids.length}명` : shown.length ? `담당 ${shown.length}명 공유` : '공유 안 함'}</span>
+                  <span className={s.vMeta}>{shown.length ? `${isAdmin ? '' : '담당 '}${shown.length}명 공유` : '공유 안 함'}</span>
                 </button>
                 {canPick && (
                   <button type="button" className={cx(ui.btnSmall, s.vMore)} onClick={() => setInfo(p.id)} aria-haspopup="dialog">
@@ -203,11 +210,11 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
       )}
       {adding && <ProgramSheet color={color} onClose={() => setAdding(false)} />}
       {fixingProgram && <ProgramSheet key={fixingProgram.id} program={fixingProgram} color={color} onClose={() => setFixing(null)} />}
-      {editingProgram && <TargetSheet program={editingProgram} color={color} members={myMembers} onClose={() => setEditing(null)} />}
+      {editingProgram && <TargetSheet program={editingProgram} color={color} members={isAdmin ? undefined : myMembers} onClose={() => setEditing(null)} />}
       {sharing !== null && pickedPrograms.length > 0 && (
-        <ShareSheet programs={pickedPrograms} on={sharing} onClose={() => setSharing(null)} onDone={() => setPicked([])} />
+        <ShareSheet programs={pickedPrograms} on={sharing} members={myMembers} color={color} onClose={() => setSharing(null)} onDone={() => setPicked([])} />
       )}
-    </>
+    </div>
   );
 }
 

@@ -418,6 +418,11 @@ export interface Backend {
   /** 새 번호를 발급하면 그 트레이너의 로그인은 끝난다 */
   adminNewTrainerCode(token: string, id: string): Promise<string>;
   adminDelTrainer(token: string, id: string): Promise<void>;
+  /** 이용자가 잘못 적은 운동·식사 기록 고치기·지우기 (날짜도 바꿀 수 있다). 고친 기록을 돌려준다 */
+  adminUpdateEx(token: string, id: string, r: NewExercise): Promise<Exercise>;
+  adminUpdateMeal(token: string, id: string, r: NewMeal): Promise<Meal>;
+  adminDelEx(token: string, id: string): Promise<void>;
+  adminDelMeal(token: string, id: string): Promise<void>;
   // 관리자·트레이너
   /** 해시태그 바꾸기. 정리된(# 뺀·중복 없는) 목록을 돌려준다 */
   staffSetTags(token: string, id: string, tags: string[]): Promise<string[]>;
@@ -425,10 +430,10 @@ export interface Backend {
   staffDelProgram(token: string, id: string): Promise<void>;
   /** 등록한 영상 고치기 (관리자). ytId 가 null 이면 영상은 그대로. 공유·따라한 기록은 그대로 */
   adminUpdateProgram(token: string, id: string, p: ProgramEdit): Promise<Program>;
-  /** 한 영상의 대상 바꾸기 (트레이너만, 자기 담당 이용자 몫만). 저장된 대상 목록을 돌려준다 */
+  /** 한 영상의 대상 바꾸기 (관리자 = 모든 이용자, 트레이너 = 자기 담당 이용자 몫만). 저장된 대상 목록을 돌려준다 */
   staffSetProgramMembers(token: string, id: string, mids: string[]): Promise<string[]>;
-  /** 영상 여러 개를 담당 이용자 여러 명에게 한 번에 공유(on)하거나 끈다. 영상마다 지금 대상 목록을 돌려준다 */
-  trainerSharePrograms(token: string, pids: string[], mids: string[], on: boolean): Promise<Record<string, string[]>>;
+  /** 영상 여러 개를 이용자 여러 명에게 한 번에 공유(on)하거나 끈다 (관리자 = 모든 이용자, 트레이너 = 담당 이용자만). 영상마다 지금 대상 목록을 돌려준다 */
+  staffSharePrograms(token: string, pids: string[], mids: string[], on: boolean): Promise<Record<string, string[]>>;
   videoUrl(p: Program): Promise<{ url: string; revoke?: boolean } | null>;
   // 음식 목록에 추가한 음식 (누구나 읽기, 관리자만 고치기)
   customFoodsGet(): Promise<CustomFood[]>;
