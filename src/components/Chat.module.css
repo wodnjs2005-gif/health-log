@@ -325,3 +325,13 @@
   justify-content: center;
   line-height: 1;
 }
+
+/* 담당 트레이너가 여럿이면 사진을 겹쳐서 */
+.faces {
+  flex: none;
+  display: inline-flex;
+}
+
+.faces > * + * {
+  margin-left: -0.875rem;
+}

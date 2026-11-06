@@ -51,7 +51,7 @@ export function useUserChat(open: boolean) {
   const notify = useNotify();
   const [key, setKey] = useState('');
   const [unread, setUnread] = useState(0);
-  const [trainer, setTrainer] = useState<ChatTrainer | null>(null);
+  const [trainers, setTrainers] = useState<ChatTrainer[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [ring, setRing] = useState(0);
   const prev = useRef<number | null>(null);
@@ -63,12 +63,12 @@ export function useUserChat(open: boolean) {
     try {
       const s = await be.userChatStatus(userCode);
       setKey(s.key);
-      setTrainer(s.trainer);
+      setTrainers(s.trainers);
       setUnread(s.unread);
       setLoaded(true);
       // 대화방을 보고 있지 않을 때 새 답장이 오면 알린다 (처음 불러올 때는 빼고)
       if (prev.current !== null && s.unread > prev.current && !openRef.current)
-        notify(s.trainer ? `${trainerTitle(s.trainer.name, s.trainer.rank)}님이 답장을 보냈어요` : '새 메시지가 왔어요');
+        notify(s.trainers.length === 1 ? `${trainerTitle(s.trainers[0].name, s.trainers[0].rank)}님이 답장을 보냈어요` : '트레이너가 답장을 보냈어요');
       prev.current = s.unread;
     } catch {
       /* 연결이 안 되면 다음에 */
@@ -89,7 +89,7 @@ export function useUserChat(open: boolean) {
   useOnVisible(bump);
   useTitleCount(open ? 0 : unread);
 
-  return { unread: open ? 0 : unread, trainer, loaded, ring };
+  return { unread: open ? 0 : unread, trainers, loaded, ring };
 }
 
 /**

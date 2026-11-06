@@ -14,7 +14,7 @@ import { NutriLine } from '../../components/Nutri';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
 import { ageOf, birthLabel, parseBirth } from '../../lib/age';
-import type { Meal, Member } from '../../lib/backend';
+import { isAssigned, type Meal, type Member } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import { md } from '../../lib/date';
 import { sumMeals } from '../../lib/nutrition';
@@ -587,16 +587,22 @@ function MemberSummary({ member: m, onView, onAssign }: { member: Member; onView
   );
 }
 
-/** 이용자 카드: 담당 트레이너 (누르면 바꾸기) */
+/** 이용자 카드: 담당 트레이너들 (누르면 바꾸기) */
 function AssignRow({ mid, onPick }: { mid: string; onPick: () => void }) {
   const { data, trainers } = useApp();
-  const t = trainers.find((x) => x.id === data.assign[mid]);
+  const ts = trainers.filter((t) => isAssigned(data, mid, t.id));
   return (
     <div className={s.assignRow}>
       <span className={cx(ui.small, s.codeLabel)}>담당</span>
-      <button type="button" className={cx(s.assignPick, !t && s.assignPickEmpty)} onClick={onPick} aria-haspopup="dialog">
-        {t && <Avatar id={t.id} name={t.name} size="sm" tone="navy" />}
-        {t ? trainerTitle(t.name, t.rank) : '담당 트레이너 정하기'}
+      <button type="button" className={cx(s.assignPick, !ts.length && s.assignPickEmpty)} onClick={onPick} aria-haspopup="dialog">
+        {ts.length > 0 && (
+          <span className={s.assignFaces}>
+            {ts.slice(0, 3).map((t) => (
+              <Avatar key={t.id} id={t.id} name={t.name} size="sm" tone="navy" />
+            ))}
+          </span>
+        )}
+        <span className={s.assignNames}>{ts.length ? ts.map((t) => trainerTitle(t.name, t.rank)).join(', ') : '담당 트레이너 정하기'}</span>
       </button>
     </div>
   );

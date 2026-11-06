@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../AppContext';
 import { BarChart } from '../../components/BarChart';
 import { Sheet } from '../../components/Layout';
+import { isAssigned } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import { md } from '../../lib/date';
 import { addMonths, groupAttendance, hm, lessonRate, monthName, monthRange, orgMonth, pct, ymLabel, ymOf } from '../../lib/monthly';
@@ -73,8 +74,8 @@ function StatsSheet({ onClose }: { onClose: () => void }) {
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   const groups = [
-    ...trainers.map((t) => ({ id: t.id, name: trainerTitle(t.name, t.rank), mids: data.members.filter((mm) => data.assign[mm.id] === t.id).map((mm) => mm.id) })),
-    { id: '-', name: '담당 없음', mids: data.members.filter((mm) => !trainers.some((t) => t.id === data.assign[mm.id])).map((mm) => mm.id) },
+    ...trainers.map((t) => ({ id: t.id, name: trainerTitle(t.name, t.rank), mids: data.members.filter((mm) => isAssigned(data, mm.id, t.id)).map((mm) => mm.id) })),
+    { id: '-', name: '담당 없음', mids: data.members.filter((mm) => !trainers.some((t) => isAssigned(data, mm.id, t.id))).map((mm) => mm.id) },
   ].filter((g) => g.mids.length > 0);
 
   const quiet = data.members.filter((mm) => !m.activeSet.has(mm.id)).sort((a, b) => a.name.localeCompare(b.name, 'ko'));

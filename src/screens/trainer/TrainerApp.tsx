@@ -9,7 +9,7 @@ import { useStaffChat } from '../../hooks/useChat';
 import { ChatList } from '../staff/ChatList';
 import { useConfirm } from '../../hooks/useConfirm';
 import { activityOf, sortByActivity, STALE_DAYS, staleText } from '../../lib/activity';
-import type { Member } from '../../lib/backend';
+import { isAssigned, type Member } from '../../lib/backend';
 import { MAIN3, WEEK_GOAL } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { md, mondayOf } from '../../lib/date';
@@ -42,10 +42,10 @@ export function TrainerApp() {
   // 상세 화면에 갔다 와도 찾던 조건은 그대로 둔다
   const { filter, setFilter, shown: found } = useMemberFilter(data.members);
   // 「내 담당」: 담당 이용자가 있으면 처음에는 켜 두고, 고른 것은 기억한다
-  const myCount = data.members.filter((m) => data.assign[m.id] === staffId).length;
+  const myCount = data.members.filter((m) => isAssigned(data, m.id, staffId)).length;
   const [mineSaved, setMineSaved] = useState(() => lsGet(LS.mineOnly));
   const mineOn = myCount > 0 && mineSaved !== 'off';
-  const shown = mineOn ? found.filter((m) => data.assign[m.id] === staffId) : found;
+  const shown = mineOn ? found.filter((m) => isAssigned(data, m.id, staffId)) : found;
   const toggleMine = () => {
     const v = mineOn ? 'off' : 'on';
     setMineSaved(v);

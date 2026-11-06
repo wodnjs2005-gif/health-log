@@ -273,8 +273,8 @@ export interface DataSet {
   /** 사진이 있는 이용자·트레이너·관리자·보호자(g+이용자 id) → 사진 버전 (사진 자체는 따로 받는다) */
   photos: Record<string, string>;
   guardians: GuardianInfo[];
-  /** 담당 트레이너: 이용자 id → 트레이너 id (담당이 있는 이용자만) */
-  assign: Record<string, string>;
+  /** 담당 트레이너: 이용자 id → 트레이너 id 목록, 먼저 정한 담당부터 (담당이 있는 이용자만) */
+  assigns: Record<string, string[]>;
 }
 
 /**
@@ -298,8 +298,12 @@ export const toDataSet = (members: Member[], d: Partial<Omit<DataSet, 'members'>
   tests: d.tests || [],
   photos: d.photos || {},
   guardians: d.guardians || [],
-  assign: d.assign || {},
+  assigns: d.assigns || {},
 });
+
+/** 이 트레이너가 이 이용자의 담당인가 */
+export const isAssigned = (d: Pick<DataSet, 'assigns'>, mid: string, tid: string | null | undefined): boolean =>
+  !!tid && (d.assigns[mid] ?? []).includes(tid);
 
 export interface UserData extends Omit<DataSet, 'members'> {
   member: Member;
@@ -485,8 +489,8 @@ export interface Backend {
   /** 보호자 관계 (비우면 지움). 저장된 글을 돌려준다 */
   guardianSetRelation(code: string, relation: string): Promise<string>;
   // 대화 (이용자 ↔ 트레이너). 관리자는 보기만
-  /** 안 읽은 수, 초인종 채널, 담당 트레이너 (없으면 null: 대화를 보낼 수 없다) */
-  userChatStatus(code: string): Promise<{ key: string; unread: number; trainer: ChatTrainer | null }>;
+  /** 안 읽은 수, 초인종 채널, 담당 트레이너들 (없으면 빈 목록: 대화를 보낼 수 없다) */
+  userChatStatus(code: string): Promise<{ key: string; unread: number; trainers: ChatTrainer[] }>;
   /** 보면 읽은 것으로 */
   userChatGet(code: string, range?: ChatRange): Promise<ChatMessage[]>;
   userChatSend(code: string, text: string): Promise<ChatMessage>;
@@ -494,8 +498,8 @@ export interface Backend {
   userChatSeen(code: string): Promise<ChatSeen>;
   staffChatSeen(token: string, mid: string): Promise<ChatSeen>;
   staffChatList(token: string): Promise<{ key: string; rooms: ChatRoom[] }>;
-  /** 담당 트레이너 정하기 (관리자). tid 가 null 이면 담당 없음 */
-  adminSetMemberTrainer(token: string, mid: string, tid: string | null): Promise<void>;
+  /** 담당 트레이너 정하기 (관리자): 고른 트레이너들로 통째로 바꾼다. 비우면 담당 없음. 저장된 목록을 돌려준다 */
+  adminSetMemberTrainers(token: string, mid: string, tids: string[]): Promise<string[]>;
   /** 트레이너는 담당 이용자만, 보면 읽은 것으로 (관리자는 모두 보기만) */
   staffChatGet(token: string, mid: string, range?: ChatRange): Promise<ChatMessage[]>;
   trainerChatSend(token: string, mid: string, text: string): Promise<ChatMessage>;

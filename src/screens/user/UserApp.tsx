@@ -147,7 +147,7 @@ export function UserApp() {
         </>
       )}
       {chatOpen && (
-        <ChatScreen mid={member.id} name={member.name} mode="user" ring={chat.ring} trainer={chat.loaded ? chat.trainer : undefined} onClose={() => setChatOpen(false)} />
+        <ChatScreen mid={member.id} name={member.name} mode="user" ring={chat.ring} trainers={chat.loaded ? chat.trainers : undefined} onClose={() => setChatOpen(false)} />
       )}
       {report && <MonthlyReport mid={member.id} tone="green" onClose={() => setReport(false)} />}
       {myPhoto && <PhotoSheet target={{ kind: 'user' }} name={member.name} title="내 사진" tone="green" onClose={() => setMyPhoto(false)} />}

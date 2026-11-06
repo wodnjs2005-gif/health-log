@@ -4,7 +4,7 @@ import { Avatar } from '../../components/Avatar';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { DateNav } from '../../components/DateNav';
 import type { useConfirm } from '../../hooks/useConfirm';
-import { isAuthError, type Lesson } from '../../lib/backend';
+import { isAssigned, isAuthError, type Lesson } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import { daysLabel, isLessonDay, isOff, isPresent, monthRate, sortLessons } from '../../lib/lessons';
 import ui from '../../styles/ui.module.css';
@@ -164,7 +164,7 @@ function LessonDetail({ lesson, confirm, color = 'orange', onBack, tile, onTile 
   useBack(true, onBack);
 
   // 트레이너는 담당 이용자만 출석을 체크한다 (담당 이용자를 위에)
-  const canMark = (mid: string) => staffRole !== 'trainer' || data.assign[mid] === staffId;
+  const canMark = (mid: string) => staffRole !== 'trainer' || isAssigned(data, mid, staffId);
   const all = activeMids(lesson, data.members);
   const mids = [...all.filter(canMark), ...all.filter((mid) => !canMark(mid))];
   const others = all.length - all.filter(canMark).length;

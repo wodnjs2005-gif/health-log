@@ -36,12 +36,12 @@ interface Props {
   /** 초인종이 울릴 때마다 1 늘어나는 수 */
   ring: number;
   onClose: () => void;
-  /** 이용자 화면: 담당 트레이너 (null 이면 담당이 없어 보낼 수 없다, undefined 면 아직 모름) */
-  trainer?: ChatTrainer | null;
+  /** 이용자 화면: 담당 트레이너들 (빈 목록이면 담당이 없어 보낼 수 없다, undefined 면 아직 모름) */
+  trainers?: ChatTrainer[];
 }
 
 /** 대화방 (화면 전체). 새 메시지는 초인종이 울리거나 30초마다, 다시 화면에 나타날 때 가져온다 */
-export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
+export function ChatScreen({ mid, name, mode, ring, onClose, trainers }: Props) {
   const { be, userCode, staffToken, staffId, fail } = useApp();
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -235,13 +235,13 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
     );
   });
 
-  const trainerName = trainer ? trainerTitle(trainer.name, trainer.rank) : '';
-  const noTrainer = mode === 'user' && trainer === null;
+  const trainerNames = (trainers ?? []).map((t) => trainerTitle(t.name, t.rank));
+  const noTrainer = mode === 'user' && trainers?.length === 0;
   const note =
     mode === 'user'
       ? noTrainer
         ? '아직 담당 트레이너가 정해지지 않아 메시지를 보낼 수 없어요. 관리자에게 알려 주세요.'
-        : `담당 ${trainerName}님과 나누는 대화예요. 관리자도 볼 수 있어요. 급한 일은 전화로 연락해 주세요.`
+        : `${trainerNames.length ? `담당 ${trainerNames.join(', ')}님과` : '담당 트레이너와'} 나누는 대화예요. 관리자도 볼 수 있어요. 급한 일은 전화로 연락해 주세요.`
       : mode === 'trainer'
         ? `${name} 님과 담당 트레이너가 나누는 대화예요. 관리자도 볼 수 있어요.`
         : '관리자는 대화를 보기만 할 수 있어요.';
@@ -252,8 +252,16 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
         <button type="button" className={ui.btnSmall} onClick={onClose}>
           ‹ 닫기
         </button>
-        {mode === 'user' && trainer && <Avatar id={trainer.id} name={trainer.name} size="md" tone="orange" />}
-        <h2 className={s.title}>{mode === 'user' ? (trainer ? `${trainerName}님` : '트레이너와 대화') : `${name} 님`}</h2>
+        {mode === 'user' && !!trainers?.length && (
+          <span className={s.faces}>
+            {trainers.slice(0, 3).map((t) => (
+              <Avatar key={t.id} id={t.id} name={t.name} size="md" tone="orange" />
+            ))}
+          </span>
+        )}
+        <h2 className={s.title}>
+          {mode !== 'user' ? `${name} 님` : !trainerNames.length ? '트레이너와 대화' : trainerNames.length === 1 ? `${trainerNames[0]}님` : `${trainerNames[0]}님 외 ${trainerNames.length - 1}명`}
+        </h2>
       </div>
       <div ref={listRef} className={s.list} aria-live="polite">
         <div className={s.note}>
@@ -293,7 +301,7 @@ export function ChatScreen({ mid, name, mode, ring, onClose, trainer }: Props) {
             rows={1}
             value={text}
             maxLength={CHAT_MAX}
-            placeholder={mode === 'user' ? `${trainerName || '트레이너'}님께 보낼 말` : `${name} 님께 보낼 말`}
+            placeholder={mode === 'user' ? `${trainerNames.length === 1 ? trainerNames[0] : '트레이너'}님께 보낼 말` : `${name} 님께 보낼 말`}
             aria-label="보낼 말"
             onChange={(e) => setText(e.target.value)}
           />

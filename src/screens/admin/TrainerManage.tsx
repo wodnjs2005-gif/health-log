@@ -83,14 +83,21 @@ export function TrainerManage({ confirm }: { confirm: ReturnType<typeof useConfi
         return fail(e);
       }
       setTrainers((list) => list.filter((x) => x.id !== id));
-      // 그 트레이너가 맡던 이용자는 담당 없음으로
-      setData((d) => ({ ...d, assign: Object.fromEntries(Object.entries(d.assign).filter(([, tid]) => tid !== id)) }));
+      // 그 트레이너가 맡던 이용자의 담당에서 뺀다
+      setData((d) => ({
+        ...d,
+        assigns: Object.fromEntries(
+          Object.entries(d.assigns)
+            .map(([mid, tids]) => [mid, tids.filter((tid) => tid !== id)] as const)
+            .filter(([, tids]) => tids.length > 0),
+        ),
+      }));
       setIssued((j) => (j && j.id === id ? null : j));
       setManaging(null);
       toast('트레이너를 삭제했어요');
     });
 
-  const assigned = (id: string) => Object.values(data.assign).filter((x) => x === id).length;
+  const assigned = (id: string) => Object.values(data.assigns).filter((tids) => tids.includes(id)).length;
   const actions = (t: Trainer) => (
     <div className={s.actions}>
       <button type="button" className={cx(ui.btnSmall, ui.btnNavyOutline)} onClick={() => setEditingRank(t)}>

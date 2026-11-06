@@ -5,6 +5,7 @@ import { chatWhen, ChatScreen } from '../../components/Chat';
 import c from '../../components/Chat.module.css';
 import type { useStaffChat } from '../../hooks/useChat';
 import { useViewMode } from '../../hooks/useViewMode';
+import { isAssigned } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import { EMPTY_FILTER, matchMember } from '../../lib/tags';
 import ui from '../../styles/ui.module.css';
@@ -37,7 +38,7 @@ export function ChatList({ mode, chat, heading = true }: Props) {
   };
   const rooms = chat.rooms.filter((r) => match(r.mid));
   // 트레이너: 담당 이용자 중 아직 대화가 없는 분도 보여준다 (새 대화). 이름으로 찾을 수 있다
-  const mine = mode === 'trainer' ? data.members.filter((m) => data.assign[m.id] === staffId) : [];
+  const mine = mode === 'trainer' ? data.members.filter((m) => isAssigned(data, m.id, staffId)) : [];
   const others = mine.filter((m) => !chat.rooms.some((r) => r.mid === m.id) && matchMember(m, { ...EMPTY_FILTER, q }));
   const opened = open ? data.members.find((m) => m.id === open) : null;
 

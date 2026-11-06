@@ -8,6 +8,7 @@ import { mealNutri, roundNutri } from '../nutrition';
 import { normRank, trainerTitle } from '../rank';
 import { normTags, TAGS_PER_MEMBER } from '../tags';
 import {
+  isAssigned,
   AuthError,
   guardianPhotoId,
   LimitError,
@@ -194,7 +195,7 @@ function seed(): DevDB {
     photos: {},
     photoData: {},
     guardians: [{ mid: 'm1', relation: '딸' }],
-    assign: { m1: 't1', m2: 't1' },
+    assigns: { m1: ['t1'], m2: ['t1'] },
     chat: [
       { id: uid(), mid: 'm1', from: 'member', tid: null, by: '', text: '어제 운동하고 무릎이 조금 뻐근해요. 오늘도 해도 될까요?', at: new Date(Date.now() - 26 * 3600e3).toISOString() },
       { id: uid(), mid: 'm1', from: 'trainer', tid: 't1', by: '김코치 팀장', text: '오늘은 걷기만 20분 가볍게 하시고, 계속 아프면 말씀해 주세요.', at: new Date(Date.now() - 25 * 3600e3).toISOString() },
@@ -241,7 +242,9 @@ const load = (): DevDB => {
   d.chat ??= [];
   d.chatSeen ??= {};
   d.chatReads ??= {};
-  d.assign ??= {};
+  // 담당이 한 명이던 때 저장한 데이터는 목록으로 옮긴다
+  const old = (d as unknown as { assign?: Record<string, string> }).assign;
+  d.assigns ??= old ? Object.fromEntries(Object.entries(old).map(([mid, tid]) => [mid, [tid]])) : {};
   return d;
 };
 
@@ -304,7 +307,7 @@ const chatPut = (d: DevDB, msg: Omit<ChatMessage, 'id' | 'at'>) => {
   d.chat.push(c);
   save(d);
   ring(memberTopic(c.mid));
-  if (d.assign[c.mid]) ring(trainerTopic(d.assign[c.mid]));
+  for (const tid of d.assigns[c.mid] ?? []) ring(trainerTopic(tid));
   ring(STAFF_TOPIC);
   return c;
 };
@@ -334,7 +337,7 @@ const userData = (d: DevDB, m: Member): UserData => ({
   tests: d.tests.filter((t) => t.mid === m.id),
   photos: photoVersFor(d, m.id),
   guardians: d.guardians.filter((g) => g.mid === m.id),
-  assign: d.assign[m.id] ? { [m.id]: d.assign[m.id] } : {},
+  assigns: d.assigns[m.id] ? { [m.id]: d.assigns[m.id] } : {},
 });
 
 /** 이용자·보호자에게는 그분·그분 보호자·트레이너 사진만 (직원은 전부) */
@@ -613,7 +616,7 @@ export function createDevBackend(): Backend {
         tests: d.tests,
         photos: d.photos,
         guardians: d.guardians,
-        assign: d.assign,
+        assigns: d.assigns,
       };
     },
 
@@ -640,7 +643,7 @@ export function createDevBackend(): Backend {
       d.tests = d.tests.filter((x) => x.mid !== id);
       d.guardians = d.guardians.filter((g) => g.mid !== id);
       d.chat = d.chat.filter((c) => c.mid !== id);
-      delete d.assign[id];
+      delete d.assigns[id];
       for (const k of [id, guardianPhotoId(id)]) {
         delete d.photos[k];
         delete d.photoData[k];
@@ -713,7 +716,11 @@ export function createDevBackend(): Backend {
     async adminDelTrainer(token, id) {
       const d = admin(token);
       d.trainers = d.trainers.filter((t) => t.id !== id);
-      for (const [mid, tid] of Object.entries(d.assign)) if (tid === id) delete d.assign[mid];
+      for (const [mid, tids] of Object.entries(d.assigns)) {
+        const left = tids.filter((tid) => tid !== id);
+        if (left.length) d.assigns[mid] = left;
+        else delete d.assigns[mid];
+      }
       d.sessions = d.sessions.filter((s) => !(s.role === 'trainer' && s.subject === id));
       delete d.photos[id];
       delete d.photoData[id];
@@ -776,7 +783,7 @@ export function createDevBackend(): Backend {
       if (!p) throw new Error('program not found'); // 다른 직원이 먼저 지운 영상
       // 삭제된 이용자는 빼고 저장. 이미 따라한 기록(views·운동일지)은 그대로 둔다
       const want = [...new Set(mids)].filter((mid) => d.members.some((m) => m.id === mid));
-      const mine = (mid: string) => s.role === 'admin' || d.assign[mid] === s.subject;
+      const mine = (mid: string) => s.role === 'admin' || isAssigned(d, mid, s.subject);
       const next = [...p.mids.filter((mid) => !mine(mid)), ...want.filter(mine)];
       p.mids = next;
       save(d);
@@ -785,7 +792,7 @@ export function createDevBackend(): Backend {
 
     async staffSharePrograms(token, pids, mids, on) {
       const { d, s } = staff(token);
-      const ms = mids.filter((mid) => d.members.some((m) => m.id === mid) && (s.role === 'admin' || d.assign[mid] === s.subject));
+      const ms = mids.filter((mid) => d.members.some((m) => m.id === mid) && (s.role === 'admin' || isAssigned(d, mid, s.subject)));
       const out: Record<string, string[]> = {};
       for (const p of d.programs.filter((x) => pids.includes(x.id))) {
         p.mids = on ? [...new Set([...p.mids, ...ms])] : p.mids.filter((mid) => !ms.includes(mid));
@@ -913,7 +920,7 @@ export function createDevBackend(): Backend {
     // 트레이너는 담당 이용자만 출석 체크
     async staffSetAttendance(token, lid, mid, date, present) {
       const { d, s } = staff(token);
-      if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
+      if (s.role === 'trainer' && !isAssigned(d, mid, s.subject)) throw new Error('not assigned');
       const l = d.lessons.find((x) => x.id === lid);
       if (!l) throw new Error('lesson not found');
       if (date > todayYmd()) throw new Error('invalid date');
@@ -933,7 +940,7 @@ export function createDevBackend(): Backend {
       let n = 0;
       for (const mid of new Set(mids)) {
         if (!l.roster.some((r) => r.mid === mid) || d.attendance.some((a) => a.lid === lid && a.mid === mid && a.date === date)) continue;
-        if (s.role === 'trainer' && d.assign[mid] !== s.subject) continue;
+        if (s.role === 'trainer' && !isAssigned(d, mid, s.subject)) continue;
         d.attendance.push({ lid, mid, date });
         n++;
       }
@@ -1144,11 +1151,10 @@ export function createDevBackend(): Backend {
       const d = load();
       const m = who(d, code);
       const seen = d.chatSeen[m.id] ?? '';
-      const t = d.trainers.find((x) => x.id === d.assign[m.id]);
       return {
         key: memberTopic(m.id),
         unread: d.chat.filter((c) => c.mid === m.id && c.from === 'trainer' && c.at > seen).length,
-        trainer: t ? { id: t.id, name: t.name, rank: t.rank ?? '' } : null,
+        trainers: (d.assigns[m.id] ?? []).flatMap((tid) => d.trainers.filter((t) => t.id === tid)).map((t) => ({ id: t.id, name: t.name, rank: t.rank ?? '' })),
       };
     },
 
@@ -1159,7 +1165,7 @@ export function createDevBackend(): Backend {
       if (!r?.before && d.chat.some((c) => c.mid === m.id && c.from === 'trainer' && c.at > (d.chatSeen[m.id] ?? ''))) {
         d.chatSeen[m.id] = new Date().toISOString();
         save(d);
-        if (d.assign[m.id]) ring(trainerTopic(d.assign[m.id]));
+        for (const tid of d.assigns[m.id] ?? []) ring(trainerTopic(tid));
       }
       return chatPage(d, m.id, r);
     },
@@ -1172,14 +1178,14 @@ export function createDevBackend(): Backend {
     async staffChatSeen(token, mid) {
       const { d, s } = staff(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
-      if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
+      if (s.role === 'trainer' && !isAssigned(d, mid, s.subject)) throw new Error('not assigned');
       return chatSeenOf(d, mid);
     },
 
     async userChatSend(code, text) {
       const d = load();
       const m = who(d, code);
-      if (!d.trainers.some((t) => t.id === d.assign[m.id])) throw new Error('no trainer');
+      if (!d.assigns[m.id]?.length) throw new Error('no trainer');
       const c = chatPut(d, { mid: m.id, from: 'member', tid: null, by: '', text });
       d.chatSeen[m.id] = c.at;
       save(d);
@@ -1190,7 +1196,7 @@ export function createDevBackend(): Backend {
       const { d, s } = staff(token);
       const last = new Map<string, ChatMessage>();
       // 트레이너는 담당 이용자 대화만
-      for (const c of [...d.chat].sort((a, b) => a.at.localeCompare(b.at))) if (s.role === 'admin' || d.assign[c.mid] === s.subject) last.set(c.mid, c);
+      for (const c of [...d.chat].sort((a, b) => a.at.localeCompare(b.at))) if (s.role === 'admin' || isAssigned(d, c.mid, s.subject)) last.set(c.mid, c);
       const rooms = [...last.values()]
         .sort((a, b) => b.at.localeCompare(a.at))
         .map((l) => {
@@ -1203,7 +1209,7 @@ export function createDevBackend(): Backend {
     async staffChatGet(token, mid, r) {
       const { d, s } = staff(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
-      if (s.role === 'trainer' && d.assign[mid] !== s.subject) throw new Error('not assigned');
+      if (s.role === 'trainer' && !isAssigned(d, mid, s.subject)) throw new Error('not assigned');
       if (s.role === 'trainer' && !r?.before) {
         const prev = d.chatReads[s.subject + '|' + mid];
         const fresh = d.chat.some((c) => c.mid === mid && c.from === 'member' && c.at > (prev ?? ''));
@@ -1219,22 +1225,27 @@ export function createDevBackend(): Backend {
     async trainerChatSend(token, mid, text) {
       const { d, s } = trainer(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
-      if (d.assign[mid] !== s.subject) throw new Error('not assigned');
+      if (!isAssigned(d, mid, s.subject)) throw new Error('not assigned');
       const c = chatPut(d, { mid, from: 'trainer', tid: s.subject, by: staffLabel(d, s), text });
       d.chatReads[s.subject + '|' + mid] = c.at;
       save(d);
       return c;
     },
 
-    async adminSetMemberTrainer(token, mid, tid) {
+    async adminSetMemberTrainers(token, mid, tids) {
       const d = admin(token);
       if (!d.members.some((m) => m.id === mid)) throw new Error('member not found');
-      if (tid && !d.trainers.some((t) => t.id === tid)) throw new Error('trainer not found');
-      if (tid) {
-        d.assign[mid] = tid;
-        d.chatReads[tid + '|' + mid] ??= new Date().toISOString();
-      } else delete d.assign[mid];
+      const want = [...new Set(tids)];
+      if (want.some((tid) => !d.trainers.some((t) => t.id === tid))) throw new Error('trainer not found');
+      // 새 담당: 다른 담당이 이미 읽은 데까지는 읽은 것으로 (서버와 같게)
+      const cur = d.assigns[mid] ?? [];
+      const lastRead = Object.entries(d.chatReads).filter(([k]) => k.endsWith('|' + mid)).map(([, at]) => at).sort().pop();
+      if (lastRead) for (const tid of want) if (!cur.includes(tid) && (d.chatReads[tid + '|' + mid] ?? '') < lastRead) d.chatReads[tid + '|' + mid] = lastRead;
+      const next = [...cur.filter((tid) => want.includes(tid)), ...want.filter((tid) => !cur.includes(tid))];
+      if (next.length) d.assigns[mid] = next;
+      else delete d.assigns[mid];
       save(d);
+      return next;
     },
 
     chatListen(key, onRing) {

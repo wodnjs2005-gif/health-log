@@ -9,7 +9,7 @@ import { NutriLine } from '../../components/Nutri';
 import { WeekChart } from '../../components/WeekChart';
 import type { ReactNode } from 'react';
 import { ageOf } from '../../lib/age';
-import { guardianPhotoId, type Nutri, type PublicMember } from '../../lib/backend';
+import { guardianPhotoId, isAssigned, type Nutri, type PublicMember } from '../../lib/backend';
 import { MEALS } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { addDays, md } from '../../lib/date';
@@ -51,7 +51,7 @@ export function MemberDetail({ member, summary, end: endProp, onGo, color = 'ora
   const { data, today, staffToken, staffRole, staffId, photoOf } = useApp();
   const isAdmin = staffRole === 'admin';
   // 관리자와 담당 트레이너는 이 분이 볼 영상을 켜고 끈다
-  const canShare = isAdmin || (staffRole === 'trainer' && data.assign[member.id] === staffId);
+  const canShare = isAdmin || (staffRole === 'trainer' && isAssigned(data, member.id, staffId));
   const isStaff = !!staffToken;
   const [photoOpen, setPhotoOpen] = useState(false);
   // 직원은 날짜별 기록을 7일씩 앞뒤로 넘겨 본다 (보호자 화면은 end 를 넘겨준다)

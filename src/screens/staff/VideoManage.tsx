@@ -4,7 +4,7 @@ import { ConfirmButton } from '../../components/ConfirmButton';
 import { Sheet } from '../../components/Layout';
 import type { useConfirm } from '../../hooks/useConfirm';
 import { useViewMode } from '../../hooks/useViewMode';
-import type { Program } from '../../lib/backend';
+import { isAssigned, type Program } from '../../lib/backend';
 import { cx } from '../../lib/cx';
 import { md } from '../../lib/date';
 import { ytThumb } from '../../lib/youtube';
@@ -42,14 +42,14 @@ export function VideoManage({ confirm, color = 'orange' }: Props) {
   const [sharing, setSharing] = useState<boolean | null>(null);
   const editingProgram = editing ? data.programs.find((p) => p.id === editing) : undefined;
   // 공유할 수 있는 이용자: 관리자 = 모두, 트레이너 = 담당 이용자
-  const myMembers = isAdmin ? data.members : data.members.filter((m) => data.assign[m.id] === staffId);
+  const myMembers = isAdmin ? data.members : data.members.filter((m) => isAssigned(data, m.id, staffId));
   const canPick = myMembers.length > 0;
   // 지워진 영상은 고른 목록에서 뺀다
   const pickedPrograms = data.programs.filter((p) => picked.includes(p.id));
   const allPicked = data.programs.length > 0 && pickedPrograms.length === data.programs.length;
   const togglePick = (id: string) => setPicked((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
   // 트레이너는 자기 담당 이용자만 보인다
-  const sharedOf = (p: Program) => (isAdmin ? p.mids : p.mids.filter((mid) => data.assign[mid] === staffId));
+  const sharedOf = (p: Program) => (isAdmin ? p.mids : p.mids.filter((mid) => isAssigned(data, mid, staffId)));
 
   const del = (id: string) =>
     confirm.tap(id, async () => {
